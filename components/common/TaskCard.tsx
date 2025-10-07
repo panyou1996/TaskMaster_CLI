@@ -229,7 +229,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <div className="flex-grow min-w-0">
                     <div className="flex justify-between items-start gap-2">
                         <p className={`flex-grow truncate text-lg font-semibold ${completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>{title}</p>
-                        <div className="flex items-center shrink-0 gap-1 pt-0.5">
+                        <div className="flex items-center shrink-0 pt-0.5">
                             <button
                                 // FIX: Removed 'as number' cast
                                 onClick={(e) => { e.stopPropagation(); if (!completed) onToggleImportant?.(id); }}
@@ -239,6 +239,22 @@ const TaskCard: React.FC<TaskCardProps> = ({
                             >
                                 <FlagIcon className={`w-4 h-4 transition-colors ${important ? (completed ? 'text-red-300' : 'text-red-500') : 'text-gray-300'}`} />
                             </button>
+                        </div>
+                    </div>
+                    
+                    {!completed && (
+                        <div className="flex justify-between items-center mt-1.5">
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${pillColors.bg} ${pillColors.text}`}>
+                                    {categoryIcon && <span>{categoryIcon}</span>}
+                                    <span className="font-medium">{category}</span>
+                                </div>
+                                {endTime && (
+                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-medium">
+                                        <span>{duration}m &rarr; {endTime}</span>
+                                    </div>
+                                )}
+                            </div>
                             {subtasks && subtasks.length > 0 && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onToggleSubtaskVisibility?.(); }}
@@ -247,20 +263,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
                                 >
                                     <ChevronRightElegantIcon className={`w-3.5 h-3.5 transition-transform duration-300 ${hideSubtasks ? '' : 'rotate-90'}`} />
                                 </button>
-                            )}
-                        </div>
-                    </div>
-                    
-                    {!completed && (
-                        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs">
-                            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${pillColors.bg} ${pillColors.text}`}>
-                                {categoryIcon && <span>{categoryIcon}</span>}
-                                <span className="font-medium">{category}</span>
-                            </div>
-                            {endTime && (
-                                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-medium">
-                                    <span>{duration}m &rarr; {endTime}</span>
-                                </div>
                             )}
                         </div>
                     )}
