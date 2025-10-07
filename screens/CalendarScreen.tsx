@@ -26,7 +26,7 @@ const CalendarScreen: React.FC = () => {
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
     // Modal and task interaction state
-    const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
+    const [completingTaskId, setCompletingTaskId] = useState<number | string | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -115,7 +115,8 @@ const CalendarScreen: React.FC = () => {
     }, [selectedDate, tasksByDay, taskFilterMode]);
 
 
-    const handleCompleteTask = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleCompleteTask = (taskId: number | string) => {
         setCompletingTaskId(taskId);
         setTimeout(async () => {
             await updateTask(taskId, { completed: true });
@@ -123,11 +124,13 @@ const CalendarScreen: React.FC = () => {
         }, 300);
     };
 
-    const handleUncompleteTask = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleUncompleteTask = (taskId: number | string) => {
         updateTask(taskId, { completed: false });
     };
 
-    const handleToggleSubtask = (taskId: number, subtaskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleSubtask = (taskId: number | string, subtaskId: number) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task && task.subtasks) {
             const newSubtasks = task.subtasks.map(sub =>
@@ -140,12 +143,14 @@ const CalendarScreen: React.FC = () => {
         }
     };
 
-    const handleToggleImportant = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleImportant = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { important: !task.important });
     };
 
-    const handleToggleToday = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleToday = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { today: !task.today });
     };
@@ -289,11 +294,11 @@ const CalendarScreen: React.FC = () => {
                                             {...task}
                                             color={listInfo.color}
                                             categoryIcon={listInfo.icon}
-                                            onComplete={handleCompleteTask}
+                                            onComplete={() => handleCompleteTask(task.id)}
                                             isCompleting={completingTaskId === task.id}
-                                            onUncomplete={handleUncompleteTask}
+                                            onUncomplete={() => handleUncompleteTask(task.id)}
                                             onToggleSubtask={handleToggleSubtask}
-                                            onToggleImportant={handleToggleImportant}
+                                            onToggleImportant={() => handleToggleImportant(task.id)}
                                             onClick={() => handleOpenTaskDetail(task)}
                                         />
                                     );

@@ -64,7 +64,7 @@ const PlanScreen: React.FC = () => {
     const [isCalendarCollapsed, setIsCalendarCollapsed] = useState(false);
     const [taskFilterMode, setTaskFilterMode] = useState<'due' | 'start'>('due');
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
-    const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
+    const [completingTaskId, setCompletingTaskId] = useState<number | string | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -101,7 +101,8 @@ const PlanScreen: React.FC = () => {
         await updateList(updatedList.id, updatedList);
         handleCloseEditModal();
     };
-    const handleDeleteList = async (listId: number) => {
+    // FIX: Changed listId to allow string for temporary items
+    const handleDeleteList = async (listId: number | string) => {
         const listToDelete = taskLists.find(l => l.id === listId);
         if (listToDelete) await deleteList(listId, listToDelete.name);
         handleCloseEditModal();
@@ -120,7 +121,8 @@ const PlanScreen: React.FC = () => {
             handleOpenEditModal(list);
         }, 500);
     };
-    const onPointerUp = (listId: number) => {
+    // FIX: Changed listId to allow string for temporary items
+    const onPointerUp = (listId: number | string) => {
         cancelLongPress();
         if (isClickRef.current) navigate(`/lists/${listId}`);
     };
@@ -178,15 +180,18 @@ const PlanScreen: React.FC = () => {
         return [...tasksToShow].sort((a, b) => (a.completed ? 1 : 0) - (b.completed ? 1 : 0));
     }, [selectedDate, tasksByDay, taskFilterMode]);
 
-    const handleCompleteTask = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleCompleteTask = (taskId: number | string) => {
         setCompletingTaskId(taskId);
         setTimeout(async () => {
             await updateTask(taskId, { completed: true });
             setCompletingTaskId(null);
         }, 300);
     };
-    const handleUncompleteTask = (taskId: number) => updateTask(taskId, { completed: false });
-    const handleToggleSubtask = (taskId: number, subtaskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleUncompleteTask = (taskId: number | string) => updateTask(taskId, { completed: false });
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleSubtask = (taskId: number | string, subtaskId: number) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task?.subtasks) {
             const newSubtasks = task.subtasks.map(s => s.id === subtaskId ? { ...s, completed: !s.completed } : s);
@@ -194,11 +199,13 @@ const PlanScreen: React.FC = () => {
             if (selectedTask?.id === taskId) setSelectedTask(p => p ? { ...p, subtasks: newSubtasks } : null);
         }
     };
-    const handleToggleImportant = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleImportant = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { important: !task.important });
     };
-    const handleToggleToday = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleToday = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { today: !task.today });
     };
@@ -357,7 +364,7 @@ const PlanScreen: React.FC = () => {
                                         {taskLists.map(list => {
                                             const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
                                             return (
-                                                <div key={list.id} onPointerDown={() => onPointerDown(list)} onPointerUp={() => onPointerUp(list.id as number)} onPointerLeave={cancelLongPress} onPointerCancel={cancelLongPress} className="bg-white p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 transition-colors select-none" onContextMenu={(e) => e.preventDefault()}>
+                                                <div key={list.id} onPointerDown={() => onPointerDown(list)} onPointerUp={() => onPointerUp(list.id)} onPointerLeave={cancelLongPress} onPointerCancel={cancelLongPress} className="bg-white p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 transition-colors select-none" onContextMenu={(e) => e.preventDefault()}>
                                                     <div className={`p-2 rounded-lg flex items-center justify-center w-12 h-12 ${colors.bg}`}><span className="text-2xl">{list.icon}</span></div>
                                                     <div><p className="font-semibold text-gray-800">{list.name}</p><p className="text-sm text-gray-500">{taskCounts[list.name] || 0} tasks</p></div>
                                                 </div>
@@ -405,7 +412,7 @@ const PlanScreen: React.FC = () => {
                                             {selectedDate.toLocaleString('default', { month: 'long' })} {selectedDate.getDate()}
                                         </h2>
                                         {selectedDayTasks.length === 0 ? <div className="flex-grow flex flex-col"><EmptyCalendarIllustration /></div> : (<div className="space-y-3">
-                                            {selectedDayTasks.map(task => (<TaskCard key={task.id} {...task} onComplete={handleCompleteTask} isCompleting={completingTaskId === task.id} onUncomplete={handleUncompleteTask} onToggleSubtask={handleToggleSubtask} onToggleImportant={handleToggleImportant} onToggleToday={handleToggleToday} onClick={() => handleOpenTaskDetail(task)} />))}
+                                            {selectedDayTasks.map(task => (<TaskCard key={task.id} {...task} onComplete={() => handleCompleteTask(task.id)} isCompleting={completingTaskId === task.id} onUncomplete={() => handleUncompleteTask(task.id)} onToggleSubtask={handleToggleSubtask} onToggleImportant={() => handleToggleImportant(task.id)} onToggleToday={() => handleToggleToday(task.id)} onClick={() => handleOpenTaskDetail(task)} />))}
                                         </div>)}
                                     </div>
                                 </div>

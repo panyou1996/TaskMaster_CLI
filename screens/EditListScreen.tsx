@@ -7,7 +7,8 @@ interface EditListScreenProps {
   onClose: () => void;
   list: TaskList | null;
   onSaveList: (listData: TaskList) => Promise<void>;
-  onDeleteList: (listId: number) => void;
+  // FIX: Changed listId to allow string for temporary items
+  onDeleteList: (listId: number | string) => void;
 }
 
 const colors = ['green', 'blue', 'pink', 'purple', 'yellow', 'red', 'orange'];

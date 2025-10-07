@@ -50,8 +50,10 @@ interface ScheduledTaskProps {
     height: number;
     onShortPress: (task: Task) => void;
     onLongPress: (task: Task) => void;
-    onComplete: (id: number) => void;
-    onUncomplete: (id: number) => void;
+    // FIX: Changed id to allow string for temporary items
+    onComplete: (id: number | string) => void;
+    // FIX: Changed id to allow string for temporary items
+    onUncomplete: (id: number | string) => void;
     isCompleting: boolean;
     isUncompleting: boolean;
 }
@@ -112,7 +114,7 @@ const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height
             <div className="pt-0.5">
                 {task.completed ? (
                     <button
-                        onClick={(e) => { e.stopPropagation(); onUncomplete(task.id as number); }}
+                        onClick={(e) => { e.stopPropagation(); onUncomplete(task.id); }}
                         className={`w-4.5 h-4.5 rounded-full bg-blue-600 flex items-center justify-center text-white shrink-0 hover:bg-blue-700 transition-colors
                             ${isUncompleting ? 'animate-uncheck' : ''}
                         `}
@@ -123,7 +125,7 @@ const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height
                     </button>
                 ) : (
                     <button
-                        onClick={(e) => { e.stopPropagation(); onComplete(task.id as number); }}
+                        onClick={(e) => { e.stopPropagation(); onComplete(task.id); }}
                         className={`relative w-4.5 h-4.5 rounded-full border-2 shrink-0 transition-colors flex items-center justify-center
                             ${isCompleting
                                 ? 'animate-checkmark' 
@@ -173,10 +175,10 @@ interface TimelineViewProps {
   onUnscheduledTaskClick: (task: Task) => void;
   onScheduledTaskShortPress: (task: Task) => void;
   onScheduledTaskLongPress: (task: Task) => void;
-  onCompleteTask: (taskId: number) => void;
-  onUncompleteTask: (taskId: number) => void;
-  completingTaskId: number | null;
-  uncompletingTaskId: number | null;
+  onCompleteTask: (taskId: number | string) => void;
+  onUncompleteTask: (taskId: number | string) => void;
+  completingTaskId: number | string | null;
+  uncompletingTaskId: number | string | null;
 }
 
 const TimelineView: React.FC<TimelineViewProps> = ({

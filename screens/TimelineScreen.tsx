@@ -20,11 +20,12 @@ const TimelineScreen: React.FC = () => {
     const [isTimeChangeConfirmOpen, setIsTimeChangeConfirmOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [timeToSet, setTimeToSet] = useState<string | null>(null);
-    const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
-    const [uncompletingTaskId, setUncompletingTaskId] = useState<number | null>(null);
+    const [completingTaskId, setCompletingTaskId] = useState<number | string | null>(null);
+    const [uncompletingTaskId, setUncompletingTaskId] = useState<number | string | null>(null);
 
     // Interaction handlers
-    const handleCompleteTask = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleCompleteTask = (taskId: number | string) => {
         setCompletingTaskId(taskId);
         setTimeout(async () => {
             await updateTask(taskId, { completed: true });
@@ -32,7 +33,8 @@ const TimelineScreen: React.FC = () => {
         }, 600);
     };
 
-    const handleUncompleteTask = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleUncompleteTask = (taskId: number | string) => {
         setUncompletingTaskId(taskId);
         setTimeout(async () => {
             await updateTask(taskId, { completed: false });

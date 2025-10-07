@@ -8,7 +8,8 @@ interface Subtask {
 }
 
 interface TaskCardProps {
-    id: number;
+    // FIX: Changed id to allow string for temporary items
+    id: number | string;
     time?: string;
     startTime?: string;
     duration?: number;
@@ -20,14 +21,20 @@ interface TaskCardProps {
     completed: boolean;
     important?: boolean;
     subtasks?: Subtask[];
-    onComplete?: (id: number) => void;
-    onUncomplete?: (id: number) => void;
+    // FIX: Changed id to allow string for temporary items
+    onComplete?: (id: number | string) => void;
+    // FIX: Changed id to allow string for temporary items
+    onUncomplete?: (id: number | string) => void;
     isCompleting?: boolean;
     isUncompleting?: boolean;
     isJustUncompleted?: boolean;
     onUncompleteAnimationEnd?: () => void;
-    onToggleSubtask?: (taskId: number, subtaskId: number) => void;
-    onToggleImportant?: (id: number) => void;
+    // FIX: Changed taskId to allow string for temporary items
+    onToggleSubtask?: (taskId: number | string, subtaskId: number) => void;
+    // FIX: Changed id to allow string for temporary items
+    onToggleImportant?: (id: number | string) => void;
+    // FIX: Added onToggleToday to support PlanScreen
+    onToggleToday?: (id: number | string) => void;
     onClick?: () => void;
     onToggleSubtaskVisibility?: () => void;
     hideSubtasks?: boolean;
@@ -224,7 +231,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
                         <p className={`flex-grow truncate text-lg font-semibold ${completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>{title}</p>
                         <div className="flex items-center shrink-0 gap-1 pt-0.5">
                             <button
-                                onClick={(e) => { e.stopPropagation(); if (!completed) onToggleImportant?.(id as number); }}
+                                // FIX: Removed 'as number' cast
+                                onClick={(e) => { e.stopPropagation(); if (!completed) onToggleImportant?.(id); }}
                                 className={`p-1 -m-1 rounded-full ${!completed ? 'hover:bg-red-50' : 'cursor-not-allowed'}`}
                                 aria-label={important ? "Remove importance" : "Mark as important"}
                                 disabled={completed}

@@ -7,7 +7,8 @@ import { useData } from '../contexts/DataContext';
 import { Moment } from '../data/mockData';
 import AddMomentScreen, { NewMomentData } from './AddMomentScreen';
 
-const MomentCard: React.FC<{ id: number; title: string; description: string; imageUrl: string; index: number; }> = ({ id, title, description, imageUrl, index }) => (
+// FIX: Changed id to allow string for temporary items
+const MomentCard: React.FC<{ id: number | string; title: string; description: string; imageUrl: string; index: number; }> = ({ id, title, description, imageUrl, index }) => (
     <Link 
         to={`/moments/${id}`} 
         className="relative aspect-[4/3] rounded-2xl overflow-hidden group cursor-pointer block animate-card-fade-in card-shadow"

@@ -206,9 +206,9 @@ const ListDetailScreen: React.FC = () => {
     
     const { tasks: allTasks, lists: taskLists, addTask, updateTask } = useData();
 
-    const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
-    const [uncompletingTaskId, setUncompletingTaskId] = useState<number | null>(null);
-    const [justUncompletedId, setJustUncompletedId] = useState<number | null>(null);
+    const [completingTaskId, setCompletingTaskId] = useState<number | string | null>(null);
+    const [uncompletingTaskId, setUncompletingTaskId] = useState<number | string | null>(null);
+    const [justUncompletedId, setJustUncompletedId] = useState<number | string | null>(null);
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -320,7 +320,8 @@ const ListDetailScreen: React.FC = () => {
     const tasks = useMemo(() => sortTasks(filteredListTasks.filter(task => !task.completed)), [filteredListTasks, activeSort]);
     const finishedTasks = useMemo(() => sortTasks(filteredListTasks.filter(task => task.completed)), [filteredListTasks, activeSort]);
     
-    const handleCompleteTask = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleCompleteTask = (taskId: number | string) => {
         setCompletingTaskId(taskId);
         setTimeout(async () => {
             await updateTask(taskId, { completed: true });
@@ -328,7 +329,8 @@ const ListDetailScreen: React.FC = () => {
         }, 600);
     };
 
-    const handleUncompleteTask = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleUncompleteTask = (taskId: number | string) => {
         setUncompletingTaskId(taskId);
         setTimeout(async () => {
             await updateTask(taskId, { completed: false });
@@ -337,7 +339,8 @@ const ListDetailScreen: React.FC = () => {
         }, 300);
     };
 
-    const handleToggleSubtask = (taskId: number, subtaskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleSubtask = (taskId: number | string, subtaskId: number) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task?.subtasks) {
             const newSubtasks = task.subtasks.map(sub =>
@@ -350,12 +353,14 @@ const ListDetailScreen: React.FC = () => {
         }
     };
     
-    const handleToggleImportant = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleImportant = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { important: !task.important });
     };
     
-    const handleToggleToday = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleToday = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { today: !task.today });
     };
@@ -493,14 +498,14 @@ const ListDetailScreen: React.FC = () => {
                                              const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
                                             return (
                                                 <TaskCard 
-                                                    key={task.id as React.Key} 
+                                                    key={task.id} 
                                                     {...task} 
                                                     color={listInfo.color}
                                                     categoryIcon={listInfo.icon}
-                                                    onComplete={() => handleCompleteTask(task.id as number)}
+                                                    onComplete={() => handleCompleteTask(task.id)}
                                                     isCompleting={completingTaskId === task.id}
                                                     onToggleSubtask={handleToggleSubtask}
-                                                    onToggleImportant={() => handleToggleImportant(task.id as number)}
+                                                    onToggleImportant={() => handleToggleImportant(task.id)}
                                                     onClick={() => handleOpenTaskDetail(task)}
                                                     hideSubtasks={true}
                                                     isJustUncompleted={justUncompletedId === task.id}
@@ -529,12 +534,12 @@ const ListDetailScreen: React.FC = () => {
                                                     const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
                                                     return (
                                                         <TaskCard 
-                                                            key={task.id as React.Key} 
+                                                            key={task.id} 
                                                             {...task} 
                                                             color={listInfo.color}
                                                             categoryIcon={listInfo.icon}
                                                             onClick={() => handleOpenTaskDetail(task)} 
-                                                            onUncomplete={() => handleUncompleteTask(task.id as number)} 
+                                                            onUncomplete={() => handleUncompleteTask(task.id)} 
                                                             isUncompleting={uncompletingTaskId === task.id}
                                                             hideSubtasks={true}
                                                         />

@@ -10,7 +10,8 @@ interface RecommendTasksScreenProps {
   isOpen: boolean;
   onClose: () => void;
   tasks: (Task & { reason: string })[];
-  onAddTaskToToday: (taskId: number) => void;
+  // FIX: Changed taskId to allow string for temporary items
+  onAddTaskToToday: (taskId: number | string) => void;
   listInfoMap: Map<string, { icon: string; color: string }>;
 }
 
@@ -38,7 +39,8 @@ const RecommendTasksScreen: React.FC<RecommendTasksScreenProps> = ({ isOpen, onC
     };
   }, [onClose]);
 
-  const handleAdd = (taskId: number) => {
+  // FIX: Changed taskId to allow string for temporary items
+  const handleAdd = (taskId: number | string) => {
     onAddTaskToToday(taskId);
     onClose();
   };

@@ -66,7 +66,8 @@ const ListsScreen: React.FC = () => {
         handleCloseEditModal();
     };
 
-    const handleDeleteList = async (listId: number) => {
+    // FIX: Changed listId to allow string for temporary items
+    const handleDeleteList = async (listId: number | string) => {
         const listToDelete = taskLists.find(l => l.id === listId);
         if (listToDelete) {
            await deleteList(listId, listToDelete.name);
@@ -93,7 +94,8 @@ const ListsScreen: React.FC = () => {
         }, 500);
     };
 
-    const onPointerUp = (listId: number) => {
+    // FIX: Changed listId to allow string for temporary items
+    const onPointerUp = (listId: number | string) => {
         cancelLongPress();
         if (isClickRef.current) {
             navigate(`/lists/${listId}`);

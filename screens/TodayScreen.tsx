@@ -34,9 +34,9 @@ const TodayScreen: React.FC = () => {
         updateTask,
         syncData
     } = useData();
-    const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
-    const [uncompletingTaskId, setUncompletingTaskId] = useState<number | null>(null);
-    const [justUncompletedId, setJustUncompletedId] = useState<number | null>(null);
+    const [completingTaskId, setCompletingTaskId] = useState<number | string | null>(null);
+    const [uncompletingTaskId, setUncompletingTaskId] = useState<number | string | null>(null);
+    const [justUncompletedId, setJustUncompletedId] = useState<number | string | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
     
     // Modal states
@@ -102,8 +102,8 @@ const TodayScreen: React.FC = () => {
         
         const recTasks: (Task & { reason: string })[] = [];
         const ovdTasks: (Task & { reason: string })[] = [];
-        const recommendedIds = new Set<number>();
-        const overdueIds = new Set<number>();
+        const recommendedIds = new Set<number | string>();
+        const overdueIds = new Set<number | string>();
 
         allTasks.forEach(task => {
             if (task.completed || task.today) return;
@@ -113,33 +113,33 @@ const TodayScreen: React.FC = () => {
 
             // Overdue logic
             if (dueDate && dueDate < today) {
-                if (!overdueIds.has(task.id as number)) {
+                if (!overdueIds.has(task.id)) {
                     const daysAgo = Math.max(1, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 3600 * 24)));
                     const reason = daysAgo === 1 ? 'Due yesterday' : `Due ${daysAgo} days ago`;
                     ovdTasks.push({ ...task, reason });
-                    overdueIds.add(task.id as number);
+                    overdueIds.add(task.id);
                 }
             } else if (startDate && startDate < today) {
-                 if (!overdueIds.has(task.id as number)) {
+                 if (!overdueIds.has(task.id)) {
                     const daysAgo = Math.max(1, Math.floor((today.getTime() - startDate.getTime()) / (1000 * 3600 * 24)));
                     const reason = daysAgo === 1 ? 'Should have started yesterday' : `Should have started ${daysAgo} days ago`;
                     ovdTasks.push({ ...task, reason });
-                    overdueIds.add(task.id as number);
+                    overdueIds.add(task.id);
                 }
             }
 
             // Recommend logic
             if (dueDate && dueDate >= today && dueDate <= threeDaysFromNow) {
-                if (!recommendedIds.has(task.id as number)) {
+                if (!recommendedIds.has(task.id)) {
                     recTasks.push({ ...task, reason: 'Due in the next 3 days' });
-                    recommendedIds.add(task.id as number);
+                    recommendedIds.add(task.id);
                 }
             }
             
             if (task.important && dueDate && dueDate >= startOfWeek && dueDate <= endOfWeek) {
-                 if (!recommendedIds.has(task.id as number)) {
+                 if (!recommendedIds.has(task.id)) {
                     recTasks.push({ ...task, reason: 'Important this week' });
-                    recommendedIds.add(task.id as number);
+                    recommendedIds.add(task.id);
                 }
             }
         });
@@ -173,7 +173,8 @@ const TodayScreen: React.FC = () => {
     const progress = totalTodayTasks > 0 ? (finishedTasks.length / totalTodayTasks) * 100 : 0;
 
 
-    const handleCompleteTask = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleCompleteTask = (taskId: number | string) => {
         setCompletingTaskId(taskId);
         setExpandedTaskIds(prev => {
             const newSet = new Set(prev);
@@ -193,7 +194,8 @@ const TodayScreen: React.FC = () => {
         }, 600);
     };
 
-    const handleUncompleteTask = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleUncompleteTask = (taskId: number | string) => {
         setUncompletingTaskId(taskId);
         const taskToUncomplete = allTasks.find(t => t.id === taskId);
         if (taskToUncomplete?.subtasks?.length) {
@@ -212,7 +214,8 @@ const TodayScreen: React.FC = () => {
         }, 300);
     };
     
-    const handleAddTaskToToday = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleAddTaskToToday = (taskId: number | string) => {
         updateTask(taskId, { today: true });
         const task = allTasks.find(t => t.id === taskId);
         if (task) {
@@ -222,7 +225,8 @@ const TodayScreen: React.FC = () => {
         }
     };
 
-    const handleToggleSubtask = (taskId: number, subtaskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleSubtask = (taskId: number | string, subtaskId: number) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task && task.subtasks) {
             const newSubtasks = task.subtasks.map(sub =>
@@ -235,17 +239,20 @@ const TodayScreen: React.FC = () => {
         }
     };
 
-    const handleToggleImportant = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleImportant = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { important: !task.important });
     };
 
-    const handleToggleToday = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleToday = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { today: !task.today });
     };
     
-    const handleToggleTaskType = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleTaskType = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (!task) return;
 
@@ -253,7 +260,8 @@ const TodayScreen: React.FC = () => {
         updateTask(taskId, { type: newType });
     };
 
-    const handleToggleExpansion = (taskId: number) => {
+    // FIX: Changed taskId to allow string for temporary items
+    const handleToggleExpansion = (taskId: number | string) => {
         setExpandedTaskIds(prev => {
             const newSet = new Set(prev);
             if (newSet.has(taskId)) newSet.delete(taskId);
@@ -712,7 +720,7 @@ const TodayScreen: React.FC = () => {
                                                                     </button>
                                                                      <div className="h-5 flex items-center">
                                                                         <button
-                                                                            onClick={(e) => { e.stopPropagation(); handleToggleTaskType(task.id as number); }}
+                                                                            onClick={(e) => { e.stopPropagation(); handleToggleTaskType(task.id); }}
                                                                             className="p-1 -m-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
                                                                             aria-label={`Toggle task type for ${task.title}. Current: ${task.type}`}
                                                                         >
@@ -726,15 +734,15 @@ const TodayScreen: React.FC = () => {
                                                                         {...task}
                                                                         color={listInfo.color}
                                                                         categoryIcon={listInfo.icon}
-                                                                        onComplete={() => handleCompleteTask(task.id as number)}
+                                                                        onComplete={() => handleCompleteTask(task.id)}
                                                                         isCompleting={completingTaskId === task.id}
                                                                         onToggleSubtask={handleToggleSubtask}
-                                                                        onToggleImportant={() => handleToggleImportant(task.id as number)}
+                                                                        onToggleImportant={() => handleToggleImportant(task.id)}
                                                                         onClick={() => handleOpenTaskDetail(task)}
                                                                         isJustUncompleted={justUncompletedId === task.id}
                                                                         onUncompleteAnimationEnd={() => setJustUncompletedId(null)}
-                                                                        hideSubtasks={!expandedTaskIds.has(task.id as number)}
-                                                                        onToggleSubtaskVisibility={() => handleToggleExpansion(task.id as number)}
+                                                                        hideSubtasks={!expandedTaskIds.has(task.id)}
+                                                                        onToggleSubtaskVisibility={() => handleToggleExpansion(task.id)}
                                                                     />
                                                                 </div>
                                                             </div>
@@ -769,11 +777,11 @@ const TodayScreen: React.FC = () => {
                                                                                 color={listInfo.color}
                                                                                 categoryIcon={listInfo.icon}
                                                                                 onClick={() => handleOpenTaskDetail(task)} 
-                                                                                onUncomplete={() => handleUncompleteTask(task.id as number)} 
+                                                                                onUncomplete={() => handleUncompleteTask(task.id)} 
                                                                                 isUncompleting={uncompletingTaskId === task.id}
-                                                                                hideSubtasks={!expandedTaskIds.has(task.id as number)}
-                                                                                onToggleSubtaskVisibility={() => handleToggleExpansion(task.id as number)}
-                                                                                onToggleImportant={() => handleToggleImportant(task.id as number)}
+                                                                                hideSubtasks={!expandedTaskIds.has(task.id)}
+                                                                                onToggleSubtaskVisibility={() => handleToggleExpansion(task.id)}
+                                                                                onToggleImportant={() => handleToggleImportant(task.id)}
                                                                             />
                                                                         </div>
                                                                     </div>
