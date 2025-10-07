@@ -228,7 +228,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
                 <div className="flex-grow min-w-0">
                     <div className="flex justify-between items-start gap-2">
-                        <p className={`flex-grow truncate text-lg font-semibold ${completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>{title}</p>
+                        <div className="flex-grow flex items-baseline gap-2 min-w-0">
+                             <p className={`truncate text-lg font-semibold ${completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>{title}</p>
+                            {subtasks && subtasks.length > 0 && !completed && (
+                                <span className="text-xs font-medium text-gray-400 shrink-0">
+                                    [{subtasks.filter(s => s.completed).length}/{subtasks.length}]
+                                </span>
+                            )}
+                        </div>
                         <div className="flex items-center shrink-0 pt-0.5">
                             <button
                                 // FIX: Removed 'as number' cast

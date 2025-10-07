@@ -112,7 +112,7 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
                         <button onClick={onClose} className="p-1 text-gray-400 hover:text-white"><CloseIcon /></button>
                     </header>
 
-                    <main className="flex-grow flex items-center justify-center min-h-[10rem]">
+                    <main className="flex-grow flex items-center justify-center min-h-[6rem]">
                         {isLoading ? (
                             <div className="flex flex-col items-center gap-3 text-gray-300">
                                 <RefreshSpinnerIcon/>
@@ -122,8 +122,7 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
                              <p className="text-center text-red-400 px-4">{error}</p>
                         ) : (
                             <p className="text-center text-gray-400 px-4">
-                                Describe your task in plain language. <br/>
-                                For example: "Remind me to call John tomorrow at 5pm"
+                                Describe your task in plain language.
                             </p>
                         )}
                     </main>
