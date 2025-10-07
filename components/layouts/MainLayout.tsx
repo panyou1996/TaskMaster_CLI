@@ -10,7 +10,7 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children, hideNavBar = false }) => {
   const location = useLocation();
   return (
-    <div className="h-screen w-full flex flex-col bg-gray-50 relative">
+    <div className="h-screen w-full flex flex-col relative">
       <div key={location.pathname} className="flex-grow animate-page-fade-in relative overflow-hidden">
         {children}
       </div>

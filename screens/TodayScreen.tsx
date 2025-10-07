@@ -552,7 +552,7 @@ const TodayScreen: React.FC = () => {
 
     if (!profile) {
         return (
-            <div className="h-full w-full flex items-center justify-center bg-gray-50">
+            <div className="h-full w-full flex items-center justify-center">
                 <svg className="w-10 h-10 animate-ios-spinner text-gray-500" viewBox="0 0 50 50">
                     <circle className="animate-ios-spinner-path" cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="4" />
                 </svg>
@@ -642,156 +642,156 @@ const TodayScreen: React.FC = () => {
                                     </div>
                                 )}
 
-                                {totalTodayTasks > 0 && (
-                                    <div className="bg-white p-3 rounded-xl card-shadow mb-4 flex items-center gap-3 text-sm flex-shrink-0">
-                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                            <span className="font-semibold text-gray-800">Progress</span>
-                                            <span className="text-gray-500">{finishedTasks.length}/{totalTodayTasks}</span>
-                                        </div>
-                                        <div className="w-full bg-gray-200 rounded-full h-2 flex-grow">
-                                            <div
-                                                className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
-                                                style={{ width: `${progress}%` }}
-                                            />
-                                        </div>
-                                        {tasksToSchedule.length > 0 && (
-                                            <button
-                                                onClick={handlePlanMyDay}
-                                                disabled={isPlanning}
-                                                className="flex-shrink-0 flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold text-xs transition-colors ease-in-out bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:bg-indigo-50 disabled:text-indigo-300 disabled:cursor-not-allowed"
-                                                aria-label="Plan My Day"
-                                            >
-                                                {isPlanning ? (
-                                                    <RefreshSpinnerIcon />
-                                                ) : (
-                                                    <>
-                                                        <SparklesIcon className="w-4 h-4" />
-                                                        <span>Plan</span>
-                                                    </>
-                                                )}
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-
-                                 {totalTodayTasks === 0 ? (
-                                    <div className="flex-grow">
-                                        <EmptyTodayIllustration onAddTask={() => setIsAddTaskOpen(true)} />
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {unfinishedTasks.length > 0 && (
-                                            <section>
-                                                <h2 className="text-base font-bold text-gray-800 mb-3">Today's Tasks</h2>
-                                                <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-200/60">
-                                                    {unfinishedTasks.map(task => {
-                                                        const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
-                                                        const timeParts = task.startTime ? task.startTime.split(':').map(Number) : null;
-                                                        let displayHour: number | string = '';
-                                                        let displayMinute: string = '';
-                                                        let displayPeriod: string = '';
-
-                                                        if (timeParts) {
-                                                            const [h, m] = timeParts;
-                                                            displayMinute = String(m).padStart(2, '0');
-                                                            displayPeriod = h >= 12 ? 'pm' : 'am';
-                                                            let hour12 = h % 12;
-                                                            if (hour12 === 0) hour12 = 12;
-                                                            displayHour = hour12;
-                                                        }
-
-                                                        return (
-                                                            <div key={task.id as React.Key} className="flex items-start">
-                                                                <div className="w-20 shrink-0 flex flex-col items-center pt-3.5 pb-2">
-                                                                    <button
-                                                                        onClick={(e) => { e.stopPropagation(); handleOpenTimePicker(task); }}
-                                                                        className="flex items-start justify-center w-full focus:outline-none rounded-md focus:ring-2 focus:ring-blue-300 h-[36px]"
-                                                                        aria-label={`Set start time for ${task.title}`}
-                                                                    >
-                                                                        {task.startTime ? (
-                                                                            <div className="flex">
-                                                                                <span className="text-3xl font-bold text-gray-800 leading-none tracking-tight">{displayHour}</span>
-                                                                                <div className="flex flex-col items-start font-semibold text-gray-500 leading-tight ml-0.5 text-[11px] mt-0.5">
-                                                                                    <span>{displayMinute}</span>
-                                                                                    <span className="-mt-0.5">{displayPeriod}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        ) : null}
-                                                                    </button>
-                                                                     <div className="h-5 flex items-center">
-                                                                        <button
-                                                                            onClick={(e) => { e.stopPropagation(); handleToggleTaskType(task.id); }}
-                                                                            className="p-1 -m-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                                                            aria-label={`Toggle task type for ${task.title}. Current: ${task.type}`}
-                                                                        >
-                                                                            <LockIcon className={`w-3.5 h-3.5 transition-colors ${task.type === 'Fixed' ? 'text-gray-600' : 'text-gray-300'}`} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex-grow min-w-0">
-                                                                    <TaskCard 
-                                                                        variant="list"
-                                                                        {...task}
-                                                                        color={listInfo.color}
-                                                                        categoryIcon={listInfo.icon}
-                                                                        onComplete={() => handleCompleteTask(task.id)}
-                                                                        isCompleting={completingTaskId === task.id}
-                                                                        onToggleSubtask={handleToggleSubtask}
-                                                                        onToggleImportant={() => handleToggleImportant(task.id)}
-                                                                        onClick={() => handleOpenTaskDetail(task)}
-                                                                        isJustUncompleted={justUncompletedId === task.id}
-                                                                        onUncompleteAnimationEnd={() => setJustUncompletedId(null)}
-                                                                        hideSubtasks={!expandedTaskIds.has(task.id)}
-                                                                        onToggleSubtaskVisibility={() => handleToggleExpansion(task.id)}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
+                                {totalTodayTasks > 0 ? (
+                                    <>
+                                        <div className="mb-4 flex-shrink-0">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <div className="flex items-baseline gap-2">
+                                                    <h2 className="text-lg font-bold text-gray-800">Today's Tasks</h2>
+                                                    <span className="text-sm font-medium text-gray-500">{finishedTasks.length}/{totalTodayTasks}</span>
                                                 </div>
-                                            </section>
-                                        )}
+                                                {tasksToSchedule.length > 0 && (
+                                                    <button
+                                                        onClick={handlePlanMyDay}
+                                                        disabled={isPlanning}
+                                                        className="flex-shrink-0 flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold text-xs transition-colors ease-in-out bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:bg-indigo-50 disabled:text-indigo-300 disabled:cursor-not-allowed"
+                                                        aria-label="Plan My Day"
+                                                    >
+                                                        {isPlanning ? (
+                                                            <RefreshSpinnerIcon />
+                                                        ) : (
+                                                            <>
+                                                                <SparklesIcon className="w-4 h-4" />
+                                                                <span>Plan</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                                <div
+                                                    className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+                                                    style={{ width: `${progress}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {unfinishedTasks.length > 0 && (
+                                                <section>
+                                                    <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-200/60">
+                                                        {unfinishedTasks.map(task => {
+                                                            const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
+                                                            const timeParts = task.startTime ? task.startTime.split(':').map(Number) : null;
+                                                            let displayHour: number | string = '';
+                                                            let displayMinute: string = '';
+                                                            let displayPeriod: string = '';
 
-                                        {finishedTasks.length > 0 && (
-                                            <section>
-                                                <button 
-                                                    onClick={() => setIsFinishedTasksVisible(!isFinishedTasksVisible)}
-                                                    className="w-full flex justify-between items-center mb-3"
-                                                    aria-expanded={isFinishedTasksVisible}
-                                                >
-                                                    <h2 className="text-base font-bold text-gray-800">Finished Tasks ({finishedTasks.length})</h2>
-                                                    <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isFinishedTasksVisible ? 'rotate-180' : ''}`} />
-                                                </button>
-                                                <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isFinishedTasksVisible ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                                    <div className="overflow-hidden">
-                                                        <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-200/60">
-                                                            {finishedTasks.map(task => {
-                                                                const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
-                                                                return (
-                                                                    <div key={task.id as React.Key} className="flex items-start">
-                                                                        <div className="w-20 shrink-0" /> {/* Placeholder for alignment */}
-                                                                        <div className="flex-grow min-w-0">
-                                                                            <TaskCard 
-                                                                                variant="list"
-                                                                                {...task} 
-                                                                                color={listInfo.color}
-                                                                                categoryIcon={listInfo.icon}
-                                                                                onClick={() => handleOpenTaskDetail(task)} 
-                                                                                onUncomplete={() => handleUncompleteTask(task.id)} 
-                                                                                isUncompleting={uncompletingTaskId === task.id}
-                                                                                hideSubtasks={!expandedTaskIds.has(task.id)}
-                                                                                onToggleSubtaskVisibility={() => handleToggleExpansion(task.id)}
-                                                                                onToggleImportant={() => handleToggleImportant(task.id)}
-                                                                            />
+                                                            if (timeParts) {
+                                                                const [h, m] = timeParts;
+                                                                displayMinute = String(m).padStart(2, '0');
+                                                                displayPeriod = h >= 12 ? 'pm' : 'am';
+                                                                let hour12 = h % 12;
+                                                                if (hour12 === 0) hour12 = 12;
+                                                                displayHour = hour12;
+                                                            }
+
+                                                            return (
+                                                                <div key={task.id as React.Key} className="flex items-start">
+                                                                    <div className="w-20 shrink-0 flex flex-col items-center pt-3.5 pb-2">
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); handleOpenTimePicker(task); }}
+                                                                            className="flex items-start justify-center w-full focus:outline-none rounded-md focus:ring-2 focus:ring-blue-300 h-[36px]"
+                                                                            aria-label={`Set start time for ${task.title}`}
+                                                                        >
+                                                                            {task.startTime ? (
+                                                                                <div className="flex">
+                                                                                    <span className="text-3xl font-bold text-gray-800 leading-none tracking-tight">{displayHour}</span>
+                                                                                    <div className="flex flex-col items-start font-semibold text-gray-500 leading-tight ml-0.5 text-[11px] mt-0.5">
+                                                                                        <span>{displayMinute}</span>
+                                                                                        <span className="-mt-0.5">{displayPeriod}</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : null}
+                                                                        </button>
+                                                                         <div className="h-5 flex items-center">
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); handleToggleTaskType(task.id); }}
+                                                                                className="p-1 -m-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                                                                aria-label={`Toggle task type for ${task.title}. Current: ${task.type}`}
+                                                                            >
+                                                                                <LockIcon className={`w-3.5 h-3.5 transition-colors ${task.type === 'Fixed' ? 'text-gray-600' : 'text-gray-300'}`} />
+                                                                            </button>
                                                                         </div>
                                                                     </div>
-                                                                );
-                                                            })}
+                                                                    <div className="flex-grow min-w-0">
+                                                                        <TaskCard 
+                                                                            variant="list"
+                                                                            {...task}
+                                                                            color={listInfo.color}
+                                                                            categoryIcon={listInfo.icon}
+                                                                            onComplete={() => handleCompleteTask(task.id)}
+                                                                            isCompleting={completingTaskId === task.id}
+                                                                            onToggleSubtask={handleToggleSubtask}
+                                                                            onToggleImportant={() => handleToggleImportant(task.id)}
+                                                                            onClick={() => handleOpenTaskDetail(task)}
+                                                                            isJustUncompleted={justUncompletedId === task.id}
+                                                                            onUncompleteAnimationEnd={() => setJustUncompletedId(null)}
+                                                                            hideSubtasks={!expandedTaskIds.has(task.id)}
+                                                                            onToggleSubtaskVisibility={() => handleToggleExpansion(task.id)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </section>
+                                            )}
+
+                                            {finishedTasks.length > 0 && (
+                                                <section>
+                                                    <button 
+                                                        onClick={() => setIsFinishedTasksVisible(!isFinishedTasksVisible)}
+                                                        className="w-full flex justify-between items-center mb-3"
+                                                        aria-expanded={isFinishedTasksVisible}
+                                                    >
+                                                        <h2 className="text-base font-bold text-gray-800">Finished Tasks ({finishedTasks.length})</h2>
+                                                        <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isFinishedTasksVisible ? 'rotate-180' : ''}`} />
+                                                    </button>
+                                                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isFinishedTasksVisible ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                                        <div className="overflow-hidden">
+                                                            <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-200/60">
+                                                                {finishedTasks.map(task => {
+                                                                    const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
+                                                                    return (
+                                                                        <div key={task.id as React.Key} className="flex items-start">
+                                                                            <div className="w-20 shrink-0" /> {/* Placeholder for alignment */}
+                                                                            <div className="flex-grow min-w-0">
+                                                                                <TaskCard 
+                                                                                    variant="list"
+                                                                                    {...task} 
+                                                                                    color={listInfo.color}
+                                                                                    categoryIcon={listInfo.icon}
+                                                                                    onClick={() => handleOpenTaskDetail(task)} 
+                                                                                    onUncomplete={() => handleUncompleteTask(task.id)} 
+                                                                                    isUncompleting={uncompletingTaskId === task.id}
+                                                                                    hideSubtasks={!expandedTaskIds.has(task.id)}
+                                                                                    onToggleSubtaskVisibility={() => handleToggleExpansion(task.id)}
+                                                                                    onToggleImportant={() => handleToggleImportant(task.id)}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </section>
-                                        )}
+                                                </section>
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                     <div className="flex-grow">
+                                        <EmptyTodayIllustration onAddTask={() => setIsAddTaskOpen(true)} />
                                     </div>
                                 )}
                             </div>
