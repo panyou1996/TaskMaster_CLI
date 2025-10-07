@@ -31,19 +31,19 @@ const ResetPasswordScreen: React.FC = () => {
 
   return (
     <AuthLayout title="Reset Your Password">
-      <p className="text-center text-sm text-gray-600 -mt-4 mb-6">
+      <p className="text-center text-xs text-gray-600 -mt-4 mb-4">
         Enter your email and we'll send you a link to get back into your account.
       </p>
-      <form className="space-y-6" onSubmit={handleSendLink}>
+      <form className="space-y-4" onSubmit={handleSendLink}>
         <InputField id="email" label="Email" type="email" placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
-        {message && <p className="text-green-600 text-sm text-center">{message}</p>}
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        {message && <p className="text-green-600 text-xs text-center">{message}</p>}
+        {error && <p className="text-red-500 text-xs text-center">{error}</p>}
         <Button type="submit" variant="primary" disabled={loading}>
           {loading ? 'Sending...' : 'Send Reset Link'}
         </Button>
       </form>
 
-      <p className="mt-8 text-center text-sm text-gray-600">
+      <p className="mt-6 text-center text-xs text-gray-600">
         <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
           Back to Login
         </Link>

@@ -54,30 +54,30 @@ const SignUpScreen: React.FC = () => {
 
   return (
     <AuthLayout title="Create a New Account">
-      <form className="space-y-6" onSubmit={handleSignUp}>
+      <form className="space-y-4" onSubmit={handleSignUp}>
         <InputField id="fullName" label="Full Name" type="text" placeholder="John Doe" required value={fullName} onChange={e => setFullName(e.target.value)} />
         <InputField id="username" label="Username" type="text" placeholder="johndoe" required value={username} onChange={e => setUsername(e.target.value)} />
         <InputField id="email" label="Email" type="email" placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
         <InputField id="password" label="Password" type="password" placeholder="••••••••" required value={password} onChange={e => setPassword(e.target.value)} />
         <InputField id="confirm-password" label="Confirm Password" type="password" placeholder="••••••••" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-500 text-xs text-center">{error}</p>}
         <Button type="submit" variant="primary" disabled={loading}>
           {loading ? 'Signing up...' : 'Sign Up'}
         </Button>
       </form>
       
-      <div className="my-6 flex items-center">
+      <div className="my-4 flex items-center">
           <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-4 text-sm text-gray-500">Or sign up with</span>
+          <span className="mx-4 text-xs text-gray-500">Or sign up with</span>
           <div className="flex-grow border-t border-gray-300"></div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
           <Button variant="social" onClick={() => alert('Social login not implemented yet.')}><GoogleIcon /><span>Sign up with Google</span></Button>
           <Button variant="social" onClick={() => alert('Social login not implemented yet.')}><AppleIcon /><span>Sign up with Apple</span></Button>
       </div>
 
-      <p className="mt-8 text-center text-sm text-gray-600">
+      <p className="mt-6 text-center text-xs text-gray-600">
         Already have an account?{' '}
         <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
           Log In

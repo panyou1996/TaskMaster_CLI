@@ -36,34 +36,34 @@ const LoginScreen: React.FC = () => {
 
   return (
     <AuthLayout title="Log In to Your Account">
-      <form className="space-y-6" onSubmit={handleLogin}>
+      <form className="space-y-4" onSubmit={handleLogin}>
         <InputField id="email" label="Email" type="email" placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
         <div>
             <InputField id="password" label="Password" type="password" placeholder="••••••••" required value={password} onChange={e => setPassword(e.target.value)} />
             <div className="text-right mt-2">
-                <Link to="/reset-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                <Link to="/reset-password" className="text-xs font-medium text-indigo-600 hover:text-indigo-500">
                     Forgot Password?
                 </Link>
             </div>
         </div>
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-500 text-xs text-center">{error}</p>}
         <Button type="submit" variant="primary" disabled={loading}>
           {loading ? 'Logging in...' : 'Log In'}
         </Button>
       </form>
 
-      <div className="my-6 flex items-center">
+      <div className="my-4 flex items-center">
           <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-4 text-sm text-gray-500">Or continue with</span>
+          <span className="mx-4 text-xs text-gray-500">Or continue with</span>
           <div className="flex-grow border-t border-gray-300"></div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
           <Button variant="social" onClick={() => alert('Social login not implemented yet.')}><GoogleIcon /><span>Log in with Google</span></Button>
           <Button variant="social" onClick={() => alert('Social login not implemented yet.')}><AppleIcon /><span>Log in with Apple</span></Button>
       </div>
 
-      <p className="mt-8 text-center text-sm text-gray-600">
+      <p className="mt-6 text-center text-xs text-gray-600">
         Don't have an account?{' '}
         <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
           Sign Up

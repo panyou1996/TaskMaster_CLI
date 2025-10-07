@@ -331,9 +331,7 @@ const PlanScreen: React.FC = () => {
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                         <div className="flex justify-start">
-                             {viewMode === 'lists' && (
-                                <button className="text-gray-600"><SearchIcon /></button>
-                            )}
+                            {/* Search Icon removed as requested */}
                         </div>
                         <div className="flex justify-center">
                             <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full max-w-48">
