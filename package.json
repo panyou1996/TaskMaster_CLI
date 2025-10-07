@@ -24,6 +24,6 @@
     "sync:android": "npx cap sync android",
     "open:ios": "npx cap open ios",
     "open:android": "npx cap open android",
-    "build": "esbuild index.tsx --bundle --outfile=index.js --loader:.tsx=tsx --define:process.env.NODE_ENV='\"production\"' --define:process.env.API_KEY='\"$API_KEY\"'"
+    "build": "mkdir -p public && cp index.html public/ && ([ -f capacitor.js ] && cp capacitor.js public/ || true) && esbuild index.tsx --bundle --outfile=public/index.js --loader:.tsx=tsx --define:process.env.NODE_ENV='\"production\"' --define:process.env.API_KEY='\"$API_KEY\"'"
   }
 }
