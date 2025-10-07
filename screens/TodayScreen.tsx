@@ -700,7 +700,7 @@ const TodayScreen: React.FC = () => {
                                                                     <div className="w-20 shrink-0 flex flex-col items-center pt-3.5 pb-2">
                                                                         <button
                                                                             onClick={(e) => { e.stopPropagation(); handleOpenTimePicker(task); }}
-                                                                            className="flex items-start justify-center w-full focus:outline-none rounded-md focus:ring-2 focus:ring-blue-300 h-[36px]"
+                                                                            className="flex items-start justify-center w-full focus:outline-none rounded-md focus:ring-2 focus:ring-blue-300 "
                                                                             aria-label={`Set start time for ${task.title}`}
                                                                         >
                                                                             {task.startTime ? (
@@ -711,7 +711,11 @@ const TodayScreen: React.FC = () => {
                                                                                         <span className="-mt-0.5">{displayPeriod}</span>
                                                                                     </div>
                                                                                 </div>
-                                                                            ) : null}
+                                                                            ) : (
+                                                                                <div className="flex items-center justify-center h-[36px]">
+                                                                                    <span className="font-semibold text-gray-400 text-2xl tracking-widest">--</span>
+                                                                                </div>
+                                                                            )}
                                                                         </button>
                                                                          <div className="h-5 flex items-center">
                                                                             <button
