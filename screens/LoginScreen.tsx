@@ -1,0 +1,76 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import AuthLayout from '../components/layouts/AuthLayout';
+import InputField from '../components/common/InputField';
+import Button from '../components/common/Button';
+import { useData } from '../contexts/DataContext';
+
+const GoogleIcon: React.FC = () => (
+  <svg className="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.19,4.73C14.03,4.73 15.69,5.36 16.95,6.58L19.05,4.58C17.22,2.91 14.88,2 12.19,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.19,22C17.6,22 21.54,18.33 21.54,12.29C21.54,11.76 21.48,11.43 21.35,11.1Z"></path></svg>
+);
+const AppleIcon: React.FC = () => (
+    <svg className="h-6 w-6" viewBox="0 0 24 24"><path fill="currentColor" d="M19.1,12.87c0-2,.83-3.6,2.2-4.71a.51.51,0,0,0,.1-.55,4.48,4.48,0,0,0-3.3-2.07c-1.3-.11-2.91.56-3.71,1.44a4.1,4.1,0,0,0-1.4,3.1,3.42,3.42,0,0,0,1,2.44,3.23,3.23,0,0,0,2.1,1.15.5.5,0,0,0,.4-.13,3.74,3.74,0,0,0,1.3-2.73m-4-6.41c.81-.88,1.62-1.4,2.81-1.46a4.34,4.34,0,0,1,1.61.29,3.8,3.8,0,0,0-3.1,3.12,3.94,3.94,0,0,0,1.4,2.83c.8.9,1.5,1.5,2.9,1.5a2.58,2.58,0,0,0,1.6-.51,4.5,4.5,0,0,1-3.7,2.57,4.8,4.8,0,0,1-4.2-2.4c-2.3-3.71-.8-8,1.4-10.38"></path></svg>
+);
+
+const LoginScreen: React.FC = () => {
+  const navigate = useNavigate();
+  const { login } = useData();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await login(email, password);
+      navigate('/today');
+    } catch (err: any) {
+      setError(err.message || 'Failed to log in.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthLayout title="Log In to Your Account">
+      <form className="space-y-6" onSubmit={handleLogin}>
+        <InputField id="email" label="Email" type="email" placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
+        <div>
+            <InputField id="password" label="Password" type="password" placeholder="••••••••" required value={password} onChange={e => setPassword(e.target.value)} />
+            <div className="text-right mt-2">
+                <Link to="/reset-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                    Forgot Password?
+                </Link>
+            </div>
+        </div>
+        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        <Button type="submit" variant="primary" disabled={loading}>
+          {loading ? 'Logging in...' : 'Log In'}
+        </Button>
+      </form>
+
+      <div className="my-6 flex items-center">
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="mx-4 text-sm text-gray-500">Or continue with</span>
+          <div className="flex-grow border-t border-gray-300"></div>
+      </div>
+
+      <div className="space-y-4">
+          <Button variant="social" onClick={() => alert('Social login not implemented yet.')}><GoogleIcon /><span>Log in with Google</span></Button>
+          <Button variant="social" onClick={() => alert('Social login not implemented yet.')}><AppleIcon /><span>Log in with Apple</span></Button>
+      </div>
+
+      <p className="mt-8 text-center text-sm text-gray-600">
+        Don't have an account?{' '}
+        <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+          Sign Up
+        </Link>
+      </p>
+    </AuthLayout>
+  );
+};
+
+export default LoginScreen;

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>TaskMaster</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @keyframes page-fade-in-animation {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-page-fade-in {
+        animation: page-fade-in-animation 0.3s ease-out forwards;
+      }
+      @keyframes card-fade-in-animation {
+        from {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+      }
+      .animate-card-fade-in {
+        animation: card-fade-in-animation 0.5s ease-out forwards;
+        opacity: 0;
+      }
+       @keyframes card-fade-out {
+          from {
+              opacity: 1;
+              transform: scale(1) translateX(0);
+          }
+          to {
+              opacity: 0;
+              transform: scale(0.95) translateX(-16px);
+          }
+      }
+      .animate-card-fade-out {
+          animation: card-fade-out 0.3s ease-out forwards;
+          animation-delay: 0.3s;
+      }
+      @keyframes checkmark-animation {
+        0% {
+          transform: scale(1);
+          background-color: transparent;
+          border-color: #9ca3af; /* gray-400 */
+        }
+        20% {
+          transform: scale(1.2);
+          background-color: transparent;
+          border-color: #3b82f6; /* blue-500 */
+        }
+        50% {
+          transform: scale(1.1);
+          background-color: #3b82f6; /* blue-500 */
+          border-color: #3b82f6;
+        }
+        100% {
+          transform: scale(1);
+          background-color: #3b82f6;
+          border-color: #3b82f6;
+        }
+      }
+      .animate-checkmark {
+        animation: checkmark-animation 0.3s ease-out forwards;
+      }
+      @keyframes checkmark-icon-fade-in {
+        from { opacity: 0; transform: scale(0.5); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-checkmark-icon {
+          animation: checkmark-icon-fade-in 0.2s 0.1s ease-out forwards;
+          opacity: 0;
+      }
+      @keyframes uncheck-animation {
+        0% {
+          transform: scale(1);
+          background-color: #3b82f6;
+          border-color: #3b82f6;
+        }
+        50% {
+          transform: scale(0.8);
+          background-color: transparent;
+        }
+        100% {
+          transform: scale(1);
+          background-color: transparent;
+          border-color: #9ca3af;
+        }
+      }
+      .animate-uncheck {
+        animation: uncheck-animation 0.3s ease-out forwards;
+      }
+      @keyframes firework-fly-out {
+        0% {
+          transform: translateX(5px) scale(0.5);
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(25px) scale(2);
+          opacity: 0;
+        }
+      }
+      .fireworks-container {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .fireworks-container > .rotator {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .fireworks-container .particle {
+        width: 5px;
+        height: 2px;
+        border-radius: 2px;
+        opacity: 0; /* Start hidden until animation begins */
+        transform: translateX(5px) scale(0.5);
+        animation: firework-fly-out 0.6s ease-out forwards;
+      }
+      .particle-blue { background-color: #3b82f6; }
+      .particle-pink { background-color: #ec4899; }
+      .particle-yellow { background-color: #f59e0b; }
+      .particle-green { background-color: #10b981; }
+       @keyframes ios-spinner-rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes ios-spinner-stroke {
+        0% {
+          stroke-dasharray: 1, 125;
+          stroke-dashoffset: 0;
+        }
+        50% {
+          stroke-dasharray: 100, 125;
+          stroke-dashoffset: -25px;
+        }
+        100% {
+          stroke-dasharray: 100, 125;
+          stroke-dashoffset: -125px;
+        }
+      }
+      .animate-ios-spinner {
+        animation: ios-spinner-rotate 1.5s linear infinite;
+      }
+      .animate-ios-spinner-path {
+        stroke-linecap: round;
+        animation: ios-spinner-stroke 1.5s ease-in-out infinite;
+      }
+      @keyframes pulse-quick-animation {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+      }
+      .animate-pulse-quick {
+        animation: pulse-quick-animation 0.3s ease-out;
+      }
+      .card-shadow {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+      }
+      .modal-shadow {
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.1);
+      }
+      .fab-shadow {
+        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.3",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@capacitor/camera": "https://aistudiocdn.com/@capacitor/camera@^7.0.2",
+    "@capacitor/core": "https://aistudiocdn.com/@capacitor/core@^6.1.0",
+    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^0.15.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-gray-50 h-full">
+    <div id="root" class="h-full"></div>
+    <script src="https://unpkg.com/@capacitor/pwa-elements@latest/dist/pwa-elements.js"></script>
+    <script src="capacitor.js"></script>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

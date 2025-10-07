@@ -1,0 +1,11 @@
+
+{
+  "appId": "com.taskmaster.app",
+  "appName": "TaskMaster",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "capacitor"
+  }
+}
