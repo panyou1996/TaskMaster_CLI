@@ -71,7 +71,7 @@ const ProfileScreen: React.FC = () => {
     const navigate = useNavigate();
     const { profile, setProfile, tasks: allTasks, moments: momentsData, logout, user } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [focusHistory] = useLocalStorage<{ date: string, duration: number }[]>('focusHistory', []);
+    const [focusHistory] = useLocalStorage<{ plantId: number; date: string; plantType: string; duration: number; }[]>('focusHistory', []);
 
     const tasksCompleted = useMemo(() => {
         return allTasks.filter(task => task.completed).length;

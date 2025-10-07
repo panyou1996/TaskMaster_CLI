@@ -8,11 +8,10 @@ interface TaskSelectorProps {
 
 const TaskSelector: React.FC<TaskSelectorProps> = ({ tasks, onSelect }) => {
   return (
-    <div className="flex flex-col items-center justify-center h-full p-6" style={{ paddingTop: `calc(4rem + env(safe-area-inset-top))` }}>
-      <h1 className="text-3xl font-bold text-gray-800">Choose a task to focus on</h1>
-      <p className="text-gray-500 mt-2 mb-8">Only tasks for today with a duration will be shown.</p>
+    <div className="flex flex-col items-center w-full p-6">
+      <h2 className="text-xl font-bold text-gray-800 mb-3">Start a New Session</h2>
       
-      <div className="w-full max-w-md overflow-y-auto">
+      <div className="w-full max-w-md">
         {tasks.length > 0 ? (
           <div className="space-y-3">
             {tasks.map(task => (
@@ -32,7 +31,7 @@ const TaskSelector: React.FC<TaskSelectorProps> = ({ tasks, onSelect }) => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-10 px-4 bg-gray-100 rounded-xl">
+          <div className="text-center py-10 px-4 bg-white rounded-xl card-shadow">
             <p className="font-semibold text-gray-700">No tasks to focus on.</p>
             <p className="text-sm text-gray-500 mt-1">Add tasks to your "Today" list and set a duration for them.</p>
           </div>

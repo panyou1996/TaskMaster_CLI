@@ -134,6 +134,13 @@ const cleanTaskForSupabase = (task: Partial<Task>) => {
         cleanedPayload.subtasks = [];
     }
 
+    // Explicitly remove any remaining keys with undefined values to prevent errors.
+    Object.keys(cleanedPayload).forEach(key => {
+        if (cleanedPayload[key] === undefined) {
+            delete cleanedPayload[key];
+        }
+    });
+
     return cleanedPayload;
 };
 

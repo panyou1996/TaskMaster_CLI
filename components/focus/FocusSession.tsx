@@ -3,12 +3,14 @@ import { Task } from '../../data/mockData';
 import Button from '../common/Button';
 import useCountdown from '../../hooks/useCountdown';
 import DynamicBackground from './DynamicBackground';
+import GrowingPlant from './GrowingPlant';
 import { quotes } from '../../data/quotes';
 import { SoundOnIcon } from '../icons/Icons';
 
 interface FocusSessionProps {
   task?: Task;
   onComplete: () => void;
+  plantType: string | null;
 }
 
 const sounds = [
@@ -23,27 +25,21 @@ const PauseIcon: React.FC = () => <svg className="w-8 h-8" fill="currentColor" v
 const StopIcon: React.FC = () => <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 5.5A.5.5 0 016 5h8a.5.5 0 01.5.5v8a.5.5 0 01-.5.5H6a.5.5 0 01-.5-.5v-8z"></path></svg>;
 const RefreshIcon: React.FC = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181-4.995l-3.182-3.182a8.25 8.25 0 00-11.664 0l-3.18 3.185" /></svg>
 
-const FocusSession: React.FC<FocusSessionProps> = ({ task, onComplete }) => {
+const FocusSession: React.FC<FocusSessionProps> = ({ task, onComplete, plantType }) => {
     const initialSeconds = (task?.duration || 25) * 60;
     const { secondsRemaining, isActive, start, pause, reset } = useCountdown({ 
         initialSeconds,
         onComplete 
     });
 
-    const [quote, setQuote] = useState<{ text: string; visible: boolean } | null>(null);
+    const [quote, setQuote] = useState<string | null>(null);
     const [currentSound, setCurrentSound] = useState<string | null>(null);
     const [isSoundMenuOpen, setIsSoundMenuOpen] = useState(false);
     const audioRef = useRef<HTMLAudioElement>(null);
 
     useEffect(() => {
         const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-        setQuote({ text: randomQuote, visible: true });
-        
-        const timer = setTimeout(() => {
-            setQuote(q => q ? { ...q, visible: false } : null);
-        }, 7000);
-
-        return () => clearTimeout(timer);
+        setQuote(randomQuote);
     }, [task]); 
 
     useEffect(() => {
@@ -99,12 +95,12 @@ const FocusSession: React.FC<FocusSessionProps> = ({ task, onComplete }) => {
             <DynamicBackground />
             <audio ref={audioRef} loop />
 
-            <div className="z-10">
+            <div className="z-10 flex flex-col justify-end min-h-[8rem]">
                 <p className="text-xl font-medium text-[var(--color-primary-500)] mb-2">{task ? task.title : 'Break Time'}</p>
                 <div className="min-h-[3rem] flex items-center justify-center">
-                    {quote?.visible && (
+                    {quote && (
                         <div className="px-6 animate-quote-fade">
-                            <p className="text-lg font-medium text-gray-600 italic">"{quote.text}"</p>
+                            <p className="text-lg font-medium text-gray-600 italic">"{quote}"</p>
                         </div>
                     )}
                 </div>
@@ -149,6 +145,12 @@ const FocusSession: React.FC<FocusSessionProps> = ({ task, onComplete }) => {
                     <StopIcon/>
                  </Button>
             </div>
+
+            <GrowingPlant 
+                plantType={plantType}
+                isGrown={false}
+                className="absolute bottom-6 left-6 w-16 h-16 z-20 opacity-80"
+            />
             
             <div className="absolute bottom-6 right-6 z-20">
                 <div className="relative">
