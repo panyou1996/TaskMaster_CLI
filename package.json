@@ -16,12 +16,14 @@
     "@supabase/supabase-js": "^2.43.4"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.1.0"
+    "@capacitor/cli": "^6.1.0",
+    "esbuild": "^0.21.5"
   },
   "scripts": {
     "sync:ios": "npx cap sync ios",
     "sync:android": "npx cap sync android",
     "open:ios": "npx cap open ios",
-    "open:android": "npx cap open android"
+    "open:android": "npx cap open android",
+    "build": "esbuild index.tsx --bundle --outfile=index.js --loader:.tsx=tsx --define:process.env.NODE_ENV='\"production\"' --define:process.env.API_KEY='\"$API_KEY\"'"
   }
 }
