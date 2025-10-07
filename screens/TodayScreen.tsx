@@ -575,14 +575,14 @@ const TodayScreen: React.FC = () => {
                     onTouchEnd={handleTouchEnd}
                 >
                     <header
-                        className="px-6 pt-6 pb-4 grid grid-cols-3 items-center flex-shrink-0"
+                        className="px-6 pt-6 pb-4 grid grid-cols-[auto_1fr_auto] items-center gap-4 flex-shrink-0"
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                         <div className="flex justify-start">
                             <SyncStatusIndicator profile={profile} onClick={() => setIsSettingsOpen(true)} />
                         </div>
-                        <div className="flex justify-center px-2">
-                            <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full">
+                        <div className="flex justify-center">
+                            <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full max-w-48">
                                 <button
                                     onClick={() => setViewMode('list')}
                                     className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'list' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
