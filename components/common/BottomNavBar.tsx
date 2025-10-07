@@ -9,8 +9,8 @@ import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
 
 const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
     const commonClasses = "flex flex-col items-center justify-center gap-1 transition-colors duration-200";
-    const activeClass = "text-blue-600";
-    const inactiveClass = "text-gray-500 hover:text-gray-700";
+    const activeClass = "text-[var(--color-primary-500)]";
+    const inactiveClass = "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]";
 
     return (
         <NavLink
@@ -91,10 +91,10 @@ const BottomNavBar: React.FC = () => {
                         >
                             <button
                                 onClick={item.action}
-                                className="flex w-32 items-center gap-3 rounded-full bg-white px-4 py-3 card-shadow"
+                                className="flex w-32 items-center gap-3 rounded-full bg-[var(--color-surface-container)] px-4 py-3 card-shadow"
                             >
                                 {item.icon}
-                                <span className="font-semibold text-gray-800 text-md">{item.label}</span>
+                                <span className="font-semibold text-[var(--color-text-primary)] text-md">{item.label}</span>
                             </button>
                         </div>
                     ))}
@@ -103,7 +103,7 @@ const BottomNavBar: React.FC = () => {
 
             {/* Main Navigation Bar */}
             <div
-                className="fixed bottom-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-sm border-t border-gray-200 z-30"
+                className="fixed bottom-0 left-0 right-0 h-20 bg-[var(--color-surface-container)]/80 backdrop-blur-sm border-t border-[var(--color-border)] z-30"
                 style={{ height: `calc(5rem + env(safe-area-inset-bottom))` }}
             >
                 <div
@@ -127,7 +127,7 @@ const BottomNavBar: React.FC = () => {
              >
                 <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className={`w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center fab-shadow transform hover:scale-105 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-blue-400 ${isMenuOpen ? 'rotate-[-225deg]' : 'rotate-0'}`}
+                    className={`w-16 h-16 bg-[var(--color-primary-500)] text-[var(--color-on-primary)] rounded-full flex items-center justify-center fab-shadow transform hover:scale-105 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-200)] ${isMenuOpen ? 'rotate-[-225deg]' : 'rotate-0'}`}
                     aria-haspopup="true"
                     aria-expanded={isMenuOpen}
                     aria-label={isMenuOpen ? "Close menu" : "Open menu"}

@@ -5,12 +5,12 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', className, ...props }) => {
-  const baseStyles = "w-full flex justify-center items-center gap-2 rounded-xl px-4 py-2.5 font-medium text-sm transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2";
+  const baseStyles = "w-full flex justify-center items-center gap-2 rounded-[var(--border-radius-md)] px-4 py-2.5 font-[var(--font-weight-medium)] text-sm transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2";
   
   const variantStyles = {
-    primary: 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500',
-    secondary: 'bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-400',
-    social: 'bg-white text-gray-800 border border-gray-300 hover:bg-gray-100 focus:ring-gray-300',
+    primary: 'bg-[var(--color-primary-500)] text-[var(--color-on-primary)] hover:opacity-90 focus:ring-[var(--color-primary-500)]',
+    secondary: 'bg-[var(--color-surface-container-low)] text-[var(--color-text-secondary)] hover:bg-gray-300 focus:ring-gray-400',
+    social: 'bg-[var(--color-surface-container)] text-[var(--color-text-primary)] border border-[var(--color-border)] hover:bg-gray-100 focus:ring-gray-300',
   };
 
   return (

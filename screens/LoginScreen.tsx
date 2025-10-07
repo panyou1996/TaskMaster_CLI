@@ -41,21 +41,21 @@ const LoginScreen: React.FC = () => {
         <div>
             <InputField id="password" label="Password" type="password" placeholder="••••••••" required value={password} onChange={e => setPassword(e.target.value)} />
             <div className="text-right mt-2">
-                <Link to="/reset-password" className="text-xs font-medium text-indigo-600 hover:text-indigo-500">
+                <Link to="/reset-password" className="text-xs font-medium text-[var(--color-primary-500)] hover:opacity-80">
                     Forgot Password?
                 </Link>
             </div>
         </div>
-        {error && <p className="text-red-500 text-xs text-center">{error}</p>}
+        {error && <p className="text-[var(--color-functional-red)] text-xs text-center">{error}</p>}
         <Button type="submit" variant="primary" disabled={loading}>
           {loading ? 'Logging in...' : 'Log In'}
         </Button>
       </form>
 
       <div className="my-4 flex items-center">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-4 text-xs text-gray-500">Or continue with</span>
-          <div className="flex-grow border-t border-gray-300"></div>
+          <div className="flex-grow border-t border-[var(--color-border)]"></div>
+          <span className="mx-4 text-xs text-[var(--color-text-secondary)]">Or continue with</span>
+          <div className="flex-grow border-t border-[var(--color-border)]"></div>
       </div>
 
       <div className="space-y-3">
@@ -63,9 +63,9 @@ const LoginScreen: React.FC = () => {
           <Button variant="social" onClick={() => alert('Social login not implemented yet.')}><AppleIcon /><span>Log in with Apple</span></Button>
       </div>
 
-      <p className="mt-6 text-center text-xs text-gray-600">
+      <p className="mt-6 text-center text-xs text-[var(--color-text-secondary)]">
         Don't have an account?{' '}
-        <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+        <Link to="/signup" className="font-medium text-[var(--color-primary-500)] hover:opacity-80">
           Sign Up
         </Link>
       </p>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { checkAndRequestCameraPermission } from '../../utils/permissions';
+import Button from '../../components/common/Button';
 
 const QuestionMarkIcon: React.FC = () => (
     <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -27,23 +28,23 @@ const OnboardingPermissionsScreen: React.FC = () => {
     const imageSrc = "https://i.ibb.co/68g6pXW/7062402.jpg";
 
     return (
-        <div className="h-full w-full flex flex-col bg-gray-50 text-gray-900">
+        <div className="h-full w-full flex flex-col bg-[var(--color-background-primary)] text-[var(--color-text-primary)]">
             <header
                 className="flex-shrink-0 p-6 flex justify-between items-center"
                 style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
             >
-                <h1 className="text-xl font-bold text-gray-800">TaskMaster</h1>
+                <h1 className="text-xl font-bold text-[var(--color-text-primary)]">TaskMaster</h1>
                 <button aria-label="Help">
                     <QuestionMarkIcon />
                 </button>
             </header>
             
             <main className="flex-grow flex flex-col items-center justify-center p-8 text-center -mt-12">
-                <div className="bg-white p-4 rounded-2xl card-shadow">
+                <div className="bg-[var(--color-surface-container)] p-4 rounded-2xl card-shadow">
                     <img src={imageSrc} alt="Permissions illustration" className="w-64 h-56 object-cover rounded-xl" />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 mt-8">We Need Your Permission</h2>
-                <p className="mt-2 text-base text-gray-700 max-w-xs">
+                <h2 className="text-3xl font-bold text-[var(--color-text-primary)] mt-8">We Need Your Permission</h2>
+                <p className="mt-2 text-base text-[var(--color-text-secondary)] max-w-xs">
                     To enhance your experience, TaskMaster requires certain permissions. We respect your privacy and ensure your data is secure.
                 </p>
             </main>
@@ -52,18 +53,9 @@ const OnboardingPermissionsScreen: React.FC = () => {
                 className="flex-shrink-0 p-8 space-y-4"
                 style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom))` }}
             >
-                <button
-                    onClick={handleAllow}
-                    className="w-full flex justify-center items-center rounded-xl px-4 py-3 font-medium text-base transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500"
-                >
-                    Allow
-                </button>
-                <button
-                    onClick={handleNotNow}
-                    className="w-full flex justify-center items-center rounded-xl px-4 py-3 font-medium text-base transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-400"
-                >
-                    Not Now
-                </button>
+                <Button variant="primary" onClick={handleAllow}>Allow</Button>
+                <Button variant="secondary" onClick={handleNotNow}>Not Now</Button>
+
                 <div className="flex justify-center items-center gap-2 pt-2">
                     {dots.map(step => (
                         <div

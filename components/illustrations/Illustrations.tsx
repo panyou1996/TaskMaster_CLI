@@ -1,12 +1,13 @@
 import React from 'react';
+import Button from '../common/Button';
 
 const IllustrationContainer: React.FC<{ children: React.ReactNode; title: string; message: string; cta?: React.ReactNode }> = ({ children, title, message, cta }) => (
     <div className="flex flex-col items-center justify-center text-center p-8 h-full animate-page-fade-in">
         <div className="w-40 h-40 text-gray-400">
             {children}
         </div>
-        <h3 className="text-lg font-bold text-gray-800 mt-6">{title}</h3>
-        <p className="text-gray-500 mt-1 max-w-xs">{message}</p>
+        <h3 className="text-lg font-bold text-[var(--color-text-primary)] mt-6">{title}</h3>
+        <p className="text-[var(--color-text-secondary)] mt-1 max-w-xs">{message}</p>
         {cta && <div className="mt-6 w-full max-w-xs">{cta}</div>}
     </div>
 );
@@ -17,12 +18,9 @@ export const EmptyTodayIllustration: React.FC<{ onAddTask: () => void }> = ({ on
         title="Your day is clear!"
         message="Enjoy your free time, or add a new task to get started."
         cta={
-            <button 
-                onClick={onAddTask}
-                className="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition"
-            >
+            <Button onClick={onAddTask} variant="primary">
                 + Add Task
-            </button>
+            </Button>
         }
     >
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -45,12 +43,9 @@ export const EmptyListsIllustration: React.FC<{ onAddList: () => void }> = ({ on
         title="No lists yet"
         message="Create a list to organize your tasks into projects or categories."
          cta={
-            <button 
-                onClick={onAddList}
-                className="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition"
-            >
+            <Button onClick={onAddList} variant="primary">
                 + Create List
-            </button>
+            </Button>
         }
     >
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -65,12 +60,9 @@ export const EmptyListDetailIllustration: React.FC<{ onAddTask: () => void }> = 
         title="List is empty"
         message="Add a task to this list to get started on your goals."
         cta={
-            <button 
-                onClick={onAddTask}
-                className="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition"
-            >
+            <Button onClick={onAddTask} variant="primary">
                 + Add Task
-            </button>
+            </Button>
         }
     >
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -103,12 +95,9 @@ export const EmptyMomentsIllustration: React.FC<{ onAddMoment: () => void }> = (
         title="Capture a moment"
         message="Your journal is waiting for its first entry. Add a photo to begin."
         cta={
-            <button 
-                onClick={onAddMoment}
-                className="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition"
-            >
+            <Button onClick={onAddMoment} variant="primary">
                 + Add Moment
-            </button>
+            </Button>
         }
     >
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
