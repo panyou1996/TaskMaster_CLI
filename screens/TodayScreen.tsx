@@ -337,12 +337,8 @@ const TodayScreen: React.FC = () => {
         if (selectedTask) {
             setTimeToSet(time);
             setIsTimePickerOpen(false);
-            if (!selectedTask.duration) {
-                setIsDurationPickerOpen(true);
-            } else {
-                 await updateTask(selectedTask.id, { startTime: time, time });
-                 handleCloseDurationPicker();
-            }
+            // Always open the duration picker. It will be pre-filled if a duration already exists.
+            setIsDurationPickerOpen(true);
         }
     };
     
