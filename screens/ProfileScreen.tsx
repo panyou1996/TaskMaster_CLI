@@ -4,6 +4,7 @@ import MainLayout from '../components/layouts/MainLayout';
 import { ChevronLeftIcon, EditIcon } from '../components/icons/Icons';
 import { useData } from '../contexts/DataContext';
 import { supabase } from '../utils/supabase';
+import useLocalStorage from '../hooks/useLocalStorage';
 
 // Helper to convert data URL to Blob
 function dataURLtoBlob(dataurl: string): Blob {
@@ -70,6 +71,7 @@ const ProfileScreen: React.FC = () => {
     const navigate = useNavigate();
     const { profile, setProfile, tasks: allTasks, moments: momentsData, logout, user } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [focusHistory] = useLocalStorage<{ date: string, duration: number }[]>('focusHistory', []);
 
     const tasksCompleted = useMemo(() => {
         return allTasks.filter(task => task.completed).length;
@@ -78,6 +80,58 @@ const ProfileScreen: React.FC = () => {
     const momentsCreated = useMemo(() => {
         return momentsData.length;
     }, [momentsData]);
+    
+    const { totalFocusMinutes, focusStreak } = useMemo(() => {
+        if (!focusHistory || focusHistory.length === 0) {
+            return { totalFocusMinutes: 0, focusStreak: 0 };
+        }
+
+        // Calculate total minutes
+        const totalMinutes = focusHistory.reduce((sum, session) => sum + (session.duration || 0), 0);
+
+        // Calculate focus streak
+        const uniqueDates = [...new Set(focusHistory.map(s => s.date))].sort().reverse();
+        if (uniqueDates.length === 0) {
+            return { totalFocusMinutes: totalMinutes, focusStreak: 0 };
+        }
+        
+        let streak = 0;
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        const mostRecentDate = new Date(uniqueDates[0] + 'T00:00:00');
+        const todayDate = new Date(todayStr + 'T00:00:00');
+        
+        const diffDays = Math.round((todayDate.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 1) {
+            return { totalFocusMinutes: totalMinutes, focusStreak: 0 };
+        }
+
+        streak = 1;
+        for (let i = 0; i < uniqueDates.length - 1; i++) {
+            const currentDate = new Date(uniqueDates[i] + 'T00:00:00');
+            const prevDate = new Date(uniqueDates[i+1] + 'T00:00:00');
+            const dayDiff = Math.round((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (dayDiff === 1) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+        
+        return { totalFocusMinutes: totalMinutes, focusStreak: streak };
+    }, [focusHistory]);
+
+    const totalFocusTime = useMemo(() => {
+        if (totalFocusMinutes < 60) {
+            return `${totalFocusMinutes} min`;
+        }
+        const hours = Math.floor(totalFocusMinutes / 60);
+        const minutes = totalFocusMinutes % 60;
+        return `${hours}h ${minutes}m`;
+    }, [totalFocusMinutes]);
 
     const handleAvatarClick = () => {
         fileInputRef.current?.click();
@@ -92,27 +146,23 @@ const ProfileScreen: React.FC = () => {
             const imageBlob = dataURLtoBlob(resizedDataUrl);
             const filePath = `public/${user.id}/avatar.jpg`;
             
-            // Upsert to storage
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
                 .upload(filePath, imageBlob, { upsert: true });
             
             if (uploadError) throw uploadError;
 
-            // Get public URL
             const { data: { publicUrl } } = supabase.storage
                 .from('avatars')
                 .getPublicUrl(filePath);
 
             if (!publicUrl) throw new Error("Could not get public URL");
             
-            // Update profile table
             const updatedProfile = { ...profile, avatar_url: `${publicUrl}?t=${new Date().getTime()}` };
             const { error: dbError } = await supabase.from('profiles').upsert(updatedProfile);
 
             if (dbError) throw dbError;
 
-            // Update local state
             setProfile(updatedProfile);
         } catch (error) {
             console.error("Error updating avatar:", error);
@@ -223,6 +273,16 @@ const ProfileScreen: React.FC = () => {
                              <div className="bg-white rounded-xl card-shadow p-4 text-center">
                                 <p className="text-3xl font-bold text-blue-600">{momentsCreated}</p>
                                 <p className="text-sm text-gray-500 mt-1">Moments Created</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div className="bg-white rounded-xl card-shadow p-4 text-center">
+                                <p className="text-3xl font-bold text-purple-600">{totalFocusTime}</p>
+                                <p className="text-sm text-gray-500 mt-1">Total Focus Time</p>
+                            </div>
+                             <div className="bg-white rounded-xl card-shadow p-4 text-center">
+                                <p className="text-3xl font-bold text-purple-600">{focusStreak} <span className="text-lg">days</span></p>
+                                <p className="text-sm text-gray-500 mt-1">Focus Streak</p>
                             </div>
                         </div>
                     </section>

@@ -21,7 +21,6 @@ import ListDetailScreen from './screens/ListDetailScreen';
 import MomentsScreen from './screens/MomentsScreen';
 import MomentDetailScreen from './screens/MomentDetailScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import TimelineScreen from './screens/TimelineScreen';
 
 const AppRoutes: React.FC = () => {
   const { session, loading } = useData();
@@ -67,7 +66,6 @@ const AppRoutes: React.FC = () => {
 
           {/* Main App */}
           <Route path="/today" element={<TodayScreen />} />
-          <Route path="/timeline" element={<TimelineScreen />} />
           <Route path="/plan" element={<PlanScreen />} />
           <Route path="/lists/:listId" element={<ListDetailScreen />} />
           <Route path="/moments" element={<MomentsScreen />} />

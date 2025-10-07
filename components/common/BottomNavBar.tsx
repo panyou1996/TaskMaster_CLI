@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { TodayIcon, ListsIcon, TimelineIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon } from '../icons/Icons';
+import { TodayIcon, ListsIcon, FocusIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon } from '../icons/Icons';
 import AddMomentScreen, { NewMomentData } from '../../screens/AddMomentScreen';
 import { takePhotoWithCapacitor } from '../../utils/permissions';
 import { useData } from '../../contexts/DataContext';
 import { Moment } from '../../data/mockData';
 import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
+import FocusScreen from '../../screens/FocusScreen';
 
 const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
     const commonClasses = "flex flex-col items-center justify-center gap-1 transition-colors duration-200";
@@ -31,6 +32,7 @@ const BottomNavBar: React.FC = () => {
     const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
     const [initialPhotoData, setInitialPhotoData] = useState<string | null>(null);
     const [isAddTaskWithAIOpen, setIsAddTaskWithAIOpen] = useState(false);
+    const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
     
     const handleMomentButtonClick = async () => {
         setIsMenuOpen(false); // Close the FAB menu immediately
@@ -114,8 +116,14 @@ const BottomNavBar: React.FC = () => {
                     <NavItem to="/plan" icon={<ListsIcon />} label="Plan" />
                     
                     <div /> {/* Placeholder for FAB */}
-
-                    <NavItem to="/timeline" icon={<TimelineIcon />} label="Timeline" />
+                    
+                    <button
+                        onClick={() => setIsFocusModeOpen(true)}
+                        className="flex flex-col items-center justify-center gap-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-200"
+                    >
+                        <FocusIcon />
+                        <span className="text-xs font-medium">Focus</span>
+                    </button>
                     <NavItem to="/moments" icon={<MomentsIcon />} label="Moments" />
                 </div>
             </div>
@@ -145,6 +153,10 @@ const BottomNavBar: React.FC = () => {
             <AddTaskWithAIScreen
                 isOpen={isAddTaskWithAIOpen}
                 onClose={() => setIsAddTaskWithAIOpen(false)}
+            />
+            <FocusScreen 
+                isOpen={isFocusModeOpen}
+                onClose={() => setIsFocusModeOpen(false)}
             />
         </>
     );

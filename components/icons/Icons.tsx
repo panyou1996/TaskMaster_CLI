@@ -50,6 +50,14 @@ export const TimelineIcon: React.FC = () => (
     </svg>
 );
 
+export const FocusIcon: React.FC = () => (
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="12" r="1" />
+    </svg>
+);
+
+
 export const CalendarIcon: React.FC = () => (
     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />

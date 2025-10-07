@@ -239,6 +239,23 @@
       .animate-pulse-quick {
         animation: pulse-quick-animation 0.3s ease-out;
       }
+      @keyframes slow-gradient-animation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      .animate-slow-gradient {
+        background: linear-gradient(270deg, var(--color-primary-100), #EAE6F5, var(--color-primary-100));
+        background-size: 200% 200%;
+        animation: slow-gradient-animation 15s ease infinite;
+      }
+      @keyframes quote-fade-in-out {
+        0%, 100% { opacity: 0; transform: translateY(10px); }
+        10%, 90% { opacity: 1; transform: translateY(0); }
+      }
+      .animate-quote-fade {
+        animation: quote-fade-in-out 7s ease-in-out forwards;
+      }
       .card-shadow {
         box-shadow: var(--shadow-subtle);
       }
