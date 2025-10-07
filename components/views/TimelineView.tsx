@@ -273,7 +273,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                     <div className="relative h-full px-6" style={{ height: (END_HOUR - START_HOUR + 1) * PIXELS_PER_HOUR }}>
                         {hours.map(hour => (
                             <div key={hour} className="absolute w-full flex items-center" style={{ top: (hour - START_HOUR) * PIXELS_PER_HOUR, left: 0, right: 0 }}>
-                                <span className="text-xs text-gray-400 w-12 text-right pr-2 -ml-12">{`${hour % 12 === 0 ? 12 : hour % 12}${hour < 12 || hour === 24 ? 'am' : 'pm'}`}</span>
+                                <span className="text-xs text-gray-400 w-12 text-right pr-2">{`${hour % 12 === 0 ? 12 : hour % 12}${hour < 12 || hour === 24 ? 'am' : 'pm'}`}</span>
                                 <div className="flex-grow border-t border-gray-200"></div>
                             </div>
                         ))}
