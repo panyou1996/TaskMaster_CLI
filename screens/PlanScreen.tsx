@@ -1,6 +1,4 @@
-
-
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
 import { 
@@ -57,6 +55,9 @@ const PlanScreen: React.FC = () => {
     const [isAddListOpen, setIsAddListOpen] = useState(false);
     const [isEditListOpen, setIsEditListOpen] = useState(false);
     const [listToEdit, setListToEdit] = useState<TaskList | null>(null);
+    const [isSearchVisible, setIsSearchVisible] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     // -- STATE FOR CALENDAR VIEW --
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -78,6 +79,12 @@ const PlanScreen: React.FC = () => {
     const calendarViewRef = useRef<HTMLDivElement>(null);
     const REFRESH_THRESHOLD = 80;
     const MIN_SWIPE_DISTANCE = 50;
+
+    useEffect(() => {
+        if (isSearchVisible) {
+            searchInputRef.current?.focus();
+        }
+    }, [isSearchVisible]);
     
     // -- LOGIC FOR LISTS VIEW --
     const taskCounts = useMemo(() => {
@@ -87,6 +94,16 @@ const PlanScreen: React.FC = () => {
         }
         return counts;
     }, [allTasks]);
+
+    const filteredTaskLists = useMemo(() => {
+        if (!searchQuery) {
+            return taskLists;
+        }
+        const lowerCaseQuery = searchQuery.toLowerCase();
+        return taskLists.filter(list => 
+            list.name.toLowerCase().includes(lowerCaseQuery)
+        );
+    }, [taskLists, searchQuery]);
 
     const handleAddList = async (newListData: NewListData) => await addList(newListData);
     const handleOpenEditModal = (list: TaskList) => {
@@ -331,7 +348,7 @@ const PlanScreen: React.FC = () => {
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                         <div className="flex justify-start">
-                            <button className="text-gray-600 p-1">
+                            <button className="text-gray-600 p-1" onClick={() => setIsSearchVisible(true)}>
                                 <SearchIcon />
                             </button>
                         </div>
@@ -350,7 +367,34 @@ const PlanScreen: React.FC = () => {
                         </div>
                     </header>
 
-                    <main className="overflow-hidden flex-grow">
+                    <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSearchVisible ? 'max-h-20' : 'max-h-0'}`}>
+                        <div className="px-6 pt-1 pb-3">
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <SearchIcon />
+                                </div>
+                                <input
+                                    ref={searchInputRef}
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search lists..."
+                                    className="w-full pl-10 pr-20 py-2.5 border border-[var(--color-border)] rounded-[var(--border-radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition text-sm"
+                                />
+                                <button 
+                                    onClick={() => {
+                                        setIsSearchVisible(false);
+                                        setSearchQuery('');
+                                    }}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm font-semibold text-[var(--color-primary-500)]"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <main className="overflow-hidden flex-grow flex flex-col">
                          <div
                             className="flex h-full transition-transform duration-300 ease-out"
                             style={{ transform: viewMode === 'lists' ? 'translateX(0%)' : 'translateX(-100%)' }}
@@ -359,9 +403,14 @@ const PlanScreen: React.FC = () => {
                             <div ref={listsViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto px-6 pb-24">
                                 {taskLists.length === 0 ? (
                                     <EmptyListsIllustration onAddList={() => setIsAddListOpen(true)} />
+                                ) : filteredTaskLists.length === 0 ? (
+                                    <div className="text-center py-16">
+                                        <p className="text-lg font-semibold text-gray-700">No lists found</p>
+                                        <p className="text-gray-500 mt-1">Try a different search term.</p>
+                                    </div>
                                 ) : (
                                     <div className="space-y-3 pt-4">
-                                        {taskLists.map(list => {
+                                        {filteredTaskLists.map(list => {
                                             const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
                                             return (
                                                 <div key={list.id} onPointerDown={() => onPointerDown(list)} onPointerUp={() => onPointerUp(list.id)} onPointerLeave={cancelLongPress} onPointerCancel={cancelLongPress} className="bg-white p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 transition-colors select-none" onContextMenu={(e) => e.preventDefault()}>

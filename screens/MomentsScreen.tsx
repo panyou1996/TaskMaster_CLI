@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
 import { PlusIconHeader, ChevronDownIcon, RefreshSpinnerIcon, SearchIcon } from '../components/icons/Icons';
@@ -31,6 +30,9 @@ const MomentsScreen: React.FC = () => {
     const { moments: momentsData, addMoment, syncData } = useData();
     const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'moments' | 'calendar' | 'tags'>('moments');
+    const [isSearchVisible, setIsSearchVisible] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const searchInputRef = useRef<HTMLInputElement>(null);
     
     // Pull to refresh and swipe state
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -42,6 +44,24 @@ const MomentsScreen: React.FC = () => {
     const tagsViewRef = useRef<HTMLDivElement>(null);
     const REFRESH_THRESHOLD = 80;
     const MIN_SWIPE_DISTANCE = 50;
+
+    useEffect(() => {
+        if (isSearchVisible) {
+            searchInputRef.current?.focus();
+        }
+    }, [isSearchVisible]);
+
+    const filteredMoments = useMemo(() => {
+        if (!searchQuery) {
+            return momentsData;
+        }
+        const lowerCaseQuery = searchQuery.toLowerCase();
+        return momentsData.filter(moment => 
+            moment.title.toLowerCase().includes(lowerCaseQuery) ||
+            (moment.notes && moment.notes.toLowerCase().includes(lowerCaseQuery)) ||
+            (moment.tags && moment.tags.some(tag => tag.toLowerCase().includes(lowerCaseQuery)))
+        );
+    }, [momentsData, searchQuery]);
 
     const handleAddMoment = async (newMomentData: NewMomentData) => {
         const newMoment: Omit<Moment, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
@@ -145,7 +165,7 @@ const MomentsScreen: React.FC = () => {
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                          <div className="flex justify-start">
-                            <button className="text-gray-600 p-1">
+                            <button className="text-gray-600 p-1" onClick={() => setIsSearchVisible(true)}>
                                 <SearchIcon />
                             </button>
                          </div>
@@ -163,6 +183,33 @@ const MomentsScreen: React.FC = () => {
                         </div>
                     </header>
 
+                    <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSearchVisible ? 'max-h-20' : 'max-h-0'}`}>
+                        <div className="px-6 pt-1 pb-3">
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <SearchIcon />
+                                </div>
+                                <input
+                                    ref={searchInputRef}
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search moments..."
+                                    className="w-full pl-10 pr-20 py-2.5 border border-[var(--color-border)] rounded-[var(--border-radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition text-sm"
+                                />
+                                <button 
+                                    onClick={() => {
+                                        setIsSearchVisible(false);
+                                        setSearchQuery('');
+                                    }}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm font-semibold text-[var(--color-primary-500)]"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <main className="overflow-hidden flex-grow flex flex-col">
                         <div
                             className="flex h-full transition-transform duration-300 ease-out"
@@ -170,23 +217,30 @@ const MomentsScreen: React.FC = () => {
                         >
                              {/* Grid View */}
                             <div ref={momentsViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto px-6 pb-24">
-                                {momentsData.length === 0 ? (
-                                    <EmptyMomentsIllustration onAddMoment={() => setIsAddMomentOpen(true)} />
-                                ) : (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pt-4">
-                                        {momentsData.map((moment, index) => (
-                                            <MomentCard key={moment.id} {...moment} index={index} />
-                                        ))}
-                                    </div>
+                                {viewMode === 'moments' && (
+                                    momentsData.length === 0 ? (
+                                        <EmptyMomentsIllustration onAddMoment={() => setIsAddMomentOpen(true)} />
+                                    ) : filteredMoments.length === 0 ? (
+                                        <div className="text-center py-16">
+                                            <p className="text-lg font-semibold text-gray-700">No moments found</p>
+                                            <p className="text-gray-500 mt-1">Try a different search term.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pt-4">
+                                            {filteredMoments.map((moment, index) => (
+                                                <MomentCard key={moment.id} {...moment} index={index} />
+                                            ))}
+                                        </div>
+                                    )
                                 )}
                             </div>
                             {/* Calendar View */}
                             <div ref={calendarViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto pb-24">
-                                <CalendarView />
+                                {viewMode === 'calendar' && <CalendarView />}
                             </div>
                             {/* Tags View */}
                             <div ref={tagsViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto pb-24">
-                                <TagsView />
+                                {viewMode === 'tags' && <TagsView />}
                             </div>
                         </div>
                     </main>
