@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { CheckIcon, TrashIcon, PlusIconHeader, RefreshSpinnerIcon } from '../components/icons/Icons';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { CheckIcon, TrashIcon, FlagIcon, ListCheckIcon, TagIcon, CalendarIcon, StarIcon, RefreshSpinnerIcon, ClockIcon, LockIcon, BellIcon } from '../components/icons/Icons';
 import { useData } from '../contexts/DataContext';
 
 export interface NewTaskData {
@@ -24,81 +24,171 @@ interface AddTaskScreenProps {
   onAddTask?: (taskData: NewTaskData) => Promise<void>;
 }
 
+const EmptySquareCheckIcon = () => (
+    <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <rect x="4" y="4" width="16" height="16" rx="4" />
+    </svg>
+);
+
+const SubtaskCircleIcon = () => (
+    <svg className="w-5 h-5 text-gray-500 hover:text-blue-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <circle cx="12" cy="12" r="8" />
+    </svg>
+);
+
+const formatChipDate = (dateString: string): string => {
+    if (!dateString) return '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const parts = dateString.split('-').map(Number);
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+    date.setHours(0, 0, 0, 0);
+
+    const diffTime = date.getTime() - today.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays > 1 && diffDays <= 3) return `In ${diffDays} days`;
+    if (diffDays === -1) return 'Yesterday';
+    if (diffDays < -1 && diffDays >= -3) return `${Math.abs(diffDays)} days ago`;
+    
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+};
+
+const reminderOptions = [
+    { label: 'No notification', value: null },
+    { label: 'On time', value: 0 },
+    { label: '5 minutes before', value: 5 },
+    { label: '10 minutes before', value: 10 },
+    { label: '15 minutes before', value: 15 },
+    { label: '30 minutes before', value: 30 },
+    { label: '1 hour before', value: 60 },
+];
+
+const getReminderLabel = (value: number | null) => {
+    const option = reminderOptions.find(o => o.value === value);
+    return option ? option.label : '';
+};
+
+
 const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialDate, onAddTask }) => {
     const { lists: userLists } = useData();
-    const listOptions = useMemo(() => userLists.map(l => l.name), [userLists]);
+    const listOptions = userLists.map(l => l.name);
 
     const [title, setTitle] = useState('');
-    const [selectedList, setSelectedList] = useState('');
-    const [isImportant, setIsImportant] = useState(false);
-    const [isToday, setIsToday] = useState(false);
-    const [taskType, setTaskType] = useState<'Fixed' | 'Flexible'>('Fixed');
-    const [startDate, setStartDate] = useState(new Date().toISOString().substring(0, 10));
-    const [startTime, setStartTime] = useState('');
-    const [duration, setDuration] = useState('');
-    const [dueDate, setDueDate] = useState('');
     const [notes, setNotes] = useState('');
-    const [reminder, setReminder] = useState<number | null>(15); // Default to 15 mins before
-    
-    const [activeTab, setActiveTab] = useState<'Basic' | 'Schedule' | 'Subtask'>('Basic');
     const [subtasks, setSubtasks] = useState<{ id: number; text: string; completed: boolean }[]>([]);
     const [newSubtaskText, setNewSubtaskText] = useState('');
-
+    const [category, setCategory] = useState('');
+    const [isImportant, setIsImportant] = useState(false);
+    const [isToday, setIsToday] = useState(false);
+    const [taskType, setTaskType] = useState<'Fixed' | 'Flexible'>('Flexible');
+    const [dueDate, setDueDate] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [startTime, setStartTime] = useState('');
+    const [reminder, setReminder] = useState<number | null>(null);
+    
+    const [activeInput, setActiveInput] = useState<'title' | 'notes' | null>(null);
+    const [isSubtaskSectionVisible, setIsSubtaskSectionVisible] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const resetState = useCallback(() => {
-        setTitle('');
-        setSelectedList(listOptions.length > 0 ? listOptions[0] : '');
-        setIsImportant(false);
-        setIsToday(false);
-        setTaskType('Fixed');
-        setStartDate(new Date().toISOString().substring(0, 10));
-        setStartTime('');
-        setDuration('');
-        setDueDate('');
-        setNotes('');
-        setReminder(15);
-        setActiveTab('Basic');
-        setSubtasks([]);
-        setNewSubtaskText('');
-        setError(null);
-        setLoading(false);
-    }, [listOptions]);
+    const [activePopover, setActivePopover] = useState<string | null>(null);
+    const [popoverPosition, setPopoverPosition] = useState<{ top?: string, bottom?: string, left?: string, right?: string }>({});
+    
+    const titleInputRef = useRef<HTMLInputElement>(null);
+    const notesInputRef = useRef<HTMLTextAreaElement>(null);
+    const newSubtaskInputRef = useRef<HTMLInputElement>(null);
+    const calendarIconRef = useRef<HTMLDivElement>(null);
+    const startTimeIconRef = useRef<HTMLDivElement>(null);
+    const listIconRef = useRef<HTMLDivElement>(null);
+    const reminderIconRef = useRef<HTMLDivElement>(null);
+    const cardRef = useRef<HTMLDivElement>(null);
+    const prevIsOpen = useRef(isOpen);
+
+    const todayStr = useMemo(() => new Date().toISOString().substring(0, 10), []);
+    const isTodayLocked = useMemo(() => dueDate === todayStr, [dueDate, todayStr]);
 
     useEffect(() => {
-        if (isOpen) {
-            resetState(); // Clear previous state first
+        if (isTodayLocked) {
+            setIsToday(true);
+        }
+    }, [isTodayLocked]);
+
+
+    const resetState = useCallback(() => {
+        setTitle('');
+        setNotes('');
+        setSubtasks([]);
+        setNewSubtaskText('');
+        setIsImportant(false);
+        setIsToday(false);
+        setTaskType('Flexible');
+        setDueDate('');
+        setStartDate('');
+        setStartTime('');
+        setReminder(null);
+        setActiveInput(null);
+        setActivePopover(null);
+        setIsSubtaskSectionVisible(false);
+        setError(null);
+        setLoading(false);
+    }, []);
+
+    useEffect(() => {
+        if (isOpen && !prevIsOpen.current) {
+            resetState();
+            setCategory(listOptions.length > 0 ? listOptions[0] : '');
             if (initialDate) {
                 setDueDate(initialDate);
-                setStartDate(initialDate);
-                setActiveTab('Schedule'); // Switch to schedule tab for better UX
+                if (initialDate === todayStr) {
+                    setIsToday(true);
+                }
             }
-            
-            const handleKeyDown = (event: KeyboardEvent) => {
-              if (event.key === 'Escape') {
-                onClose();
-              }
-            };
-            window.addEventListener('keydown', handleKeyDown);
-            
-            return () => {
-              window.removeEventListener('keydown', handleKeyDown);
-            };
         }
-    }, [isOpen, initialDate, onClose, resetState]);
+        prevIsOpen.current = isOpen;
+    }, [isOpen, initialDate, listOptions, resetState, todayStr]);
+    
+    const handlePopoverToggle = useCallback((popoverName: string, ref: React.RefObject<HTMLDivElement>) => {
+        if (activePopover === popoverName) {
+            setActivePopover(null);
+            return;
+        }
+
+        if (ref.current) {
+            const rect = ref.current.getBoundingClientRect();
+            const popoverHeight = 220; // A generous estimate for the tallest popover
+            
+            if (rect.top < popoverHeight) { // Not enough space above, open below
+                setPopoverPosition({ top: `${rect.height + 4}px`, right: '0' });
+            } else { // Enough space above, open above
+                setPopoverPosition({ bottom: `${rect.height + 4}px`, right: '0' });
+            }
+        }
+        setActivePopover(popoverName);
+    }, [activePopover]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
+            if (cardRef.current && !cardRef.current.contains(target)) {
+                 setActiveInput(null);
+            }
+            if (activePopover && !cardRef.current?.contains(target)) {
+                 setActivePopover(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [activePopover]);
 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title.trim()) {
-            setError("Task name is required.");
-            return;
-        }
-        if (!selectedList) {
-            setError("Please select a list. If you have no lists, please create one first.");
-            return;
-        }
+        if (!title.trim()) { setError("Task name is required."); return; }
+        if (!category) { setError("Please select a list."); return; }
 
         setLoading(true);
         setError(null);
@@ -106,283 +196,152 @@ const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialD
         try {
             if (onAddTask) {
                 await onAddTask({
-                    title,
-                    list: selectedList,
-                    isImportant,
-                    isToday,
-                    type: taskType,
-                    startDate,
-                    startTime,
-                    duration,
-                    dueDate,
-                    notes,
-                    subtasks,
-                    reminder
+                    title, list: category, isImportant, isToday, notes: notes,
+                    subtasks: isSubtaskSectionVisible ? subtasks.filter(s => s.text.trim()) : [],
+                    dueDate, type: taskType,
+                    startDate: taskType === 'Fixed' && startTime ? (startDate || new Date().toISOString().substring(0, 10)) : '',
+                    startTime: taskType === 'Fixed' ? startTime : '',
+                    duration: '', 
+                    reminder: reminder,
                 });
             }
             onClose();
-        } catch (err: any) {
-            const errorMessage = (err && typeof err === 'object' && err.message)
-                ? err.message
-                : 'Failed to save the task. Please try again.';
-            setError(errorMessage);
-            console.error("Failed to add task:", err);
+        } catch (err) {
+            setError('Failed to save the task. Please try again.');
         } finally {
             setLoading(false);
         }
     };
-
+    
     const handleAddSubtask = () => {
         if (newSubtaskText.trim()) {
             setSubtasks([...subtasks, { id: Date.now(), text: newSubtaskText, completed: false }]);
             setNewSubtaskText('');
+            setTimeout(() => newSubtaskInputRef.current?.focus(), 0);
         }
     };
 
-    const handleToggleSubtask = (id: number) => {
-        setSubtasks(subtasks.map(sub => sub.id === id ? { ...sub, completed: !sub.completed } : sub));
+    const handleToggleToday = () => {
+        if (isTodayLocked) return;
+        setIsToday(prev => !prev);
     };
-
-    const handleDeleteSubtask = (id: number) => {
-        setSubtasks(subtasks.filter(sub => sub.id !== id));
-    };
-
-
-    const CloseIcon: React.FC = () => (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-    );
 
     return (
-        <div className={`fixed inset-0 z-50 flex items-end transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
-            <div
-                className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
-                onClick={onClose}
-                aria-hidden="true"
-            />
-            <div
-                className={`w-full bg-gray-50 rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="add-task-title"
-            >
-                <header
-                    className="pt-3 px-4 pb-3 border-b border-gray-200 bg-white rounded-t-3xl sticky top-0 z-10"
-                    style={{ paddingTop: `calc(0.75rem + env(safe-area-inset-top))` }}
-                >
-                    <div className="w-8 h-1 bg-gray-300 rounded-full mx-auto mb-3" />
-                    <div className="flex justify-between items-center h-8">
-                        <button onClick={onClose} className="p-1 text-gray-500 hover:text-gray-800 rounded-full hover:bg-gray-100">
-                            <CloseIcon />
-                        </button>
-                        <h2 id="add-task-title" className="text-base font-bold text-gray-900">Add New Task</h2>
-                        <button type="submit" form="add-task-form" disabled={loading} className="p-1 text-blue-600 hover:text-blue-800 rounded-full hover:bg-blue-50 transition-colors disabled:opacity-50">
-                            {loading ? <RefreshSpinnerIcon /> : <CheckIcon />}
-                        </button>
-                    </div>
-                </header>
-                
-                <form id="add-task-form" onSubmit={handleSubmit}>
-                    <div
-                        className="p-4 space-y-4 overflow-y-auto max-h-[75vh] pb-24"
-                        style={{ paddingBottom: `calc(6rem + env(safe-area-inset-bottom))` }}
-                    >
-                        {error && <p className="text-red-500 text-sm text-center -mt-2 mb-2 px-4 bg-red-50 py-2 rounded-lg">{error}</p>}
-                        
-                        {/* Tab Toggle */}
-                        <div className="flex bg-gray-200 rounded-lg p-1">
-                            <button type="button" onClick={() => setActiveTab('Basic')} className={`w-1/3 py-1.5 text-sm font-semibold rounded-md transition-all ${activeTab === 'Basic' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Basic</button>
-                            <button type="button" onClick={() => setActiveTab('Schedule')} className={`w-1/3 py-1.5 text-sm font-semibold rounded-md transition-all ${activeTab === 'Schedule' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Schedule</button>
-                            <button type="button" onClick={() => setActiveTab('Subtask')} className={`w-1/3 py-1.5 text-sm font-semibold rounded-md transition-all ${activeTab === 'Subtask' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Subtask</button>
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
+            <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
+            
+            <form onSubmit={handleSubmit} className={`w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} style={{ paddingBottom: `env(safe-area-inset-bottom)` }}>
+                <div ref={cardRef} className="bg-white rounded-xl card-shadow p-4">
+                    {error && <p className="text-red-500 text-sm text-center mb-2">{error}</p>}
+                    
+                    <div className="flex items-start gap-3">
+                        <div className="pt-1"><EmptySquareCheckIcon /></div>
+                        <div className="flex-grow">
+                            <input ref={titleInputRef} type="text" value={title} onChange={e => setTitle(e.target.value)} onFocus={() => setActiveInput('title')} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); notesInputRef.current?.focus(); }}} placeholder="New To-Do" className="w-full text-base font-semibold text-gray-900 placeholder-gray-800 focus:outline-none bg-transparent" />
+                            <textarea ref={notesInputRef} value={notes} onChange={e => setNotes(e.target.value)} onFocus={() => setActiveInput('notes')} placeholder="Notes" rows={1} className="w-full text-sm mt-1 text-gray-700 placeholder-gray-500 focus:outline-none resize-none bg-transparent" />
+                            {isSubtaskSectionVisible && (
+                                <div className="mt-2 space-y-1 pt-2 border-t border-gray-100">
+                                    {subtasks.map((sub) => (
+                                        <div key={sub.id} className="flex items-center gap-2 group">
+                                            <SubtaskCircleIcon />
+                                            <input type="text" value={sub.text} onChange={e => { const newText = e.target.value; setSubtasks(subs => subs.map(s => s.id === sub.id ? { ...s, text: newText } : s)); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask(); } }} className="w-full text-sm text-gray-800 focus:outline-none bg-transparent" />
+                                            <button type="button" onClick={() => setSubtasks(subs => subs.filter(s => s.id !== sub.id))} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100"><TrashIcon /></button>
+                                        </div>
+                                    ))}
+                                    <div className="flex items-center gap-2">
+                                        <SubtaskCircleIcon />
+                                        <input ref={newSubtaskInputRef} type="text" value={newSubtaskText} onChange={e => setNewSubtaskText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask(); } }} placeholder="Add item" className="w-full text-sm text-gray-800 placeholder-gray-500 focus:outline-none bg-transparent" />
+                                    </div>
+                                </div>
+                            )}
                         </div>
-
-                        <div className="grid">
-                             {/* Basic Tab Content */}
-                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${activeTab === 'Basic' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                <div className="overflow-hidden">
-                                     <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
-                                        <div>
-                                            <label htmlFor="task-title" className="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
-                                            <input
-                                                id="task-title"
-                                                type="text"
-                                                placeholder="e.g. Plan team meeting"
-                                                value={title}
-                                                onChange={(e) => setTitle(e.target.value)}
-                                                required
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="task-list" className="block text-sm font-medium text-gray-700 mb-1">List</label>
-                                            <div className="relative">
-                                                <select
-                                                    id="task-list"
-                                                    value={selectedList}
-                                                    onChange={(e) => setSelectedList(e.target.value)}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-sm"
-                                                >
-                                                    {listOptions.map(list => <option key={list} value={list}>{list}</option>)}
-                                                </select>
-                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700">
-                                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <label htmlFor="task-important" className="font-medium text-gray-700 text-sm">Important</label>
-                                            <button
-                                                type="button"
-                                                id="task-important"
-                                                onClick={() => setIsImportant(!isImportant)}
-                                                className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${isImportant ? 'bg-blue-600' : 'bg-gray-200'}`}
-                                            >
-                                                <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${isImportant ? 'translate-x-6' : 'translate-x-1'}`} />
-                                            </button>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <label htmlFor="task-today" className="font-medium text-gray-700 text-sm">Today</label>
-                                            <button
-                                                type="button"
-                                                id="task-today"
-                                                onClick={() => setIsToday(!isToday)}
-                                                className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${isToday ? 'bg-blue-600' : 'bg-gray-200'}`}
-                                            >
-                                                <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${isToday ? 'translate-x-6' : 'translate-x-1'}`} />
-                                            </button>
-                                        </div>
-                                        <div>
-                                            <label htmlFor="task-notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                                            <textarea
-                                                id="task-notes"
-                                                rows={2}
-                                                placeholder="Add more details..."
-                                                value={notes}
-                                                onChange={(e) => setNotes(e.target.value)}
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                            />
-                                        </div>
-                                    </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                         <div className="flex items-center gap-2 flex-wrap min-w-0 mb-3 min-h-[1.75rem]">
+                            {reminder !== null && (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 text-xs font-semibold animate-page-fade-in">
+                                    <BellIcon className="w-3.5 h-3.5" />
+                                    <span className="truncate">{getReminderLabel(reminder)}</span>
                                 </div>
-                            </div>
-                            
-                            {/* Schedule Tab Content */}
-                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${activeTab === 'Schedule' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                 <div className="overflow-hidden">
-                                     <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Task Type</label>
-                                            <div className="flex bg-gray-200 rounded-lg p-1">
-                                                <button type="button" onClick={() => setTaskType('Fixed')} className={`w-1/2 py-1.5 text-sm font-semibold rounded-md transition-all ${taskType === 'Fixed' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Fixed</button>
-                                                <button type="button" onClick={() => setTaskType('Flexible')} className={`w-1/2 py-1.5 text-sm font-semibold rounded-md transition-all ${taskType === 'Flexible' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Flexible</button>
-                                            </div>
-                                        </div>
-                                         <div>
-                                            <label htmlFor="task-reminder" className="block text-sm font-medium text-gray-700 mb-1">Reminder</label>
-                                            <div className="relative">
-                                                <select
-                                                    id="task-reminder"
-                                                    value={reminder === null ? 'none' : reminder.toString()}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        setReminder(val === 'none' ? null : Number(val));
-                                                    }}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-sm"
-                                                >
-                                                    <option value="none">No notification</option>
-                                                    <option value="0">On time</option>
-                                                    <option value="5">5 minutes before</option>
-                                                    <option value="10">10 minutes before</option>
-                                                    <option value="15">15 minutes before</option>
-                                                    <option value="30">30 minutes before</option>
-                                                    <option value="60">1 hour before</option>
-                                                </select>
-                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700">
-                                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">Duration (in minutes)</label>
-                                            <input type="number" id="duration" placeholder="e.g. 30" value={duration} onChange={e => setDuration(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" min="0" />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="due-day" className="block text-sm font-medium text-gray-700 mb-1">Due Day</label>
-                                            <input type="date" id="due-day" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
-                                        </div>
-
-                                        <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${taskType === 'Fixed' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                            <div className="overflow-hidden">
-                                                <div className="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
-                                                    <div>
-                                                        <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                                                        <input type="date" id="start-date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
-                                                    </div>
-                                                    <div>
-                                                        <label htmlFor="start-time" className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                                                        <input type="time" id="start-time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                            )}
+                            {startTime && taskType === 'Fixed' && (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-100 text-green-800 text-xs font-semibold animate-page-fade-in">
+                                    <ClockIcon className="w-3.5 h-3.5" />
+                                    <span className="truncate">Starts {formatChipDate(startDate || todayStr)}, {new Date('1970-01-01T' + startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                                 </div>
-                            </div>
-
-                             {/* Subtask Tab Content */}
-                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${activeTab === 'Subtask' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                <div className="overflow-hidden">
-                                    <div className="bg-white p-4 rounded-xl shadow-sm">
-                                        <label htmlFor="subtask-input" className="block text-sm font-medium text-gray-700 mb-1">Add Subtask</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                id="subtask-input"
-                                                type="text"
-                                                placeholder="e.g. Research competitors"
-                                                value={newSubtaskText}
-                                                onChange={(e) => setNewSubtaskText(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSubtask())}
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                            />
-                                            <button 
-                                                type="button" 
-                                                onClick={handleAddSubtask} 
-                                                className="flex-shrink-0 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors"
-                                                aria-label="Add subtask"
-                                            >
-                                                <PlusIconHeader />
-                                            </button>
+                            )}
+                            {dueDate && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 text-gray-800 text-xs font-semibold animate-page-fade-in"><span>Due {formatChipDate(dueDate)}</span></div>)}
+                            {category && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-100 text-blue-800 text-xs font-semibold animate-page-fade-in"><span>{category}</span></div>)}
+                         </div>
+                        <div className="flex items-center justify-end">
+                            <div className="flex items-center gap-1">
+                                <button type="button" title={taskType === 'Fixed' ? "Set as Flexible" : "Set as Fixed"} onClick={() => setTaskType(p => p === 'Fixed' ? 'Flexible' : 'Fixed')} className={`p-2 rounded-full transition-colors ${taskType === 'Fixed' ? 'text-blue-600 bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}><LockIcon className="w-5 h-5" /></button>
+                                {taskType === 'Fixed' && (
+                                     <div ref={startTimeIconRef} className="relative">
+                                        <button type="button" title="Set Start Date" onClick={() => handlePopoverToggle('startTime', startTimeIconRef)} className={`p-2 rounded-full transition-colors ${startTime ? 'text-blue-600 bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}><ClockIcon className="w-5 h-5" /></button>
+                                        {activePopover === 'startTime' && (
+                                            <div className="absolute w-56 bg-white rounded-lg shadow-lg p-3 z-10 animate-page-fade-in space-y-3" style={popoverPosition}>
+                                                <div><label className="text-xs font-medium text-gray-500">Start Date</label><input type="date" value={startDate || todayStr} onChange={e => setStartDate(e.target.value)} className="w-full mt-1 p-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"/></div>
+                                                <div><label className="text-xs font-medium text-gray-500">Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full mt-1 p-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"/></div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                <div ref={calendarIconRef} className="relative">
+                                    <button type="button" title="Set Due Date" onClick={() => handlePopoverToggle('dueDate', calendarIconRef)} className={`p-2 rounded-full transition-colors ${dueDate ? 'text-blue-600 bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}><CalendarIcon className="w-5 h-5" /></button>
+                                    {activePopover === 'dueDate' && (
+                                        <div className="absolute w-56 bg-white rounded-lg shadow-lg p-3 z-10 animate-page-fade-in" style={popoverPosition}>
+                                           <div><label className="text-xs font-medium text-gray-500">Due Date</label><input type="date" value={dueDate} onChange={e => { setDueDate(e.target.value); }} className="w-full mt-1 p-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"/></div>
                                         </div>
-
-                                        <div className="mt-4 space-y-2">
-                                            {subtasks.map(sub => (
-                                                <div key={sub.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
-                                                    <div className="flex items-center gap-3">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={sub.completed}
-                                                            onChange={() => handleToggleSubtask(sub.id)}
-                                                            className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                        />
-                                                        <span className={`text-sm ${sub.completed ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                                                            {sub.text}
-                                                        </span>
-                                                    </div>
-                                                    <button type="button" onClick={() => handleDeleteSubtask(sub.id)} className="text-gray-400 hover:text-red-500">
-                                                        <TrashIcon />
-                                                    </button>
-                                                </div>
+                                    )}
+                                </div>
+                                <div ref={listIconRef} className="relative">
+                                    <button type="button" title="Select List" onClick={() => handlePopoverToggle('list', listIconRef)} className={`p-2 rounded-full transition-colors ${category ? 'text-blue-600 bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}><TagIcon className="w-5 h-5" /></button>
+                                    {activePopover === 'list' && (
+                                        <div className="absolute w-48 bg-white rounded-lg shadow-lg p-2 z-10 animate-page-fade-in max-h-48 overflow-y-auto" style={popoverPosition}>
+                                            {listOptions.map(listName => (
+                                                <button key={listName} type="button" onClick={() => { setCategory(listName); setActivePopover(null); }} className={`w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${category === listName ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>
+                                                    <span>{listName}</span>
+                                                    {category === listName && <CheckIcon className="w-4 h-4" />}
+                                                </button>
                                             ))}
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
+                                <button type="button" title="Add Subtasks" onClick={() => setIsSubtaskSectionVisible(p => !p)} className={`p-2 rounded-full transition-colors ${isSubtaskSectionVisible ? 'text-blue-600 bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}><ListCheckIcon className="w-5 h-5" /></button>
+                                <div ref={reminderIconRef} className="relative">
+                                    <button type="button" title="Set Reminder" onClick={() => handlePopoverToggle('reminder', reminderIconRef)} className={`p-2 rounded-full transition-colors ${reminder !== null ? 'text-blue-600 bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}>
+                                        <BellIcon className="w-5 h-5" />
+                                    </button>
+                                    {activePopover === 'reminder' && (
+                                        <div className="absolute w-48 bg-white rounded-lg shadow-lg p-2 z-10 animate-page-fade-in max-h-48 overflow-y-auto" style={popoverPosition}>
+                                            {reminderOptions.map(option => (
+                                                <button
+                                                    key={option.label}
+                                                    type="button"
+                                                    onClick={() => { setReminder(option.value); setActivePopover(null); }}
+                                                    className={`w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${reminder === option.value ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}
+                                                >
+                                                    <span>{option.label}</span>
+                                                    {reminder === option.value && <CheckIcon className="w-4 h-4" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <button type="button" title={isTodayLocked ? "Due today" : "Toggle Today"} onClick={handleToggleToday} className={`p-2 rounded-full transition-colors ${isToday ? 'text-yellow-500 bg-yellow-100' : 'text-gray-500 hover:bg-gray-100'} ${isTodayLocked ? 'opacity-70 cursor-default' : ''}`}><StarIcon className="w-5 h-5" /></button>
+                                <button type="button" title="Mark as Important" onClick={() => setIsImportant(p => !p)} className={`p-2 rounded-full transition-colors ${isImportant ? 'text-red-600 bg-red-100' : 'text-gray-500 hover:bg-gray-100'}`}><FlagIcon className="w-4 h-4" /></button>
                             </div>
                         </div>
-
                     </div>
-                </form>
-            </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                    <button type="submit" disabled={loading || !title.trim()} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl fab-shadow hover:bg-blue-700 transition-colors w-full disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        {loading && <RefreshSpinnerIcon />}
+                        <span>{loading ? 'Saving...' : 'Create Task'}</span>
+                    </button>
+                </div>
+            </form>
         </div>
     );
 };
