@@ -1,6 +1,5 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
-import { GoogleGenAI, LiveServerMessage, Modality, Blob } from "@google/genai";
 import { TodayIcon, ListsIcon, FocusIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon } from '../icons/Icons';
 import AddMomentScreen, { NewMomentData } from '../../screens/AddMomentScreen';
 import { takePhotoWithCapacitor } from '../../utils/permissions';
@@ -8,27 +7,13 @@ import { useData } from '../../contexts/DataContext';
 import { Moment } from '../../data/mockData';
 import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
 
-// --- Audio Helper Functions for Gemini Live API ---
-function encode(bytes: Uint8Array) {
-    let binary = '';
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
+// --- Web Speech API Setup ---
+// Extend the Window interface for TypeScript
+interface IWindow extends Window {
+  SpeechRecognition: any;
+  webkitSpeechRecognition: any;
 }
-
-function createBlob(data: Float32Array): Blob {
-  const l = data.length;
-  const int16 = new Int16Array(l);
-  for (let i = 0; i < l; i++) {
-    int16[i] = data[i] * 32768;
-  }
-  return {
-    data: encode(new Uint8Array(int16.buffer)),
-    mimeType: 'audio/pcm;rate=16000',
-  };
-}
+const SpeechRecognition = (window as any as IWindow).SpeechRecognition || (window as any as IWindow).webkitSpeechRecognition;
 
 
 const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
@@ -50,7 +35,6 @@ const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label
 const BottomNavBar: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { addMoment } = useData();
-    const ai = useMemo(() => new GoogleGenAI({ apiKey: process.env.API_KEY }), []);
 
     // State for the Add Moment flow
     const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
@@ -65,99 +49,77 @@ const BottomNavBar: React.FC = () => {
     
     const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isLongPressRef = useRef(false);
-    
-    const sessionPromiseRef = useRef<Promise<any> | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
-    const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
-    
-    const transcriptionRef = useRef('');
+    const recognitionRef = useRef<any | null>(null);
+    const finalTranscriptRef = useRef('');
 
-    // --- Voice Input Logic ---
+    // --- Voice Input Logic using Web Speech API ---
 
-    const stopRecording = () => {
+    const stopRecording = useCallback(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
         setIsRecording(false);
-        setTimeout(() => setShowRecordingUI(false), 300);
-        setLiveTranscription('');
-
-        streamRef.current?.getTracks().forEach(track => track.stop());
-        sourceNodeRef.current?.disconnect();
-        scriptProcessorRef.current?.disconnect();
-        audioContextRef.current?.close();
-
-        streamRef.current = null;
-        scriptProcessorRef.current = null;
-        sourceNodeRef.current = null;
-        audioContextRef.current = null;
-
-        sessionPromiseRef.current?.then(session => session.close());
-        sessionPromiseRef.current = null;
-    };
+        setTimeout(() => setShowRecordingUI(false), 300); // Allow for fade-out
+    }, []);
     
     const startRecording = async () => {
+        if (!SpeechRecognition) {
+            alert("Speech recognition is not supported in this browser.");
+            return;
+        }
+
         try {
-            streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // Check for microphone permission implicitly by starting
             setShowRecordingUI(true);
             setIsRecording(true);
-            transcriptionRef.current = '';
+            finalTranscriptRef.current = '';
             setLiveTranscription('');
 
-            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-            sourceNodeRef.current = audioContextRef.current.createMediaStreamSource(streamRef.current);
-            scriptProcessorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+            recognitionRef.current = new SpeechRecognition();
+            const rec = recognitionRef.current;
+            rec.lang = 'zh-CN';
+            rec.continuous = true;
+            rec.interimResults = true;
 
-            sessionPromiseRef.current = ai.live.connect({
-                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-                callbacks: {
-                    onopen: () => {
-                        if (sourceNodeRef.current && scriptProcessorRef.current && audioContextRef.current) {
-                            sourceNodeRef.current.connect(scriptProcessorRef.current);
-                            scriptProcessorRef.current.connect(audioContextRef.current.destination);
-                        }
-                    },
-                    onmessage: (message: LiveServerMessage) => {
-                        if (message.serverContent?.inputTranscription) {
-                            const newTextChunk = message.serverContent.inputTranscription.text;
-                            transcriptionRef.current += newTextChunk;
-                            const cleanedText = transcriptionRef.current.replace(/<noise>|<unk>/g, ' ').replace(/\s+/g, ' ').trim();
-                            setLiveTranscription(cleanedText);
-                        }
-                        // Ignore audio output from the model as we only want transcription
-                    },
-                    onclose: () => {
-                        const finalText = transcriptionRef.current.replace(/<noise>|<unk>/g, ' ').replace(/\s+/g, ' ').trim();
-                        if (finalText) {
-                            setInitialAIPrompt(finalText);
-                            setIsAddTaskWithAIOpen(true);
-                        }
-                        transcriptionRef.current = ''; // Reset for next session
-                    },
-                    onerror: (e: ErrorEvent) => {
-                        console.error('Live session error:', e);
-                        alert('Voice recognition failed. Please try again.');
-                        stopRecording();
+            rec.onresult = (event: any) => {
+                let interimTranscript = '';
+                finalTranscriptRef.current = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscriptRef.current += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
                     }
-                },
-                config: {
-                    responseModalities: [Modality.AUDIO], // Required by API, but we will ignore the audio output
-                    inputAudioTranscription: {
-                        languageCodes: ['cmn-Hans-CN']
-                    },
-                },
-            });
-
-            scriptProcessorRef.current.onaudioprocess = (event) => {
-                const inputData = event.inputBuffer.getChannelData(0);
-                const pcmBlob = createBlob(inputData);
-                sessionPromiseRef.current?.then((session) => {
-                    session.sendRealtimeInput({ media: pcmBlob });
-                });
+                }
+                setLiveTranscription(finalTranscriptRef.current + interimTranscript);
             };
+
+            rec.onend = () => {
+                stopRecording();
+                const finalText = finalTranscriptRef.current.trim();
+                if (finalText) {
+                    setInitialAIPrompt(finalText);
+                    setIsAddTaskWithAIOpen(true);
+                }
+                recognitionRef.current = null;
+            };
+
+            rec.onerror = (event: any) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'not-allowed') {
+                    alert('Microphone access was denied. Please allow it in your browser settings.');
+                } else {
+                    alert(`An error occurred during voice recognition: ${event.error}`);
+                }
+                stopRecording();
+            };
+
+            rec.start();
 
         } catch (err) {
             console.error('Failed to start recording:', err);
-            alert('Could not access microphone. Please check permissions.');
+            alert('Could not start recording. Please check microphone permissions.');
+            stopRecording();
         }
     };
 
@@ -177,6 +139,7 @@ const BottomNavBar: React.FC = () => {
         } else {
             setIsMenuOpen(prev => !prev);
         }
+        isLongPressRef.current = false;
     };
 
     const handlePointerLeave = () => {
@@ -223,23 +186,25 @@ const BottomNavBar: React.FC = () => {
 
     return (
         <>
+            {/* Recording UI */}
             {showRecordingUI && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-page-fade-in backdrop-blur-sm">
-                    <div className="w-40 h-40 bg-[var(--color-primary-500)]/50 rounded-full flex items-center justify-center animate-pulse-recording">
-                        <MicrophoneIcon className="w-16 h-16 text-white" />
+                <>
+                    <div className="fixed inset-0 bg-black/50 z-40 animate-page-fade-in backdrop-blur-sm" onClick={stopRecording} />
+                    <div 
+                        className="fixed left-1/2 -translate-x-1/2 w-40 h-40 bg-[var(--color-primary-500)]/40 rounded-full flex items-center justify-center animate-pulse-recording z-40 pointer-events-none"
+                        style={{ bottom: `calc(1rem + env(safe-area-inset-bottom) - 2.5rem)` }}
+                    />
+                     <div
+                        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-50 transition-all duration-300 ease-out"
+                        style={{ bottom: `calc(7rem + env(safe-area-inset-bottom))` }}
+                    >
+                        <div className="bg-black/70 backdrop-blur-md rounded-xl p-4 text-white text-center text-base animate-page-fade-in min-h-[3.5rem] flex items-center justify-center">
+                            <p>{liveTranscription || 'Listening...'}<span className="inline-block w-1 h-4 bg-white ml-1 animate-pulse"></span></p>
+                        </div>
                     </div>
-                </div>
+                </>
             )}
-             {showRecordingUI && (
-                <div
-                    className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-50 transition-all duration-300 ease-out"
-                    style={{ bottom: `calc(7rem + env(safe-area-inset-bottom))` }}
-                >
-                    <div className="bg-black/70 backdrop-blur-md rounded-xl p-4 text-white text-center text-sm animate-page-fade-in min-h-[3.5rem] flex items-center justify-center">
-                        <p>{liveTranscription}<span className="inline-block w-1 h-4 bg-white ml-1 animate-pulse"></span></p>
-                    </div>
-                </div>
-            )}
+
             {/* Backdrop & Floating Action Menu */}
             <div
                 className={`fixed inset-0 z-40 transition-all duration-300 ${isMenuOpen ? 'visible' : 'invisible'}`}
@@ -295,7 +260,7 @@ const BottomNavBar: React.FC = () => {
 
             {/* FAB Button - positioned independently */}
              <div
-                className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 transform -translate-x-[calc(50%-0px)]"
+                className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
                 style={{ bottom: `calc(1rem + env(safe-area-inset-bottom))` }}
              >
                 <button
@@ -305,7 +270,7 @@ const BottomNavBar: React.FC = () => {
                     className={`w-16 h-16 bg-[var(--color-primary-500)] text-[var(--color-on-primary)] rounded-full flex items-center justify-center fab-shadow transform transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-200)] ${isMenuOpen ? 'rotate-[-225deg]' : ''} ${isRecording ? 'animate-fab-pulse' : ''}`}
                     aria-haspopup="true"
                     aria-expanded={isMenuOpen}
-                    aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+                    aria-label={isMenuOpen ? "Close menu" : (isRecording ? "Stop recording" : "Open menu or long-press to record")}
                 >
                     {isRecording ? <MicrophoneIcon className="w-8 h-8"/> : <PlusIcon />}
                 </button>
