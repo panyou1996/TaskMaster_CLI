@@ -51,7 +51,6 @@ const TodayScreen: React.FC = () => {
     const [isTimeChangeConfirmOpen, setIsTimeChangeConfirmOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [timeToSet, setTimeToSet] = useState<string | null>(null);
-    const [editInitialTab, setEditInitialTab] = useState<'Basic' | 'Schedule' | 'Subtask'>('Basic');
     const [expandedTaskIds, setExpandedTaskIds] = useState(() =>
         new Set(allTasks.filter(t => !t.completed && t.subtasks && t.subtasks.length > 0).map(t => t.id))
     );
@@ -220,7 +219,6 @@ const TodayScreen: React.FC = () => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) {
             setSelectedTask({ ...task, today: true });
-            setEditInitialTab('Schedule');
             setIsEditOpen(true);
         }
     };
@@ -281,7 +279,6 @@ const TodayScreen: React.FC = () => {
     };
 
     const handleOpenEditTask = () => {
-        setEditInitialTab('Basic');
         setIsDetailOpen(false);
         setIsEditOpen(true);
     };
@@ -844,7 +841,6 @@ const TodayScreen: React.FC = () => {
                 onClose={handleCloseEditTask}
                 task={selectedTask}
                 onSave={handleSaveTask}
-                initialTab={editInitialTab}
             />
             <SettingsScreen 
                 isOpen={isSettingsOpen}

@@ -423,7 +423,12 @@ const PlanScreen: React.FC = () => {
             <EditListScreen isOpen={isEditListOpen} onClose={handleCloseEditModal} list={listToEdit} onSaveList={handleSaveList} onDeleteList={handleDeleteList} />
             <AddTaskScreen isOpen={isAddTaskOpen} onClose={() => setIsAddTaskOpen(false)} initialDate={formatDateToYYYYMMDD(selectedDate)} onAddTask={handleAddTask} />
             <TaskDetailScreen isOpen={isDetailOpen} onClose={handleCloseTaskDetail} task={selectedTask} onEdit={handleOpenEditTask} />
-            <EditTaskScreen isOpen={isEditOpen} onClose={handleCloseEditTask} task={selectedTask} onSave={handleSaveTask} />
+            <EditTaskScreen
+                isOpen={isEditOpen}
+                onClose={handleCloseEditTask}
+                task={selectedTask}
+                onSave={handleSaveTask}
+            />
         </MainLayout>
     );
 };
