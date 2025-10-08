@@ -73,8 +73,8 @@ const RecommendTasksScreen: React.FC<RecommendTasksScreenProps> = ({ isOpen, onC
         
         {/* Content */}
         <div
-          className="p-4 space-y-3 pb-8 overflow-y-auto"
-          style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}
+          className="p-4 space-y-3 pb-24 overflow-y-auto"
+          style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
         >
           {tasks.length > 0 ? (
               tasks.map(task => {
