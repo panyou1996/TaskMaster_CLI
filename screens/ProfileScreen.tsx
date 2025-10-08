@@ -4,7 +4,6 @@ import MainLayout from '../components/layouts/MainLayout';
 import { ChevronLeftIcon, EditIcon } from '../components/icons/Icons';
 import { useData } from '../contexts/DataContext';
 import { supabase } from '../utils/supabase';
-import useLocalStorage from '../hooks/useLocalStorage';
 
 // Helper to convert data URL to Blob
 function dataURLtoBlob(dataurl: string): Blob {
@@ -69,9 +68,8 @@ const resizeImage = (file: File, maxWidth: number, maxHeight: number, quality: n
 
 const ProfileScreen: React.FC = () => {
     const navigate = useNavigate();
-    const { profile, setProfile, tasks: allTasks, moments: momentsData, logout, user } = useData();
+    const { profile, setProfile, tasks: allTasks, moments: momentsData, logout, user, focusHistory } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [focusHistory] = useLocalStorage<{ plantId: number; date: string; plantType: string; duration: number; }[]>('focusHistory', []);
 
     const tasksCompleted = useMemo(() => {
         return allTasks.filter(task => task.completed).length;
@@ -90,7 +88,7 @@ const ProfileScreen: React.FC = () => {
         const totalMinutes = focusHistory.reduce((sum, session) => sum + (session.duration || 0), 0);
 
         // Calculate focus streak
-        const uniqueDates = [...new Set(focusHistory.map(s => s.date))].sort().reverse();
+        const uniqueDates = [...new Set(focusHistory.map(s => s.session_date))].sort().reverse();
         if (uniqueDates.length === 0) {
             return { totalFocusMinutes: totalMinutes, focusStreak: 0 };
         }

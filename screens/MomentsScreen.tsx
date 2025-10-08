@@ -1,7 +1,8 @@
+
 import React, { useState, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
-import { MomentsIcon, CalendarIcon, TagIcon, PlusIconHeader, ChevronDownIcon, RefreshSpinnerIcon } from '../components/icons/Icons';
+import { PlusIconHeader, ChevronDownIcon, RefreshSpinnerIcon, SearchIcon } from '../components/icons/Icons';
 import { EmptyMomentsIllustration } from '../components/illustrations/Illustrations';
 import { useData } from '../contexts/DataContext';
 import { Moment } from '../data/mockData';
@@ -143,12 +144,16 @@ const MomentsScreen: React.FC = () => {
                         className="px-6 pt-6 pb-4 flex-shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-4"
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
-                         <div className="w-6" /> {/* Spacer */}
+                         <div className="flex justify-start">
+                            <button className="text-gray-600 p-1">
+                                <SearchIcon />
+                            </button>
+                         </div>
                         <div className="flex justify-center">
                             <div className="grid grid-cols-3 bg-gray-200 rounded-lg p-1 w-full max-w-xs">
-                                <button onClick={() => setViewMode('moments')} className={`flex justify-center items-center gap-1.5 py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'moments' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}><MomentsIcon/> Grid</button>
-                                <button onClick={() => setViewMode('calendar')} className={`flex justify-center items-center gap-1.5 py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}><CalendarIcon/> Calendar</button>
-                                <button onClick={() => setViewMode('tags')} className={`flex justify-center items-center gap-1.5 py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'tags' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}><TagIcon/> Tags</button>
+                                <button onClick={() => setViewMode('moments')} className={`flex justify-center items-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'moments' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Grid</button>
+                                <button onClick={() => setViewMode('calendar')} className={`flex justify-center items-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Calendar</button>
+                                <button onClick={() => setViewMode('tags')} className={`flex justify-center items-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'tags' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Tags</button>
                             </div>
                         </div>
                         <div className="flex justify-end">

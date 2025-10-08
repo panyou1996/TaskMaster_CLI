@@ -6,9 +6,11 @@ import {
     TaskList, 
     Moment, 
     UserProfile,
+    FocusSession,
     initialTasksData,
     initialListsData,
     initialMomentsData,
+    initialFocusHistoryData,
 } from '../data/mockData';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -16,7 +18,8 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 type OperationType = 
     | 'ADD_TASK' | 'UPDATE_TASK' | 'DELETE_TASK'
     | 'ADD_LIST' | 'UPDATE_LIST' | 'DELETE_LIST'
-    | 'ADD_MOMENT' | 'UPDATE_MOMENT' | 'DELETE_MOMENT';
+    | 'ADD_MOMENT' | 'UPDATE_MOMENT' | 'DELETE_MOMENT'
+    | 'ADD_FOCUS_SESSION';
 
 interface OfflineOperation {
     id: string; // Unique ID for the operation itself
@@ -53,6 +56,9 @@ interface DataContextType {
     addMoment: (momentData: Omit<Moment, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>) => Promise<void>;
     updateMoment: (momentId: number | string, updates: Partial<Moment>) => Promise<void>;
     deleteMoment: (momentId: number | string) => Promise<void>;
+
+    focusHistory: FocusSession[];
+    addFocusSession: (sessionData: Omit<FocusSession, 'id' | 'user_id' | 'created_at' | 'status'>) => Promise<void>;
 
     profile: UserProfile | null;
     setProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>;
@@ -204,6 +210,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [moments, setMoments] = useLocalStorage<Moment[]>('moments', initialMomentsData);
     const [profile, setProfile] = useLocalStorage<UserProfile | null>('userProfile', null);
     const [tags, setTags] = useLocalStorage<string[]>('checkinTags', []);
+    const [focusHistory, setFocusHistory] = useLocalStorage<FocusSession[]>('focusHistory', initialFocusHistoryData);
 
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -297,6 +304,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         success = true;
                         break;
                     }
+                    case 'ADD_FOCUS_SESSION': {
+                        const { data: synced, error } = await supabase.from('focus_sessions').insert({ ...operation.payload.sessionData, user_id: targetUser.id }).select().single();
+                        if (error) throw error;
+                        setFocusHistory(current => current.map(s => s.plant_id.toString() === operation.tempId ? { ...synced, status: 'synced' } : s));
+                        success = true;
+                        break;
+                    }
                 }
                 if (success) {
                     processedOperationIds.add(operation.id);
@@ -317,7 +331,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setOfflineQueue(current => current.filter(op => !processedOperationIds.has(op.id)));
         }
         isProcessingQueue.current = false;
-    }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments]);
+    }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments, setFocusHistory]);
     
     const syncData = useCallback(async (userOverride?: User | null) => {
         const targetUser = userOverride !== undefined ? userOverride : user;
@@ -331,17 +345,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             await processOfflineQueueInternal(targetUser);
 
-            const [{ data: profileData, error: profileError }, { data: listsData, error: listsError }, { data: tasksData, error: tasksError }, { data: momentsData, error: momentsError }] = await Promise.all([
+            const [{ data: profileData, error: profileError }, { data: listsData, error: listsError }, { data: tasksData, error: tasksError }, { data: momentsData, error: momentsError }, { data: focusData, error: focusError }] = await Promise.all([
                 supabase.from('profiles').select('*').eq('id', targetUser.id).single(),
                 supabase.from('lists').select('*').eq('user_id', targetUser.id),
                 supabase.from('tasks').select('*').eq('user_id', targetUser.id),
-                supabase.from('moments').select('*').eq('user_id', targetUser.id)
+                supabase.from('moments').select('*').eq('user_id', targetUser.id),
+                supabase.from('focus_sessions').select('*').eq('user_id', targetUser.id)
             ]);
     
             if (profileError && profileError.code !== 'PGRST116') throw profileError;
             if (listsError) throw listsError;
             if (tasksError) throw tasksError;
             if (momentsError) throw momentsError;
+            if (focusError) throw focusError;
     
             if (profileData) setProfile(profileData);
             
@@ -383,6 +399,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     return [...syncedData, ...newItems];
                 });
             }
+            
+            if (focusData) {
+                setFocusHistory(currentLocal => {
+                    const localPending = currentLocal.filter(s => s.status === 'pending');
+                    const localPendingIds = new Set(localPending.map(s => s.plant_id));
+                    const serverDataFiltered = focusData.filter(s => !localPendingIds.has(s.plant_id));
+                    return [...serverDataFiltered, ...localPending];
+                });
+            }
+
         } catch (error) {
             console.error("A critical error occurred during data sync:");
             console.dir(error); // Use console.dir for better object inspection
@@ -391,7 +417,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } finally {
             setIsSyncing(false);
         }
-    }, [user, isOnline, isSyncing, offlineQueue, processOfflineQueueInternal, setProfile, setLists, setTasks, setMoments]);
+    }, [user, isOnline, isSyncing, offlineQueue, processOfflineQueueInternal, setProfile, setLists, setTasks, setMoments, setFocusHistory]);
 
     const syncDataRef = useRef(syncData);
     useEffect(() => {
@@ -448,6 +474,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setTasks([]);
               setLists([]);
               setMoments([]);
+              setFocusHistory([]);
               setOfflineQueue([]);
               setSyncError(null);
             }
@@ -455,7 +482,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
     
         return () => authListener.subscription.unsubscribe();
-    }, [setOfflineQueue]);
+    }, [setOfflineQueue, setFocusHistory]);
 
     const addToQueue = useCallback((operation: Omit<OfflineOperation, 'id' | 'timestamp'>) => {
         const newOperation: OfflineOperation = {
@@ -634,6 +661,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addToQueue({ type: 'DELETE_MOMENT', payload: { momentId } });
         }
     }, [setMoments, setOfflineQueue, addToQueue]);
+
+    const addFocusSession = useCallback(async (sessionData: Omit<FocusSession, 'id' | 'user_id' | 'created_at' | 'status'>) => {
+        if (!user) throw new Error("User not logged in");
+        const newSession: FocusSession = { ...sessionData, user_id: user.id, status: 'pending' };
+        setFocusHistory(current => [...current, newSession]);
+        
+        const { status, user_id, id, created_at, ...payloadForSupabase } = newSession;
+        
+        addToQueue({ type: 'ADD_FOCUS_SESSION', payload: { sessionData: payloadForSupabase }, tempId: String(sessionData.plant_id) });
+    }, [user, setFocusHistory, addToQueue]);
     
     const rescheduleAllNotifications = useCallback(async () => {
         if (!areNotificationsGloballyEnabled()) return;
@@ -693,14 +730,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         tasks, setTasks,
         lists, setLists,
         moments, setMoments,
+        focusHistory,
         profile, setProfile,
         syncData,
         isOnline, isSyncing, offlineQueue, syncError, clearOfflineQueue, rescheduleAllNotifications,
         addTask, updateTask, deleteTask,
         addList, updateList, deleteList,
         addMoment, updateMoment, deleteMoment,
+        addFocusSession,
         tags, addTag, deleteTag
-    }), [session, user, loading, tasks, lists, moments, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, tags, addTag, deleteTag]);
+    }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, deleteTag]);
 
     return (
         <DataContext.Provider value={value}>

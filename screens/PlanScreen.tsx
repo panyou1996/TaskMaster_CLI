@@ -331,7 +331,9 @@ const PlanScreen: React.FC = () => {
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                         <div className="flex justify-start">
-                            {/* Search Icon removed as requested */}
+                            <button className="text-gray-600 p-1">
+                                <SearchIcon />
+                            </button>
                         </div>
                         <div className="flex justify-center">
                             <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full max-w-48">

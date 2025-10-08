@@ -1,23 +1,26 @@
+
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import { Task } from '../data/mockData';
 import TaskSelector from '../components/focus/TaskSelector';
 import FocusSession from '../components/focus/FocusSession';
 import SessionComplete from '../components/focus/SessionComplete';
-import useLocalStorage from '../hooks/useLocalStorage';
 import FocusGarden from '../components/focus/FocusGarden';
 import MainLayout from '../components/layouts/MainLayout';
+import SyncStatusIndicator from '../components/common/SyncStatusIndicator';
+import SettingsScreen from './settings/SettingsScreen';
+import { InfoIcon } from '../components/icons/Icons';
 
 type FocusState = 'selecting' | 'session' | 'complete' | 'break';
 const plantTypes = ['cactus', 'fern', 'orchid', 'sunflower', 'bonsai'];
 
 const FocusScreen: React.FC = () => {
-  const { tasks, updateTask } = useData();
+  const { tasks, updateTask, focusHistory, addFocusSession, profile } = useData();
   const [focusState, setFocusState] = useState<FocusState>('selecting');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [currentPlant, setCurrentPlant] = useState<string | null>(null);
-  const [focusHistory, setFocusHistory] = useLocalStorage< { plantId: number; date: string; plantType: string; duration: number; }[] >('focusHistory', []);
   const [viewMode, setViewMode] = useState<'session' | 'garden'>('session');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const todayTasks = tasks.filter(t => t.today && !t.completed && t.duration);
 
@@ -31,12 +34,12 @@ const FocusScreen: React.FC = () => {
   const handleSessionComplete = () => {
     if (selectedTask && selectedTask.duration && currentPlant) {
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-      setFocusHistory(prevHistory => [...prevHistory, { 
-        plantId: Date.now(),
-        date: today, 
+      addFocusSession({
+        plant_id: Date.now(),
+        session_date: today,
         duration: selectedTask.duration!,
-        plantType: currentPlant,
-      }]);
+        plant_type: currentPlant,
+      });
     }
     setFocusState('complete');
   };
@@ -68,32 +71,46 @@ const FocusScreen: React.FC = () => {
   };
 
   const inSelectionMode = focusState === 'selecting';
+
+  if (!profile) {
+      return null;
+  }
   
   return (
     <MainLayout>
         <div className="absolute inset-0 flex flex-col">
             <header
-                className="px-6 pt-6 pb-4 flex justify-center items-center flex-shrink-0"
+                className="px-6 pt-6 pb-4 grid grid-cols-[auto_1fr_auto] items-center gap-4 flex-shrink-0"
                 style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
             >
-                {inSelectionMode ? (
-                    <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full max-w-48">
-                        <button
-                            onClick={() => setViewMode('session')}
-                            className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'session' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
-                        >
-                            Session
-                        </button>
-                        <button
-                            onClick={() => setViewMode('garden')}
-                            className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'garden' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
-                        >
-                            Garden
-                        </button>
-                    </div>
-                ) : (
-                    <h1 className="text-3xl font-bold text-gray-900">Focus</h1>
-                )}
+                <div className="flex justify-start">
+                    <SyncStatusIndicator profile={profile} onClick={() => setIsSettingsOpen(true)} />
+                </div>
+                <div className="flex justify-center">
+                    {inSelectionMode ? (
+                        <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full max-w-48">
+                            <button
+                                onClick={() => setViewMode('session')}
+                                className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'session' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
+                            >
+                                Session
+                            </button>
+                            <button
+                                onClick={() => setViewMode('garden')}
+                                className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'garden' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
+                            >
+                                Garden
+                            </button>
+                        </div>
+                    ) : (
+                        <h1 className="text-xl font-bold text-gray-900">Focus</h1>
+                    )}
+                </div>
+                 <div className="flex justify-end">
+                    <button className="text-gray-600 p-1" aria-label="Focus mode information">
+                        <InfoIcon className="w-6 h-6" />
+                    </button>
+                </div>
             </header>
 
             <main className="flex-1 flex flex-col overflow-y-auto pb-24">
@@ -117,6 +134,7 @@ const FocusScreen: React.FC = () => {
                 )}
             </main>
         </div>
+        <SettingsScreen isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </MainLayout>
   );
 };

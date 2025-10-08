@@ -65,11 +65,23 @@ export interface UserProfile {
     bio: string;
 }
 
+export interface FocusSession {
+    id?: number; // from supabase
+    user_id?: string;
+    created_at?: string;
+    plant_id: number; // from Date.now() on client
+    session_date: string; // YYYY-MM-DD
+    plant_type: string;
+    duration: number; // in minutes
+    status?: 'pending' | 'synced';
+}
+
 
 // Initial Data (will be replaced by fetched data)
 export const initialTasksData: Task[] = [];
 export const initialListsData: TaskList[] = [];
 export const initialMomentsData: Moment[] = [];
+export const initialFocusHistoryData: FocusSession[] = [];
 
 // This will be used only if a profile doesn't exist in the database yet.
 export const initialProfile: UserProfile = {

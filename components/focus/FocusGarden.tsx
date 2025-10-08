@@ -1,11 +1,8 @@
 import React from 'react';
+import { FocusSession } from '../../data/mockData';
 
 interface FocusGardenProps {
-  history: {
-    plantId: number;
-    date: string;
-    plantType: string;
-  }[];
+  history: FocusSession[];
 }
 
 const EmptyGardenIllustration: React.FC = () => (
@@ -21,7 +18,7 @@ const EmptyGardenIllustration: React.FC = () => (
 );
 
 const FocusGarden: React.FC<FocusGardenProps> = ({ history }) => {
-  const sortedHistory = [...history].sort((a, b) => b.plantId - a.plantId);
+  const sortedHistory = [...history].sort((a, b) => b.plant_id - a.plant_id);
 
   return (
     <div className="flex flex-col items-center w-full p-6">
@@ -31,16 +28,16 @@ const FocusGarden: React.FC<FocusGardenProps> = ({ history }) => {
         {sortedHistory.length > 0 ? (
           <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 p-4 bg-white rounded-xl card-shadow">
             {sortedHistory.map((plant) => {
-              const date = new Date(plant.date + 'T00:00:00'); // Ensure local timezone
+              const date = new Date(plant.session_date + 'T00:00:00'); // Ensure local timezone
               const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
               return (
-                <div key={plant.plantId} className="flex flex-col items-center">
+                <div key={plant.plant_id} className="flex flex-col items-center">
                   <div className="w-12 h-12">
                       <svg 
                           className="w-full h-full object-contain"
-                          aria-label={`A grown ${plant.plantType}`}
+                          aria-label={`A grown ${plant.plant_type}`}
                       >
-                          <use href={`#plant-${plant.plantType}-grown`} />
+                          <use href={`#plant-${plant.plant_type}-grown`} />
                       </svg>
                   </div>
                   <span className="text-xs text-gray-500 mt-1">{formattedDate}</span>
