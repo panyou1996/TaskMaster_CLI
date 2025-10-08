@@ -1,12 +1,11 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-// FIX: The 'LiveSession' type is not exported from '@google/genai'. It has been removed.
-import { GoogleGenAI, Type, LiveServerMessage, Modality, Blob } from "@google/genai";
+import { GoogleGenAI, LiveServerMessage, Modality, Blob } from "@google/genai";
 import { TodayIcon, ListsIcon, FocusIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon } from '../icons/Icons';
 import AddMomentScreen, { NewMomentData } from '../../screens/AddMomentScreen';
 import { takePhotoWithCapacitor } from '../../utils/permissions';
 import { useData } from '../../contexts/DataContext';
-import { Moment, Task } from '../../data/mockData';
+import { Moment } from '../../data/mockData';
 import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
 
 // --- Audio Helper Functions for Gemini Live API ---
@@ -50,24 +49,23 @@ const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label
 
 const BottomNavBar: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const { addMoment, addTask, lists } = useData();
+    const { addMoment } = useData();
     const ai = useMemo(() => new GoogleGenAI({ apiKey: process.env.API_KEY }), []);
 
     // State for the Add Moment flow
     const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
     const [initialPhotoData, setInitialPhotoData] = useState<string | null>(null);
     const [isAddTaskWithAIOpen, setIsAddTaskWithAIOpen] = useState(false);
+    const [initialAIPrompt, setInitialAIPrompt] = useState('');
     
     // --- Voice Input State & Refs ---
     const [isRecording, setIsRecording] = useState(false);
     const [showRecordingUI, setShowRecordingUI] = useState(false);
     const [liveTranscription, setLiveTranscription] = useState('');
     
-    // FIX: The `useRef` hook requires an initial value. It was called with 0 arguments.
     const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isLongPressRef = useRef(false);
     
-    // FIX: The `LiveSession` type is not exported, so `any` is used as a replacement.
     const sessionPromiseRef = useRef<Promise<any> | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -76,68 +74,7 @@ const BottomNavBar: React.FC = () => {
     
     const transcriptionRef = useRef('');
 
-    const listNames = useMemo(() => lists.map(l => l.name), [lists]);
-    const listColorMap = useMemo(() => new Map(lists.map(l => [l.name, l.color])), [lists]);
-
     // --- Voice Input Logic ---
-
-    const createTaskFromText = async (text: string) => {
-        if (!text) return;
-        
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const schema = {
-                type: Type.OBJECT,
-                properties: {
-                    title: { type: Type.STRING, description: "The main title of the task." },
-                    list: { type: Type.STRING, description: `The category for the task. Must be one of: ${listNames.join(', ')}.` },
-                    isImportant: { type: Type.BOOLEAN, description: "Whether the task is important." },
-                    isToday: { type: Type.BOOLEAN, description: "Whether the task is for today." },
-                    type: { type: Type.STRING, description: "The type of task, either 'Fixed' (has a specific time) or 'Flexible'.", enum: ['Fixed', 'Flexible'] },
-                    dueDate: { type: Type.STRING, description: "The due date in YYYY-MM-DD format." },
-                    startTime: { type: Type.STRING, description: "The start time in HH:MM (24-hour) format." },
-                    duration: { type: Type.INTEGER, description: "The estimated duration of the task in minutes." },
-                    notes: { type: Type.STRING, description: "Any additional notes or details." },
-                },
-                required: ["title", "list"]
-            };
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: text,
-                config: {
-                    systemInstruction: `You are an intelligent task parser. Analyze the user's text and extract task details. Your response MUST be in JSON format and strictly adhere to the provided schema. The user's available task lists are: ${listNames.join(', ')}. If the user specifies a list that isn't in the available lists, or doesn't specify one, use '${listNames[0] || 'Personal'}' as the default. If the user mentions a time without a date, assume it's for today (${today}). Infer if the task is important or for today based on keywords. A task with a specific startTime is 'Fixed', otherwise it is 'Flexible'.`,
-                    responseMimeType: "application/json",
-                    responseSchema: schema,
-                },
-            });
-
-            const parsed = JSON.parse(response.text);
-            const chosenList = listNames.includes(parsed.list) ? parsed.list : (listNames[0] || 'Personal');
-
-            const taskForContext: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'> = {
-                title: parsed.title,
-                category: chosenList,
-                important: parsed.isImportant || false,
-                today: parsed.isToday || !!parsed.startTime || false,
-                type: parsed.startTime ? 'Fixed' : 'Flexible',
-                dueDate: parsed.dueDate || undefined,
-                startDate: parsed.startTime ? (parsed.dueDate || today) : undefined,
-                startTime: parsed.startTime || undefined,
-                time: parsed.startTime ? parsed.startTime : '--:--',
-                duration: parsed.duration || undefined,
-                notes: parsed.notes || undefined,
-                subtasks: [],
-                color: listColorMap.get(chosenList) || 'gray',
-            };
-            await addTask(taskForContext);
-            alert(`Task created: ${parsed.title}`);
-
-        } catch (err) {
-            console.error("Gemini task creation from voice failed:", err);
-            alert("Sorry, I couldn't understand that. Please try rephrasing your task.");
-        }
-    };
 
     const stopRecording = () => {
         setIsRecording(false);
@@ -181,16 +118,18 @@ const BottomNavBar: React.FC = () => {
                     },
                     onmessage: (message: LiveServerMessage) => {
                         if (message.serverContent?.inputTranscription) {
-                            const newText = message.serverContent.inputTranscription.text;
-                            transcriptionRef.current += newText;
-                            setLiveTranscription(prev => prev + newText);
+                            const newTextChunk = message.serverContent.inputTranscription.text;
+                            transcriptionRef.current += newTextChunk;
+                            const cleanedText = transcriptionRef.current.replace(/<noise>|<unk>/g, ' ').replace(/\s+/g, ' ').trim();
+                            setLiveTranscription(cleanedText);
                         }
                         // Ignore audio output from the model as we only want transcription
                     },
-                    onclose: async () => {
-                        const finalText = transcriptionRef.current.trim();
+                    onclose: () => {
+                        const finalText = transcriptionRef.current.replace(/<noise>|<unk>/g, ' ').replace(/\s+/g, ' ').trim();
                         if (finalText) {
-                            await createTaskFromText(finalText);
+                            setInitialAIPrompt(finalText);
+                            setIsAddTaskWithAIOpen(true);
                         }
                         transcriptionRef.current = ''; // Reset for next session
                     },
@@ -202,7 +141,9 @@ const BottomNavBar: React.FC = () => {
                 },
                 config: {
                     responseModalities: [Modality.AUDIO], // Required by API, but we will ignore the audio output
-                    inputAudioTranscription: {},
+                    inputAudioTranscription: {
+                        languageCodes: ['cmn-Hans-CN']
+                    },
                 },
             });
 
@@ -379,6 +320,7 @@ const BottomNavBar: React.FC = () => {
             <AddTaskWithAIScreen
                 isOpen={isAddTaskWithAIOpen}
                 onClose={() => setIsAddTaskWithAIOpen(false)}
+                initialPrompt={initialAIPrompt}
             />
         </>
     );

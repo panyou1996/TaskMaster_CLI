@@ -7,9 +7,10 @@ import { RefreshSpinnerIcon, SparklesIcon, SendIcon, CloseIcon } from '../compon
 interface AddTaskWithAIScreenProps {
     isOpen: boolean;
     onClose: () => void;
+    initialPrompt?: string;
 }
 
-const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClose }) => {
+const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClose, initialPrompt }) => {
     const { addTask, lists } = useData();
     const [prompt, setPrompt] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -21,13 +22,19 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
 
     useEffect(() => {
         if (isOpen) {
-            setPrompt('');
+            setPrompt(initialPrompt || '');
             setError(null);
             setIsLoading(false);
             // Auto-focus the textarea when the modal opens
-            setTimeout(() => textareaRef.current?.focus(), 300);
+            setTimeout(() => {
+                textareaRef.current?.focus();
+                // If there's an initial prompt, move cursor to the end
+                if (initialPrompt) {
+                    textareaRef.current?.setSelectionRange(initialPrompt.length, initialPrompt.length);
+                }
+            }, 300);
         }
-    }, [isOpen]);
+    }, [isOpen, initialPrompt]);
 
     const handleGenerateTask = async (e: React.FormEvent) => {
         e.preventDefault();
