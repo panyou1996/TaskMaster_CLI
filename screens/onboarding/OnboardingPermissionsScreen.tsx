@@ -11,9 +11,6 @@ const QuestionMarkIcon: React.FC = () => (
 
 const OnboardingPermissionsScreen: React.FC = () => {
     const navigate = useNavigate();
-    const currentStep = 4;
-    const totalSteps = 4;
-    const dots = Array.from({ length: totalSteps }, (_, i) => i + 1);
     
     const handleAllow = async () => {
         await checkAndRequestCameraPermission();
@@ -57,13 +54,6 @@ const OnboardingPermissionsScreen: React.FC = () => {
                 <Button variant="secondary" onClick={handleNotNow}>Not Now</Button>
 
                 <div className="flex justify-center items-center gap-2 pt-2">
-                    {dots.map(step => (
-                        <div
-                            key={step}
-                            className={`h-2 rounded-full transition-all duration-300 ${step === currentStep ? 'w-2 bg-gray-800' : 'w-2 bg-gray-300'}`}
-                        />
-                    ))}
-                    {/* The design from the image has three dots, with the last one highlighted. Let's adjust to match it. */}
                     <div className="w-2 h-2 bg-gray-300 rounded-full" />
                     <div className="w-2 h-2 bg-gray-300 rounded-full" />
                     <div className="w-2 h-2 bg-gray-800 rounded-full" />

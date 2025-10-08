@@ -24,35 +24,38 @@ const FocusGarden: React.FC<FocusGardenProps> = ({ history }) => {
   const sortedHistory = [...history].sort((a, b) => b.plantId - a.plantId);
 
   return (
-    <div className="w-full max-w-md mx-auto px-6 pt-4">
+    <div className="flex flex-col items-center w-full p-6">
       <h2 className="text-xl font-bold text-gray-800 mb-3">My Focus Garden</h2>
-      {sortedHistory.length > 0 ? (
-        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 p-3 bg-white rounded-xl card-shadow">
-          {sortedHistory.map((plant) => {
-            const date = new Date(plant.date + 'T00:00:00'); // Ensure local timezone
-            const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
-            return (
-              <div key={plant.plantId} className="flex flex-col items-center">
-                <div className="w-12 h-12">
-                    <svg 
-                        className="w-full h-full object-contain"
-                        aria-label={`A grown ${plant.plantType}`}
-                    >
-                        <use href={`#plant-${plant.plantType}-grown`} />
-                    </svg>
+      
+      <div className="w-full max-w-md">
+        {sortedHistory.length > 0 ? (
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 p-4 bg-white rounded-xl card-shadow">
+            {sortedHistory.map((plant) => {
+              const date = new Date(plant.date + 'T00:00:00'); // Ensure local timezone
+              const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+              return (
+                <div key={plant.plantId} className="flex flex-col items-center">
+                  <div className="w-12 h-12">
+                      <svg 
+                          className="w-full h-full object-contain"
+                          aria-label={`A grown ${plant.plantType}`}
+                      >
+                          <use href={`#plant-${plant.plantType}-grown`} />
+                      </svg>
+                  </div>
+                  <span className="text-xs text-gray-500 mt-1">{formattedDate}</span>
                 </div>
-                <span className="text-xs text-gray-500 mt-1">{formattedDate}</span>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center text-center p-6 bg-white rounded-xl card-shadow">
-            <EmptyGardenIllustration />
-            <p className="font-semibold text-gray-700 mt-2">Your garden is waiting to grow.</p>
-            <p className="text-sm text-gray-500 mt-1">Complete a focus session to plant your first seed.</p>
-        </div>
-      )}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center py-10 px-4 bg-white rounded-xl card-shadow">
+              <EmptyGardenIllustration />
+              <p className="font-semibold text-gray-700 mt-2">Your garden is waiting to grow.</p>
+              <p className="text-sm text-gray-500 mt-1">Complete a focus session to plant your first seed.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

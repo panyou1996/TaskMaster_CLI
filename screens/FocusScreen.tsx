@@ -4,35 +4,22 @@ import { Task } from '../data/mockData';
 import TaskSelector from '../components/focus/TaskSelector';
 import FocusSession from '../components/focus/FocusSession';
 import SessionComplete from '../components/focus/SessionComplete';
-import { CloseIcon }  from '../components/icons/Icons';
 import useLocalStorage from '../hooks/useLocalStorage';
 import FocusGarden from '../components/focus/FocusGarden';
-
-interface FocusScreenProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+import MainLayout from '../components/layouts/MainLayout';
 
 type FocusState = 'selecting' | 'session' | 'complete' | 'break';
 const plantTypes = ['cactus', 'fern', 'orchid', 'sunflower', 'bonsai'];
 
-const FocusScreen: React.FC<FocusScreenProps> = ({ isOpen, onClose }) => {
+const FocusScreen: React.FC = () => {
   const { tasks, updateTask } = useData();
   const [focusState, setFocusState] = useState<FocusState>('selecting');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [currentPlant, setCurrentPlant] = useState<string | null>(null);
   const [focusHistory, setFocusHistory] = useLocalStorage< { plantId: number; date: string; plantType: string; duration: number; }[] >('focusHistory', []);
+  const [viewMode, setViewMode] = useState<'session' | 'garden'>('session');
 
   const todayTasks = tasks.filter(t => t.today && !t.completed && t.duration);
-
-  useEffect(() => {
-    if (isOpen) {
-      // Reset state when opening
-      setFocusState('selecting');
-      setSelectedTask(null);
-      setCurrentPlant(null);
-    }
-  }, [isOpen]);
 
   const handleTaskSelect = (task: Task) => {
     const randomPlant = plantTypes[Math.floor(Math.random() * plantTypes.length)];
@@ -58,54 +45,79 @@ const FocusScreen: React.FC<FocusScreenProps> = ({ isOpen, onClose }) => {
     if (selectedTask) {
       updateTask(selectedTask.id, { completed: true });
     }
-    setFocusState('selecting'); // Go back to task selection
+    setSelectedTask(null);
+    setFocusState('selecting');
+    setViewMode('session');
   };
   
   const handleStartBreak = () => {
+    setSelectedTask(null);
     setFocusState('break');
   };
 
   const handleNextTask = () => {
+    setSelectedTask(null);
     setFocusState('selecting');
+    setViewMode('session');
   };
+
+  const handleGoBackToSelection = () => {
+    setSelectedTask(null);
+    setFocusState('selecting');
+    setViewMode('session');
+  };
+
+  const inSelectionMode = focusState === 'selecting';
   
-  const handleClose = () => {
-    // TODO: Add confirmation if a session is active
-    onClose();
-  };
-
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 z-50 bg-[var(--color-background-primary)] flex flex-col animate-page-fade-in">
-      <header className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4" style={{ paddingTop: `calc(1rem + env(safe-area-inset-top))` }}>
-        <button onClick={handleClose} className="p-2 text-gray-500 bg-black/5 rounded-full hover:bg-black/10">
-            <CloseIcon />
-        </button>
-      </header>
+    <MainLayout>
+        <div className="absolute inset-0 flex flex-col">
+            <header
+                className="px-6 pt-6 pb-4 flex justify-center items-center flex-shrink-0"
+                style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
+            >
+                {inSelectionMode ? (
+                    <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full max-w-48">
+                        <button
+                            onClick={() => setViewMode('session')}
+                            className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'session' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
+                        >
+                            Session
+                        </button>
+                        <button
+                            onClick={() => setViewMode('garden')}
+                            className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'garden' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
+                        >
+                            Garden
+                        </button>
+                    </div>
+                ) : (
+                    <h1 className="text-3xl font-bold text-gray-900">Focus</h1>
+                )}
+            </header>
 
-      <main className="flex-1 flex flex-col overflow-y-auto">
-        {focusState === 'selecting' && (
-          <div className="flex flex-col" style={{ paddingTop: `calc(4rem + env(safe-area-inset-top))` }}>
-            <FocusGarden history={focusHistory} />
-            <TaskSelector tasks={todayTasks} onSelect={handleTaskSelect} />
-          </div>
-        )}
-        {focusState === 'session' && selectedTask && <FocusSession task={selectedTask} onComplete={handleSessionComplete} plantType={currentPlant} />}
-        {focusState === 'break' && <FocusSession onComplete={() => setFocusState('selecting')} plantType={null} />}
-        {focusState === 'complete' && selectedTask && (
-            <SessionComplete 
-                task={selectedTask}
-                plantType={currentPlant}
-                onMarkComplete={handleMarkComplete}
-                onStartBreak={handleStartBreak}
-                onNextTask={handleNextTask}
-            />
-        )}
-      </main>
-    </div>
+            <main className="flex-1 flex flex-col overflow-y-auto pb-24">
+                {focusState === 'selecting' && (
+                    viewMode === 'session' ? (
+                        <TaskSelector tasks={todayTasks} onSelect={handleTaskSelect} />
+                    ) : (
+                        <FocusGarden history={focusHistory} />
+                    )
+                )}
+                {focusState === 'session' && selectedTask && <FocusSession task={selectedTask} onComplete={handleSessionComplete} plantType={currentPlant} />}
+                {focusState === 'break' && <FocusSession onComplete={handleGoBackToSelection} plantType={null} />}
+                {focusState === 'complete' && selectedTask && (
+                    <SessionComplete 
+                        task={selectedTask}
+                        plantType={currentPlant}
+                        onMarkComplete={handleMarkComplete}
+                        onStartBreak={handleStartBreak}
+                        onNextTask={handleNextTask}
+                    />
+                )}
+            </main>
+        </div>
+    </MainLayout>
   );
 };
 

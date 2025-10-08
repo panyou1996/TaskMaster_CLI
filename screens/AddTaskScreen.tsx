@@ -14,6 +14,7 @@ export interface NewTaskData {
     dueDate: string;
     notes: string;
     subtasks: { id: number; text: string; completed: boolean }[];
+    reminder: number | null;
 }
 
 interface AddTaskScreenProps {
@@ -37,6 +38,7 @@ const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialD
     const [duration, setDuration] = useState('');
     const [dueDate, setDueDate] = useState('');
     const [notes, setNotes] = useState('');
+    const [reminder, setReminder] = useState<number | null>(15); // Default to 15 mins before
     
     const [activeTab, setActiveTab] = useState<'Basic' | 'Schedule' | 'Subtask'>('Basic');
     const [subtasks, setSubtasks] = useState<{ id: number; text: string; completed: boolean }[]>([]);
@@ -56,6 +58,7 @@ const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialD
         setDuration('');
         setDueDate('');
         setNotes('');
+        setReminder(15);
         setActiveTab('Basic');
         setSubtasks([]);
         setNewSubtaskText('');
@@ -113,7 +116,8 @@ const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialD
                     duration,
                     dueDate,
                     notes,
-                    subtasks
+                    subtasks,
+                    reminder
                 });
             }
             onClose();
@@ -272,6 +276,31 @@ const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialD
                                             <div className="flex bg-gray-200 rounded-lg p-1">
                                                 <button type="button" onClick={() => setTaskType('Fixed')} className={`w-1/2 py-1.5 text-sm font-semibold rounded-md transition-all ${taskType === 'Fixed' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Fixed</button>
                                                 <button type="button" onClick={() => setTaskType('Flexible')} className={`w-1/2 py-1.5 text-sm font-semibold rounded-md transition-all ${taskType === 'Flexible' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Flexible</button>
+                                            </div>
+                                        </div>
+                                         <div>
+                                            <label htmlFor="task-reminder" className="block text-sm font-medium text-gray-700 mb-1">Reminder</label>
+                                            <div className="relative">
+                                                <select
+                                                    id="task-reminder"
+                                                    value={reminder === null ? 'none' : reminder.toString()}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setReminder(val === 'none' ? null : Number(val));
+                                                    }}
+                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-sm"
+                                                >
+                                                    <option value="none">No notification</option>
+                                                    <option value="0">On time</option>
+                                                    <option value="5">5 minutes before</option>
+                                                    <option value="10">10 minutes before</option>
+                                                    <option value="15">15 minutes before</option>
+                                                    <option value="30">30 minutes before</option>
+                                                    <option value="60">1 hour before</option>
+                                                </select>
+                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700">
+                                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                                </div>
                                             </div>
                                         </div>
                                         <div>

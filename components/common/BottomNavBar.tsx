@@ -32,7 +32,6 @@ const BottomNavBar: React.FC = () => {
     const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
     const [initialPhotoData, setInitialPhotoData] = useState<string | null>(null);
     const [isAddTaskWithAIOpen, setIsAddTaskWithAIOpen] = useState(false);
-    const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
     
     const handleMomentButtonClick = async () => {
         setIsMenuOpen(false); // Close the FAB menu immediately
@@ -117,13 +116,7 @@ const BottomNavBar: React.FC = () => {
                     
                     <div /> {/* Placeholder for FAB */}
                     
-                    <button
-                        onClick={() => setIsFocusModeOpen(true)}
-                        className="flex flex-col items-center justify-center gap-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-200"
-                    >
-                        <FocusIcon />
-                        <span className="text-xs font-medium">Focus</span>
-                    </button>
+                    <NavItem to="/focus" icon={<FocusIcon />} label="Focus" />
                     <NavItem to="/moments" icon={<MomentsIcon />} label="Moments" />
                 </div>
             </div>
@@ -153,10 +146,6 @@ const BottomNavBar: React.FC = () => {
             <AddTaskWithAIScreen
                 isOpen={isAddTaskWithAIOpen}
                 onClose={() => setIsAddTaskWithAIOpen(false)}
-            />
-            <FocusScreen 
-                isOpen={isFocusModeOpen}
-                onClose={() => setIsFocusModeOpen(false)}
             />
         </>
     );

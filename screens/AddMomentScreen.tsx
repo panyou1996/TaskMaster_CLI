@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CheckIcon, PlusIconHeader, UploadImageIcon, RefreshSpinnerIcon } from '../components/icons/Icons';
 import { takePhotoWithCapacitor } from '../utils/permissions';
+import { useData } from '../contexts/DataContext';
 
 const CloseIcon: React.FC<{className?: string}> = ({className}) => (
     <svg className={`w-6 h-6 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -222,9 +223,10 @@ const ImageCropperModal: React.FC<ImageCropperModalProps> = ({ imageSrc, onCrop,
 
 
 const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAddMoment, initialImage }) => {
+    const { tags: allAvailableTags, addTag } = useData();
     const [title, setTitle] = useState('');
     const [notes, setNotes] = useState('');
-    const [tags, setTags] = useState<string[]>(['Work', 'Personal']);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [newTag, setNewTag] = useState('');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageToCrop, setImageToCrop] = useState<string | null>(null);
@@ -238,7 +240,7 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
             // Reset state when modal opens
             setTitle('');
             setNotes('');
-            setTags(['Work', 'Personal']);
+            setSelectedTags([]);
             setNewTag('');
             setImagePreview(null);
             setImageToCrop(null);
@@ -269,7 +271,7 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
             await onAddMoment({
                 title,
                 notes,
-                tags,
+                tags: selectedTags,
                 imageUrl: imagePreview,
             });
             onClose();
@@ -286,14 +288,19 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
     
     const handleAddTag = () => {
         const trimmedTag = newTag.trim();
-        if (trimmedTag && !tags.find(t => t.toLowerCase() === trimmedTag.toLowerCase())) {
-            setTags([...tags, trimmedTag]);
+        if (trimmedTag && !selectedTags.find(t => t.toLowerCase() === trimmedTag.toLowerCase())) {
+            setSelectedTags([...selectedTags, trimmedTag]);
+            addTag(trimmedTag); // Add to global list in context
             setNewTag('');
         }
     };
 
-    const handleRemoveTag = (tagToRemove: string) => {
-        setTags(tags.filter(tag => tag !== tagToRemove));
+    const handleToggleTag = (tagToToggle: string) => {
+        setSelectedTags(current => 
+            current.includes(tagToToggle) 
+                ? current.filter(t => t !== tagToToggle) 
+                : [...current, tagToToggle]
+        );
     };
 
     const handleTakePhoto = async () => {
@@ -342,6 +349,8 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
             fileInputRef.current.value = "";
         }
     };
+    
+    const unselectedTags = allAvailableTags.filter(t => !selectedTags.includes(t));
 
     return (
         <>
@@ -390,21 +399,32 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
                             />
                         </div>
                         
-                        <div className="rounded-xl p-4 bg-white">
+                         <div className="rounded-xl p-4 bg-white">
+                            <label className="block text-sm font-medium text-gray-700 mb-3">Tags</label>
                             <div className="flex flex-wrap gap-2">
-                                {tags.map(tag => (
-                                    <div key={tag} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${tag.toLowerCase() === 'work' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                                {selectedTags.map(tag => (
+                                    <button key={tag} onClick={() => handleToggleTag(tag)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-purple-100 text-purple-700">
                                         <span>{tag}</span>
-                                        <button onClick={() => handleRemoveTag(tag)} className="text-current opacity-70 hover:opacity-100">
-                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                                        </button>
-                                    </div>
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
                                 ))}
                             </div>
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                            {unselectedTags.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-gray-100">
+                                    <p className="text-xs font-medium text-gray-500 mb-2">Suggestions</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {unselectedTags.map(tag => (
+                                            <button key={tag} onClick={() => handleToggleTag(tag)} className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">
+                                                + {tag}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                             <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
                                  <input
                                     type="text"
-                                    placeholder="Add or create a tag"
+                                    placeholder="Add new tag..."
                                     value={newTag}
                                     onChange={(e) => setNewTag(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}

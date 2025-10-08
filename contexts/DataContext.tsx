@@ -11,6 +11,7 @@ import {
     initialMomentsData,
 } from '../data/mockData';
 import useLocalStorage from '../hooks/useLocalStorage';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 type OperationType = 
     | 'ADD_TASK' | 'UPDATE_TASK' | 'DELETE_TASK'
@@ -62,46 +63,33 @@ interface DataContextType {
     offlineQueue: OfflineOperation[];
     syncError: string | null;
     clearOfflineQueue: () => void;
+    rescheduleAllNotifications: () => Promise<void>;
+    
+    tags: string[];
+    addTag: (tag: string) => void;
+    deleteTag: (tag: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 const getErrorMessage = (error: unknown): string => {
-    // Log the full error for debugging purposes
-    console.error("Supabase error object:", error);
+    console.error("Supabase error object (raw):", error);
 
-    if (!error) {
-        return "An unknown error occurred.";
-    }
-    
-    // Check for nested error object (common in Supabase responses)
-    if (typeof error === 'object' && error !== null && 'error' in error && error.error && typeof error.error === 'object' && 'message' in error.error) {
-        const nestedError = error.error as { message: string, details?: string, hint?: string };
-        let msg = nestedError.message;
-        if (nestedError.details) msg += ` Details: ${nestedError.details}`;
-        if (nestedError.hint) msg += ` Hint: ${nestedError.hint}`;
-        return msg;
-    }
+    if (!error) return "An unknown error occurred.";
 
-    // Handle top-level Supabase PostgrestError objects
     if (typeof error === 'object' && error !== null && 'message' in error) {
-        const errObj = error as { message: string, details?: string, hint?: string, code?: string };
-        let msg = errObj.message;
-        if (errObj.details) msg += ` Details: ${errObj.details}`;
-        if (errObj.hint) msg += ` Hint: ${errObj.hint}`;
-        return msg;
+        return String((error as { message: unknown }).message);
     }
 
     if (error instanceof Error) {
         return error.message;
     }
-
-    // Fallback for other types of errors
+    
     try {
-        const str = JSON.stringify(error);
+        const str = JSON.stringify(error, null, 2);
         if (str !== '{}' && str !== '[]') return str;
     } catch {
-        // Fallback for circular structures or other stringify errors
+        // Fallback for circular structures
     }
 
     return String(error);
@@ -121,20 +109,17 @@ const cleanTaskForSupabase = (task: Partial<Task>) => {
 
     const cleanedPayload: { [key: string]: any } = { ...cleaned };
 
-    // Ensure nullable fields that might be empty strings are sent as null,
-    // only if the key exists in the update object.
     if ('dueDate' in cleanedPayload && (cleanedPayload.dueDate === '' || cleanedPayload.dueDate === undefined)) cleanedPayload.dueDate = null;
     if ('startDate' in cleanedPayload && (cleanedPayload.startDate === '' || cleanedPayload.startDate === undefined)) cleanedPayload.startDate = null;
     if ('startTime' in cleanedPayload && (cleanedPayload.startTime === '' || cleanedPayload.startTime === undefined)) cleanedPayload.startTime = null;
     if ('notes' in cleanedPayload && (cleanedPayload.notes === '' || cleanedPayload.notes === undefined)) cleanedPayload.notes = null;
     if ('today_assigned_date' in cleanedPayload && (cleanedPayload.today_assigned_date === '' || cleanedPayload.today_assigned_date === undefined)) cleanedPayload.today_assigned_date = null;
+    if ('reminder' in cleanedPayload && cleanedPayload.reminder === undefined) cleanedPayload.reminder = null;
     
-    // Ensure subtasks is an array if it's provided as part of the update.
     if ('subtasks' in cleanedPayload && (cleanedPayload.subtasks === undefined || cleanedPayload.subtasks === null)) {
         cleanedPayload.subtasks = [];
     }
 
-    // Explicitly remove any remaining keys with undefined values to prevent errors.
     Object.keys(cleanedPayload).forEach(key => {
         if (cleanedPayload[key] === undefined) {
             delete cleanedPayload[key];
@@ -142,6 +127,70 @@ const cleanTaskForSupabase = (task: Partial<Task>) => {
     });
 
     return cleanedPayload;
+};
+
+// --- Notification Helpers ---
+const getNotificationId = (taskId: number | string): number => {
+    if (typeof taskId === 'number') {
+        return taskId;
+    }
+    // For temp string IDs like "temp_1678886400000"
+    // Use a portion of the timestamp to create a unique 32-bit integer.
+    const timestampPart = parseInt(taskId.substring(taskId.length - 9), 10);
+    return timestampPart; 
+};
+
+const areNotificationsGloballyEnabled = () => {
+    try {
+        const item = window.localStorage.getItem('notifications_taskReminders');
+        return item ? JSON.parse(item) : true; // Default to true
+    } catch {
+        return true;
+    }
+};
+
+const scheduleNotification = async (task: Task) => {
+    const notificationId = getNotificationId(task.id);
+    await LocalNotifications.cancel({ notifications: [{ id: notificationId }] });
+
+    if (!areNotificationsGloballyEnabled() || task.reminder === null || task.reminder === undefined || !task.dueDate || !task.startTime || task.completed) {
+        return;
+    }
+
+    const [year, month, day] = task.dueDate.split('-').map(Number);
+    const [hour, minute] = task.startTime.split(':').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
+        return;
+    }
+    const dueAt = new Date(year, month - 1, day, hour, minute);
+    const notifyAt = new Date(dueAt.getTime() - task.reminder * 60 * 1000);
+
+    if (notifyAt < new Date()) {
+        return;
+    }
+
+    try {
+        await LocalNotifications.schedule({
+            notifications: [{
+                title: "Task Reminder",
+                body: task.title,
+                id: notificationId,
+                schedule: { at: notifyAt },
+                sound: 'default',
+            }]
+        });
+    } catch(e) {
+        console.error("Failed to schedule notification:", e)
+    }
+};
+
+const cancelNotification = async (taskId: number | string) => {
+    const notificationId = getNotificationId(taskId);
+    try {
+        await LocalNotifications.cancel({ notifications: [{ id: notificationId }] });
+    } catch(e) {
+        console.error("Failed to cancel notification:", e)
+    }
 };
 
 
@@ -154,6 +203,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [lists, setLists] = useLocalStorage<TaskList[]>('lists', initialListsData);
     const [moments, setMoments] = useLocalStorage<Moment[]>('moments', initialMomentsData);
     const [profile, setProfile] = useLocalStorage<UserProfile | null>('userProfile', null);
+    const [tags, setTags] = useLocalStorage<string[]>('checkinTags', []);
 
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -180,6 +230,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                      case 'ADD_TASK': {
                         const { data: synced, error } = await supabase.from('tasks').insert({ ...operation.payload.taskData, user_id: targetUser.id }).select().single();
                         if (error) throw error;
+                        await cancelNotification(operation.tempId!);
+                        await scheduleNotification({ ...synced, status: 'synced' });
                         setTasks(current => current.map(t => t.id === operation.tempId ? { ...synced, status: 'synced' } : t));
                         success = true;
                         break;
@@ -332,9 +384,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 });
             }
         } catch (error) {
-            console.error("A critical error occurred during data sync:", error);
+            console.error("A critical error occurred during data sync:");
+            console.dir(error); // Use console.dir for better object inspection
             const errorMessage = getErrorMessage(error);
-            setSyncError(`A critical error occurred during data sync: ${errorMessage}`);
+            setSyncError(`Data sync failed: ${errorMessage}`);
         } finally {
             setIsSyncing(false);
         }
@@ -423,22 +476,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!user) throw new Error("User not logged in");
         const tempId = `temp_${Date.now()}`;
 
-        // Ensure all required fields for DB insert are present.
         const dataForSupabase = { ...taskData, completed: false };
         if (dataForSupabase.today) {
             (dataForSupabase as Partial<Task>).today_assigned_date = new Date().toISOString().split('T')[0];
         }
 
-        // Create the full local task object
         const newTask: Task = { ...dataForSupabase, id: tempId, user_id: user.id, status: 'pending' };
         setTasks(current => [...current, newTask]);
+        
+        await scheduleNotification(newTask);
 
-        // Clean the data and add to offline queue
         const supabaseTaskData = cleanTaskForSupabase(dataForSupabase);
         addToQueue({ type: 'ADD_TASK', payload: { taskData: supabaseTaskData }, tempId });
     }, [user, setTasks, addToQueue]);
 
     const updateTask = useCallback(async (taskId: string | number, updates: Partial<Task>) => {
+        let updatedTask: Task | undefined;
         const fullUpdates = { ...updates };
         if (fullUpdates.today === true) {
             fullUpdates.today_assigned_date = new Date().toISOString().split('T')[0];
@@ -446,11 +499,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             fullUpdates.today_assigned_date = undefined;
         }
 
-        // Apply updates locally first, marking as pending
-        setTasks(current => current.map(t => t.id === taskId ? { ...t, ...fullUpdates, status: 'pending' } : t));
+        setTasks(current => current.map(t => {
+            if (t.id === taskId) {
+                updatedTask = { ...t, ...fullUpdates, status: 'pending' };
+                return updatedTask;
+            }
+            return t;
+        }));
+        
+        if (updatedTask) {
+            await scheduleNotification(updatedTask);
+        }
 
         if (typeof taskId === 'string' && taskId.startsWith('temp_')) {
-            // The task is not yet synced, so we find its 'ADD_TASK' operation in the queue and merge the updates.
             setOfflineQueue(currentQueue => currentQueue.map(op => {
                 if (op.tempId === taskId && op.type === 'ADD_TASK') {
                     const updatedPayloadData = { ...op.payload.taskData, ...cleanTaskForSupabase(fullUpdates) };
@@ -459,13 +520,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return op;
             }));
         } else {
-            // The task is synced, queue an UPDATE_TASK operation.
             const supabaseUpdates = cleanTaskForSupabase(fullUpdates);
             addToQueue({ type: 'UPDATE_TASK', payload: { taskId, updates: supabaseUpdates } });
         }
     }, [setTasks, setOfflineQueue, addToQueue]);
 
     const deleteTask = useCallback(async (taskId: string | number) => {
+        await cancelNotification(taskId);
         setTasks(current => current.filter(t => t.id !== taskId));
         if (typeof taskId === 'string' && taskId.startsWith('temp_')) {
             setOfflineQueue(currentQueue => currentQueue.filter(op => op.tempId !== taskId));
@@ -573,6 +634,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addToQueue({ type: 'DELETE_MOMENT', payload: { momentId } });
         }
     }, [setMoments, setOfflineQueue, addToQueue]);
+    
+    const rescheduleAllNotifications = useCallback(async () => {
+        if (!areNotificationsGloballyEnabled()) return;
+        const permissions = await LocalNotifications.checkPermissions();
+        if (permissions.display !== 'granted') return;
+
+        const pending = await LocalNotifications.getPending();
+        if (pending.notifications.length > 0) {
+            await LocalNotifications.cancel(pending);
+        }
+
+        for (const task of tasks) {
+            await scheduleNotification(task);
+        }
+    }, [tasks]);
 
     useEffect(() => {
         if (user && tasks.length > 0 && !cleanupRun.current) {
@@ -588,6 +664,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [user, tasks, updateTask]);
 
+    const addTag = useCallback((newTag: string) => {
+        const trimmedTag = newTag.trim();
+        if (trimmedTag && !tags.find(t => t.toLowerCase() === trimmedTag.toLowerCase())) {
+            setTags(current => [...current, trimmedTag].sort());
+        }
+    }, [tags, setTags]);
+    
+    const deleteTag = useCallback(async (tagToDelete: string) => {
+        const momentsToUpdate = moments.filter(m => m.tags?.includes(tagToDelete));
+        const updatePromises = momentsToUpdate.map(moment => {
+            const newTags = moment.tags?.filter(t => t !== tagToDelete);
+            return updateMoment(moment.id, { tags: newTags });
+        });
+        
+        await Promise.all(updatePromises);
+        
+        setTags(current => current.filter(t => t !== tagToDelete));
+    
+    }, [moments, updateMoment, setTags]);
+
     const value = useMemo(() => ({
         session, user, loading,
         login: (email, pass) => supabase.auth.signInWithPassword({ email, password: pass }),
@@ -599,11 +695,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         moments, setMoments,
         profile, setProfile,
         syncData,
-        isOnline, isSyncing, offlineQueue, syncError, clearOfflineQueue,
+        isOnline, isSyncing, offlineQueue, syncError, clearOfflineQueue, rescheduleAllNotifications,
         addTask, updateTask, deleteTask,
         addList, updateList, deleteList,
         addMoment, updateMoment, deleteMoment,
-    }), [session, user, loading, tasks, lists, moments, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment]);
+        tags, addTag, deleteTag
+    }), [session, user, loading, tasks, lists, moments, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, tags, addTag, deleteTag]);
 
     return (
         <DataContext.Provider value={value}>

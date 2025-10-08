@@ -26,6 +26,7 @@ export interface Task {
     startTime?: string;
     notes?: string;
     subtasks?: Subtask[];
+    reminder?: number | null; // Minutes before due time. null = no reminder, 0 = on time.
 }
 
 export interface TaskList {

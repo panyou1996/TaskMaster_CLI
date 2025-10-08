@@ -21,6 +21,8 @@ import ListDetailScreen from './screens/ListDetailScreen';
 import MomentsScreen from './screens/MomentsScreen';
 import MomentDetailScreen from './screens/MomentDetailScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import FocusScreen from './screens/FocusScreen';
+import TagDetailScreen from './screens/TagDetailScreen';
 
 const AppRoutes: React.FC = () => {
   const { session, loading } = useData();
@@ -70,6 +72,8 @@ const AppRoutes: React.FC = () => {
           <Route path="/lists/:listId" element={<ListDetailScreen />} />
           <Route path="/moments" element={<MomentsScreen />} />
           <Route path="/moments/:id" element={<MomentDetailScreen />} />
+          <Route path="/moments/tags/:tagName" element={<TagDetailScreen />} />
+          <Route path="/focus" element={<FocusScreen />} />
           
           {/* Settings Flow */}
           <Route path="/settings/notifications" element={<NotificationSettingsScreen />} />

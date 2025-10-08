@@ -1,15 +1,14 @@
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 // Helper to show an alert and guide user to settings
-const showSettingsAlert = () => {
-    alert('Camera permission is required. Please enable it in your app settings to use this feature.');
+const showSettingsAlert = (message: string) => {
+    alert(message);
 };
 
 // Check and request camera permission
 export const checkAndRequestCameraPermission = async (): Promise<boolean> => {
-    // On web, the browser handles permissions when getPhoto is called.
-    // We can skip the Capacitor-specific permission checks which are not implemented.
     if (!Capacitor.isNativePlatform()) {
         return true;
     }
@@ -22,11 +21,10 @@ export const checkAndRequestCameraPermission = async (): Promise<boolean> => {
         }
 
         if (permissions.camera === 'denied') {
-            showSettingsAlert();
+            showSettingsAlert('Camera permission is required. Please enable it in your app settings to use this feature.');
             return false;
         }
 
-        // If 'prompt' or 'prompt-with-rationale', request it
         permissions = await Camera.requestPermissions({
             permissions: ['camera']
         });
@@ -34,17 +32,50 @@ export const checkAndRequestCameraPermission = async (): Promise<boolean> => {
         if (permissions.camera === 'granted') {
             return true;
         } else {
-            // If denied after prompt, guide to settings
-            showSettingsAlert();
+            showSettingsAlert('Camera permission is required. Please enable it in your app settings to use this feature.');
             return false;
         }
     } catch (e) {
         console.error("Permission check failed:", e);
-        // This catch is for native platforms, where an error is unexpected.
         alert("Could not check camera permissions.");
         return false;
     }
 };
+
+// Check and request notification permission
+export const checkAndRequestNotificationPermission = async (): Promise<boolean> => {
+    if (!Capacitor.isNativePlatform()) {
+        const status = await Notification.requestPermission();
+        return status === 'granted';
+    }
+
+    try {
+        let permissions = await LocalNotifications.checkPermissions();
+
+        if (permissions.display === 'granted') {
+            return true;
+        }
+
+        if (permissions.display === 'denied') {
+            showSettingsAlert('Notification permission is required for reminders. Please enable it in your app settings.');
+            return false;
+        }
+
+        permissions = await LocalNotifications.requestPermissions();
+        
+        if (permissions.display === 'denied') {
+             showSettingsAlert('Notification permission is required for reminders. Please enable it in your app settings.');
+        }
+        
+        return permissions.display === 'granted';
+
+    } catch (e) {
+        console.error("Notification permission check failed:", e);
+        alert("Could not check notification permissions.");
+        return false;
+    }
+};
+
 
 // Function to take a photo using Capacitor Camera
 export const takePhotoWithCapacitor = async (): Promise<string | null> => {

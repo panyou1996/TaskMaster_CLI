@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { CloseIcon, ChevronRightIcon, SyncIcon, DownloadIcon, RefreshSpinnerIcon, BellIcon, ListCheckIcon, PaletteIcon, InfoIcon } from '../../components/icons/Icons';
+import { CloseIcon, ChevronRightIcon, SyncIcon, DownloadIcon, UploadIcon, RefreshSpinnerIcon, BellIcon, ListCheckIcon, PaletteIcon, InfoIcon } from '../../components/icons/Icons';
 import { useData } from '../../contexts/DataContext';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import Button from '../../components/common/Button';
@@ -49,8 +49,17 @@ interface SettingsScreenProps {
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ isOpen, onClose }) => {
-    const { profile, isOnline, isSyncing, offlineQueue, syncData, syncError, clearOfflineQueue } = useData();
+    const { 
+        profile, isOnline, isSyncing, offlineQueue, syncData, syncError, clearOfflineQueue,
+        tasks, lists, moments, setTasks, setLists, setMoments, setProfile
+    } = useData();
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+    
+    // State for import functionality
+    const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
+    const [importFileData, setImportFileData] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    
     const hasPendingChanges = offlineQueue.length > 0;
 
     let syncStatusText = "Synced";
@@ -86,6 +95,89 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ isOpen, onClose }) => {
         onClose();
     };
 
+    const handleExportData = () => {
+        try {
+            const dataToExport = {
+                profile,
+                tasks,
+                lists,
+                moments,
+                version: '1.0.0',
+                exportedAt: new Date().toISOString(),
+            };
+
+            const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+                JSON.stringify(dataToExport, null, 2)
+            )}`;
+            
+            const link = document.createElement("a");
+            link.href = jsonString;
+            link.download = `taskmaster_backup_${new Date().toISOString().split('T')[0]}.json`;
+
+            link.click();
+        } catch (error) {
+            console.error("Failed to export data:", error);
+            alert("An error occurred while exporting your data.");
+        }
+    };
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target?.result;
+                if (typeof text === 'string') {
+                    setImportFileData(text);
+                    setIsImportConfirmOpen(true);
+                } else {
+                    alert("Could not read file content.");
+                }
+            };
+            reader.onerror = () => {
+                alert("Failed to read the file.");
+            };
+            reader.readAsText(file);
+        }
+        if (event.target) {
+            event.target.value = ''; // Reset file input to allow selecting the same file again
+        }
+    };
+
+    const handleConfirmImport = () => {
+        if (!importFileData) return;
+
+        try {
+            const importedData = JSON.parse(importFileData);
+            
+            if (!Array.isArray(importedData.tasks) || !Array.isArray(importedData.lists) || !Array.isArray(importedData.moments) || !importedData.profile) {
+                throw new Error("Invalid backup file format. Missing required data keys.");
+            }
+            
+            clearOfflineQueue();
+            setTasks(importedData.tasks);
+            setLists(importedData.lists);
+            setMoments(importedData.moments);
+            setProfile(importedData.profile);
+            
+            setIsImportConfirmOpen(false);
+            setImportFileData(null);
+            alert("Data imported successfully! Your data will now be synced with the server.");
+            
+            syncData(); // Trigger sync to upload imported data
+
+        } catch (error) {
+            console.error("Failed to import data:", error);
+            alert(`Import failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+            setIsImportConfirmOpen(false);
+            setImportFileData(null);
+        }
+    };
+
 
     if (!profile) {
         return null; // The parent component should handle loading state
@@ -93,6 +185,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ isOpen, onClose }) => {
 
     return (
         <>
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".json,application/json"
+                className="hidden"
+            />
             <div className={`fixed inset-0 z-50 flex items-end transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
                 <div
                     className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
@@ -178,15 +277,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ isOpen, onClose }) => {
 
                             <SectionHeader title="Data Management" />
                             <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-100">
-                                <SettingsItem icon={<SyncIcon className="w-5 h-5 text-gray-600" />}>
+                                <SettingsItem icon={<InfoIcon />}>
                                     <span>Sync Status</span>
                                     <span className={syncStatusColor}>{syncStatusText}</span>
                                 </SettingsItem>
-                                <SettingsItem isLink onClick={handleSyncNow} icon={<RefreshSpinnerIcon />}>
+                                <SettingsItem isLink onClick={handleSyncNow} icon={<SyncIcon className="w-5 h-5 text-gray-600" />}>
                                     <span className="text-blue-600">Sync Now</span>
                                 </SettingsItem>
-                                <SettingsItem isLink icon={<DownloadIcon className="w-5 h-5 text-gray-600" />}>
+                                <SettingsItem isLink onClick={handleExportData} icon={<DownloadIcon className="w-5 h-5 text-gray-600" />}>
                                     <span className="text-blue-600">Export Data</span>
+                                </SettingsItem>
+                                <SettingsItem isLink onClick={handleImportClick} icon={<UploadIcon className="w-5 h-5 text-gray-600" />}>
+                                    <span className="text-blue-600">Import Data</span>
                                 </SettingsItem>
                             </div>
                             
@@ -214,6 +316,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ isOpen, onClose }) => {
                 title="Clear Pending Changes?"
                 message="This will remove all unsynced changes. This action is useful if a bad operation is blocking the sync process. Are you sure?"
                 confirmText="Clear & Retry"
+            />
+             <ConfirmationModal
+                isOpen={isImportConfirmOpen}
+                onClose={() => setIsImportConfirmOpen(false)}
+                onConfirm={handleConfirmImport}
+                title="Import Data?"
+                message="This will overwrite all your current local data. This action cannot be undone. Are you sure you want to proceed?"
+                confirmText="Overwrite & Import"
+                confirmVariant="primary"
             />
         </>
     );

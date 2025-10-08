@@ -1,11 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
-import { SearchIcon, PlusIconHeader, FilterIcon, ChevronDownIcon, RefreshSpinnerIcon } from '../components/icons/Icons';
+import { MomentsIcon, CalendarIcon, TagIcon, PlusIconHeader, ChevronDownIcon, RefreshSpinnerIcon } from '../components/icons/Icons';
 import { EmptyMomentsIllustration } from '../components/illustrations/Illustrations';
 import { useData } from '../contexts/DataContext';
 import { Moment } from '../data/mockData';
 import AddMomentScreen, { NewMomentData } from './AddMomentScreen';
+import TagsView from '../components/views/TagsView';
+import CalendarView from '../components/views/CalendarView';
 
 // FIX: Changed id to allow string for temporary items
 const MomentCard: React.FC<{ id: number | string; title: string; description: string; imageUrl: string; index: number; }> = ({ id, title, description, imageUrl, index }) => (
@@ -27,13 +29,18 @@ const MomentCard: React.FC<{ id: number | string; title: string; description: st
 const MomentsScreen: React.FC = () => {
     const { moments: momentsData, addMoment, syncData } = useData();
     const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
-
-    // Pull to refresh state
+    const [viewMode, setViewMode] = useState<'moments' | 'calendar' | 'tags'>('moments');
+    
+    // Pull to refresh and swipe state
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [pullDelta, setPullDelta] = useState(0);
-    const touchStartY = useRef<number | null>(null);
-    const mainRef = useRef<HTMLElement>(null);
+    const gestureStart = useRef<{ x: number; y: number } | null>(null);
+    const gestureType = useRef<'none' | 'vertical' | 'horizontal'>('none');
+    const momentsViewRef = useRef<HTMLDivElement>(null);
+    const calendarViewRef = useRef<HTMLDivElement>(null);
+    const tagsViewRef = useRef<HTMLDivElement>(null);
     const REFRESH_THRESHOLD = 80;
+    const MIN_SWIPE_DISTANCE = 50;
 
     const handleAddMoment = async (newMomentData: NewMomentData) => {
         const newMoment: Omit<Moment, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
@@ -47,39 +54,76 @@ const MomentsScreen: React.FC = () => {
         await addMoment(newMoment);
     };
     
-    // Pull to refresh handlers
+    // Combined handlers for pull-to-refresh and swipe
     const handleTouchStart = (e: React.TouchEvent) => {
-        if (mainRef.current?.scrollTop === 0) {
-            touchStartY.current = e.touches[0].clientY;
-        } else {
-            touchStartY.current = null;
+        gestureStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        gestureType.current = 'none';
+        
+        const viewRefMap = {
+            moments: momentsViewRef,
+            calendar: calendarViewRef,
+            tags: tagsViewRef
+        };
+        const activeScrollView = viewRefMap[viewMode].current;
+
+        if (activeScrollView?.scrollTop !== 0) {
+            gestureStart.current.y = -1;
         }
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
-        if (touchStartY.current === null || isRefreshing) return;
-        const currentY = e.touches[0].clientY;
-        const delta = currentY - touchStartY.current;
-        if (delta > 0) {
-            setPullDelta(Math.pow(delta, 0.85)); // Apply resistance
+        if (!gestureStart.current) return;
+
+        const deltaX = e.touches[0].clientX - gestureStart.current.x;
+        const deltaY = e.touches[0].clientY - gestureStart.current.y;
+
+        if (gestureType.current === 'none') {
+            if (Math.abs(deltaX) > 10 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                gestureType.current = 'horizontal';
+            } else if (Math.abs(deltaY) > 10 && Math.abs(deltaY) > Math.abs(deltaX)) {
+                gestureType.current = 'vertical';
+            }
+        }
+
+        if (gestureType.current === 'vertical' && gestureStart.current.y !== -1 && deltaY > 0) {
+            setPullDelta(Math.pow(deltaY, 0.85));
         }
     };
 
-    const handleTouchEnd = () => {
-        if (touchStartY.current === null || isRefreshing) return;
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (!gestureStart.current) return;
 
-        if (pullDelta > REFRESH_THRESHOLD) {
-            setIsRefreshing(true);
-            syncData().finally(() => {
-                setIsRefreshing(false);
+        if (gestureType.current === 'horizontal') {
+            const endX = e.changedTouches[0].clientX;
+            const distance = gestureStart.current.x - endX;
+            if (distance > MIN_SWIPE_DISTANCE) { // Swipe left
+                if (viewMode === 'moments') setViewMode('calendar');
+                else if (viewMode === 'calendar') setViewMode('tags');
+            } else if (distance < -MIN_SWIPE_DISTANCE) { // Swipe right
+                if (viewMode === 'tags') setViewMode('calendar');
+                else if (viewMode === 'calendar') setViewMode('moments');
+            }
+        } else if (gestureType.current === 'vertical' && gestureStart.current.y !== -1) {
+            if (pullDelta > REFRESH_THRESHOLD) {
+                setIsRefreshing(true);
+                syncData().finally(() => {
+                    setIsRefreshing(false);
+                    setPullDelta(0);
+                });
+            } else {
                 setPullDelta(0);
-                touchStartY.current = null;
-            });
-        } else {
-            setPullDelta(0);
-            touchStartY.current = null;
+            }
         }
+        
+        gestureStart.current = null;
+        gestureType.current = 'none';
     };
+    
+    const viewIndex = useMemo(() => {
+        if (viewMode === 'moments') return 0;
+        if (viewMode === 'calendar') return 1;
+        return 2;
+    }, [viewMode]);
 
     return (
         <MainLayout>
@@ -96,44 +140,50 @@ const MomentsScreen: React.FC = () => {
                     onTouchEnd={handleTouchEnd}
                 >
                     <header
-                        className="px-6 pt-6 pb-4 flex justify-between items-center flex-shrink-0"
+                        className="px-6 pt-6 pb-4 flex-shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-4"
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
-                        <div className="w-6" /> {/* Spacer */}
-                        <h1 className="text-3xl font-bold text-gray-900">Moments</h1>
-                        <button className="text-gray-800" onClick={() => setIsAddMomentOpen(true)}>
-                            <PlusIconHeader />
-                        </button>
-                    </header>
-
-                    <div className="px-6 pb-4 flex-shrink-0">
-                        <div className="flex items-center gap-3">
-                            <div className="relative flex-grow">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <SearchIcon />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Search moments..."
-                                    className="w-full bg-gray-100 border border-gray-200 rounded-xl py-2.5 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
+                         <div className="w-6" /> {/* Spacer */}
+                        <div className="flex justify-center">
+                            <div className="grid grid-cols-3 bg-gray-200 rounded-lg p-1 w-full max-w-xs">
+                                <button onClick={() => setViewMode('moments')} className={`flex justify-center items-center gap-1.5 py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'moments' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}><MomentsIcon/> Grid</button>
+                                <button onClick={() => setViewMode('calendar')} className={`flex justify-center items-center gap-1.5 py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}><CalendarIcon/> Calendar</button>
+                                <button onClick={() => setViewMode('tags')} className={`flex justify-center items-center gap-1.5 py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'tags' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}><TagIcon/> Tags</button>
                             </div>
-                             <button className="p-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-200">
-                                <FilterIcon />
+                        </div>
+                        <div className="flex justify-end">
+                            <button className="text-gray-800" onClick={() => setIsAddMomentOpen(true)}>
+                                <PlusIconHeader />
                             </button>
                         </div>
-                    </div>
+                    </header>
 
-                    <main ref={mainRef} className="px-6 pb-24 overflow-y-auto flex-grow">
-                        {momentsData.length === 0 ? (
-                            <EmptyMomentsIllustration onAddMoment={() => setIsAddMomentOpen(true)} />
-                        ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                                {momentsData.map((moment, index) => (
-                                    <MomentCard key={moment.id} {...moment} index={index} />
-                                ))}
+                    <main className="overflow-hidden flex-grow flex flex-col">
+                        <div
+                            className="flex h-full transition-transform duration-300 ease-out"
+                            style={{ transform: `translateX(-${viewIndex * 100}%)` }}
+                        >
+                             {/* Grid View */}
+                            <div ref={momentsViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto px-6 pb-24">
+                                {momentsData.length === 0 ? (
+                                    <EmptyMomentsIllustration onAddMoment={() => setIsAddMomentOpen(true)} />
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pt-4">
+                                        {momentsData.map((moment, index) => (
+                                            <MomentCard key={moment.id} {...moment} index={index} />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        )}
+                            {/* Calendar View */}
+                            <div ref={calendarViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto pb-24">
+                                <CalendarView />
+                            </div>
+                            {/* Tags View */}
+                            <div ref={tagsViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto pb-24">
+                                <TagsView />
+                            </div>
+                        </div>
                     </main>
                 </div>
             </div>

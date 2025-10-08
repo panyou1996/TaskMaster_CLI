@@ -14,3 +14,10 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// Define PWA elements for Capacitor plugins on the web
+// @ts-ignore
+if (window.defineCustomElements) {
+  // @ts-ignore
+  window.defineCustomElements(window);
+}

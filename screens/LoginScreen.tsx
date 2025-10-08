@@ -24,14 +24,15 @@ const LoginScreen: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    try {
-      await login(email, password);
-      navigate('/today');
-    } catch (err: any) {
-      setError(err.message || 'Failed to log in.');
-    } finally {
-      setLoading(false);
+    
+    const { error: authError } = await login(email, password);
+    setLoading(false);
+
+    if (authError) {
+        setError(authError.message);
     }
+    // On successful login, the onAuthStateChange listener in DataContext
+    // will update the session, and App.tsx will handle navigation.
   };
 
   return (
