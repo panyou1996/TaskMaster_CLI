@@ -224,7 +224,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ isOpen, onClose }) => {
                     </header>
 
                     <main className="overflow-y-auto max-h-[75vh]">
-                        <div className="p-4" style={{ paddingBottom: `calc(1rem + env(safe-area-inset-bottom))` }}>
+                        <div className="p-4" style={{ paddingBottom: `calc(6rem + env(safe-area-inset-bottom))` }}>
                             <SectionHeader title="Account" />
                             <Link to="/profile" className="block" onClick={handleLinkClick}>
                                 <div className="bg-white rounded-xl p-4 flex items-center gap-4 card-shadow hover:bg-gray-50 transition-colors">

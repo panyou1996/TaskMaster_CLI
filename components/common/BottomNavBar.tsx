@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { GoogleGenAI, Type, LiveSession, LiveServerMessage, Modality, Blob } from "@google/genai";
+// FIX: The 'LiveSession' type is not exported from '@google/genai'. It has been removed.
+import { GoogleGenAI, Type, LiveServerMessage, Modality, Blob } from "@google/genai";
 import { TodayIcon, ListsIcon, FocusIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon } from '../icons/Icons';
 import AddMomentScreen, { NewMomentData } from '../../screens/AddMomentScreen';
 import { takePhotoWithCapacitor } from '../../utils/permissions';
@@ -60,11 +61,14 @@ const BottomNavBar: React.FC = () => {
     // --- Voice Input State & Refs ---
     const [isRecording, setIsRecording] = useState(false);
     const [showRecordingUI, setShowRecordingUI] = useState(false);
+    const [liveTranscription, setLiveTranscription] = useState('');
     
-    const longPressTimerRef = useRef<ReturnType<typeof setTimeout>>();
+    // FIX: The `useRef` hook requires an initial value. It was called with 0 arguments.
+    const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isLongPressRef = useRef(false);
     
-    const sessionPromiseRef = useRef<Promise<LiveSession> | null>(null);
+    // FIX: The `LiveSession` type is not exported, so `any` is used as a replacement.
+    const sessionPromiseRef = useRef<Promise<any> | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
     const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
@@ -138,6 +142,7 @@ const BottomNavBar: React.FC = () => {
     const stopRecording = () => {
         setIsRecording(false);
         setTimeout(() => setShowRecordingUI(false), 300);
+        setLiveTranscription('');
 
         streamRef.current?.getTracks().forEach(track => track.stop());
         sourceNodeRef.current?.disconnect();
@@ -159,6 +164,7 @@ const BottomNavBar: React.FC = () => {
             setShowRecordingUI(true);
             setIsRecording(true);
             transcriptionRef.current = '';
+            setLiveTranscription('');
 
             audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
             sourceNodeRef.current = audioContextRef.current.createMediaStreamSource(streamRef.current);
@@ -175,14 +181,18 @@ const BottomNavBar: React.FC = () => {
                     },
                     onmessage: (message: LiveServerMessage) => {
                         if (message.serverContent?.inputTranscription) {
-                            transcriptionRef.current += message.serverContent.inputTranscription.text;
+                            const newText = message.serverContent.inputTranscription.text;
+                            transcriptionRef.current += newText;
+                            setLiveTranscription(prev => prev + newText);
                         }
                         // Ignore audio output from the model as we only want transcription
                     },
                     onclose: async () => {
-                        if (transcriptionRef.current.trim()) {
-                            await createTaskFromText(transcriptionRef.current.trim());
+                        const finalText = transcriptionRef.current.trim();
+                        if (finalText) {
+                            await createTaskFromText(finalText);
                         }
+                        transcriptionRef.current = ''; // Reset for next session
                     },
                     onerror: (e: ErrorEvent) => {
                         console.error('Live session error:', e);
@@ -220,7 +230,7 @@ const BottomNavBar: React.FC = () => {
     };
 
     const handlePointerUp = () => {
-        clearTimeout(longPressTimerRef.current);
+        if(longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
         if (isLongPressRef.current) {
             stopRecording();
         } else {
@@ -230,7 +240,7 @@ const BottomNavBar: React.FC = () => {
 
     const handlePointerLeave = () => {
         if (isRecording) {
-            clearTimeout(longPressTimerRef.current);
+            if(longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
             stopRecording();
         }
     };
@@ -276,6 +286,16 @@ const BottomNavBar: React.FC = () => {
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-page-fade-in backdrop-blur-sm">
                     <div className="w-40 h-40 bg-[var(--color-primary-500)]/50 rounded-full flex items-center justify-center animate-pulse-recording">
                         <MicrophoneIcon className="w-16 h-16 text-white" />
+                    </div>
+                </div>
+            )}
+             {showRecordingUI && (
+                <div
+                    className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-50 transition-all duration-300 ease-out"
+                    style={{ bottom: `calc(7rem + env(safe-area-inset-bottom))` }}
+                >
+                    <div className="bg-black/70 backdrop-blur-md rounded-xl p-4 text-white text-center text-sm animate-page-fade-in min-h-[3.5rem] flex items-center justify-center">
+                        <p>{liveTranscription}<span className="inline-block w-1 h-4 bg-white ml-1 animate-pulse"></span></p>
                     </div>
                 </div>
             )}
