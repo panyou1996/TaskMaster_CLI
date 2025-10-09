@@ -64,18 +64,18 @@ const TagsView: React.FC = () => {
         <>
             <div className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-white p-4 rounded-xl card-shadow text-center">
-                        <p className="text-2xl font-bold text-purple-600">{tagData.length}</p>
-                        <p className="text-sm text-gray-500 mt-1">Total Tags</p>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow text-center">
+                        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{tagData.length}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Total Tags</p>
                     </div>
-                     <div className="bg-white p-4 rounded-xl card-shadow text-center">
-                        <p className="text-2xl font-bold text-purple-600">{totalCheckins}</p>
-                        <p className="text-sm text-gray-500 mt-1">Total Check-ins</p>
+                     <div className="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow text-center">
+                        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{totalCheckins}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Total Check-ins</p>
                     </div>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl card-shadow mb-6">
-                    <label htmlFor="new-tag-input" className="block text-sm font-medium text-gray-700 mb-1">Add New Tag</label>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow mb-6">
+                    <label htmlFor="new-tag-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Add New Tag</label>
                     <div className="flex items-center gap-2">
                         <input
                             id="new-tag-input"
@@ -84,7 +84,7 @@ const TagsView: React.FC = () => {
                             value={newTag}
                             onChange={(e) => setNewTag(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         />
                         <button 
                             type="button" 
@@ -97,26 +97,26 @@ const TagsView: React.FC = () => {
                     </div>
                 </div>
                 
-                <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-100">
+                <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
                     {tagData.map(tag => (
-                        <div key={tag.name} className="flex items-center p-3 group hover:bg-gray-50 transition-colors">
+                        <div key={tag.name} className="flex items-center p-3 group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <div className="flex items-center gap-4 flex-grow" onClick={() => navigate(`/moments/tags/${encodeURIComponent(tag.name)}`)}>
                                 {tag.imageUrl ? (
                                     <img src={tag.imageUrl} alt={tag.name} className="w-10 h-10 rounded-lg object-cover" />
                                 ) : (
-                                    <div className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg text-gray-400">
+                                    <div className="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-400 dark:text-gray-500">
                                         <TagIcon className="w-5 h-5" />
                                     </div>
                                 )}
                                 <div className="flex-grow">
-                                    <p className="font-semibold text-gray-800">{tag.name}</p>
-                                    <p className="text-sm text-gray-500">{tag.count} check-in{tag.count !== 1 ? 's' : ''}</p>
+                                    <p className="font-semibold text-gray-800 dark:text-gray-200">{tag.name}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{tag.count} check-in{tag.count !== 1 ? 's' : ''}</p>
                                 </div>
                             </div>
                             <div className="flex items-center">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleDeleteClick(tag.name); }}
-                                    className="p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                                     aria-label={`Delete tag ${tag.name}`}
                                 >
                                     <TrashIcon />

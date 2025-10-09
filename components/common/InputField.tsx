@@ -16,7 +16,7 @@ const InputField: React.FC<InputFieldProps> = ({ label, id, type = 'text', ...pr
         id={id}
         name={id}
         type={type}
-        className="w-full px-4 py-2.5 border border-[var(--color-border)] rounded-[var(--border-radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:border-transparent transition text-sm"
+        className="w-full px-4 py-2.5 bg-[var(--color-surface-container)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded-[var(--border-radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:border-transparent transition text-sm"
         {...props}
       />
     </div>

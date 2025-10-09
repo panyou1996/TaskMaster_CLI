@@ -166,7 +166,7 @@ const MomentsScreen: React.FC = () => {
 
     return (
         <MainLayout>
-            <div className="absolute inset-0 flex flex-col bg-gray-50 overflow-hidden">
+            <div className="absolute inset-0 flex flex-col bg-[var(--color-background-primary)] overflow-hidden">
                 <div className={`absolute top-0 left-0 right-0 h-14 flex justify-center items-center transition-opacity duration-300 pointer-events-none z-10 ${pullDelta > 0 || isRefreshing ? 'opacity-100' : 'opacity-0'}`}>
                     {isRefreshing ? <RefreshSpinnerIcon /> : <ChevronDownIcon className={`w-6 h-6 text-gray-500 transition-transform duration-300 ${pullDelta > REFRESH_THRESHOLD ? 'rotate-180' : ''}`} />}
                 </div>
@@ -183,19 +183,19 @@ const MomentsScreen: React.FC = () => {
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                          <div className="flex justify-start">
-                            <button className="text-gray-600 p-1" onClick={() => setIsSearchVisible(true)}>
+                            <button className="text-gray-600 dark:text-gray-400 p-1" onClick={() => setIsSearchVisible(true)}>
                                 <SearchIcon />
                             </button>
                          </div>
                         <div className="flex justify-center">
-                            <div className="grid grid-cols-3 bg-gray-200 rounded-lg p-1 w-full max-w-xs">
-                                <button onClick={() => setViewMode('moments')} className={`flex justify-center items-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'moments' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Grid</button>
-                                <button onClick={() => setViewMode('calendar')} className={`flex justify-center items-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Calendar</button>
-                                <button onClick={() => setViewMode('tags')} className={`flex justify-center items-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'tags' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Tags</button>
+                            <div className="grid grid-cols-3 bg-gray-200 dark:bg-gray-700 rounded-lg p-1 w-full max-w-xs">
+                                <button onClick={() => setViewMode('moments')} className={`flex justify-center items-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'moments' ? 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Grid</button>
+                                <button onClick={() => setViewMode('calendar')} className={`flex justify-center items-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Calendar</button>
+                                <button onClick={() => setViewMode('tags')} className={`flex justify-center items-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'tags' ? 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Tags</button>
                             </div>
                         </div>
                         <div className="flex justify-end">
-                            <button className="text-gray-800" onClick={() => setIsAddMomentOpen(true)}>
+                            <button className="text-gray-800 dark:text-gray-200" onClick={() => setIsAddMomentOpen(true)}>
                                 <PlusIconHeader />
                             </button>
                         </div>
@@ -232,7 +232,7 @@ const MomentsScreen: React.FC = () => {
             </div>
             
              {/* Search Overlay */}
-            <div className={`fixed inset-0 z-40 bg-gray-50 flex flex-col transition-transform duration-300 ease-in-out ${isSearchVisible ? 'translate-y-0' : 'translate-y-full'}`}
+            <div className={`fixed inset-0 z-40 bg-[var(--color-background-primary)] flex flex-col transition-transform duration-300 ease-in-out ${isSearchVisible ? 'translate-y-0' : 'translate-y-full'}`}
                  style={{ paddingTop: `env(safe-area-inset-top)` }}>
                 <div className="flex-shrink-0 px-4 pt-4 pb-3 flex items-center gap-2">
                     <div className="relative flex-grow">
@@ -245,12 +245,12 @@ const MomentsScreen: React.FC = () => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search moments..."
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
                     <button 
                         onClick={() => { setIsSearchVisible(false); setSearchQuery(''); }}
-                        className="font-semibold text-blue-600 px-2"
+                        className="font-semibold text-blue-600 dark:text-blue-400 px-2"
                     >
                         Cancel
                     </button>
@@ -259,8 +259,8 @@ const MomentsScreen: React.FC = () => {
                 <div className="flex-grow overflow-y-auto px-6 pb-24">
                     {filteredMoments.length === 0 && searchQuery ? (
                         <div className="text-center py-16">
-                            <p className="text-lg font-semibold text-gray-700">No moments found</p>
-                            <p className="text-gray-500 mt-1">Try a different search term.</p>
+                            <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">No moments found</p>
+                            <p className="text-gray-500 dark:text-gray-400 mt-1">Try a different search term.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-4">

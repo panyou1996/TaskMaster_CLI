@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 
 const ClockIcon: React.FC = () => (
-    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
 );
@@ -56,17 +57,17 @@ const DurationPickerModal: React.FC<DurationPickerModalProps> = ({ isOpen, onClo
                 onClick={onClose}
                 aria-hidden="true"
             />
-            <div className="relative w-full max-w-xs p-6 mx-4 bg-white rounded-2xl modal-shadow transform transition-all duration-300 animate-card-fade-in">
+            <div className="relative w-full max-w-xs p-6 mx-4 bg-white dark:bg-gray-800 rounded-2xl modal-shadow transform transition-all duration-300 animate-card-fade-in">
                 <div className="text-center">
                     <div className="flex justify-center mb-4">
                         <ClockIcon />
                     </div>
-                    <h2 id="duration-picker-title" className="text-xl font-bold text-gray-900">
+                    <h2 id="duration-picker-title" className="text-xl font-bold text-gray-900 dark:text-gray-100">
                         Set Duration
                     </h2>
                 </div>
 
-                <div className="flex items-center justify-center my-6 text-gray-800">
+                <div className="flex items-center justify-center my-6 text-gray-800 dark:text-gray-200">
                      <input
                         ref={durationInputRef}
                         type="text"
@@ -75,17 +76,17 @@ const DurationPickerModal: React.FC<DurationPickerModalProps> = ({ isOpen, onClo
                         onChange={handleDurationChange}
                         onBlur={handleBlur}
                         onFocus={(e) => e.target.select()}
-                        className="w-28 text-center text-5xl font-bold bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 py-2"
+                        className="w-28 text-center text-5xl font-bold bg-gray-100 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 py-2"
                         maxLength={3}
                         pattern="\d*"
                     />
-                    <span className="ml-3 text-lg text-gray-500 font-medium">minutes</span>
+                    <span className="ml-3 text-lg text-gray-500 dark:text-gray-400 font-medium">minutes</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                     <button
                         onClick={onClose}
-                        className="w-full px-4 py-3 font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                        className="w-full px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
                     >
                         Cancel
                     </button>

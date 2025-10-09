@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { useData } from '../contexts/DataContext';
@@ -109,26 +110,26 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
              role="dialog" aria-modal="true" aria-labelledby="ai-task-title">
             <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity duration-300"
                  onClick={onClose} aria-hidden="true"/>
-            <div className={`w-full bg-gray-800 rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
+            <div className={`w-full bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
                 <div className="p-4 flex flex-col" style={{ paddingBottom: `calc(1rem + env(safe-area-inset-bottom))` }}>
                     <header className="flex-shrink-0 flex items-center justify-between pb-3">
                         <div className="flex items-center gap-2">
-                            <SparklesIcon className="w-5 h-5 text-purple-400"/>
-                            <h2 id="ai-task-title" className="text-lg font-bold text-white">Create Task with AI</h2>
+                            <SparklesIcon className="w-5 h-5 text-purple-500 dark:text-purple-400"/>
+                            <h2 id="ai-task-title" className="text-lg font-bold text-gray-900 dark:text-white">Create Task with AI</h2>
                         </div>
-                        <button onClick={onClose} className="p-1 text-gray-400 hover:text-white"><CloseIcon /></button>
+                        <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-800 dark:hover:text-white"><CloseIcon /></button>
                     </header>
 
                     <main className="flex-grow flex items-center justify-center min-h-[6rem]">
                         {isLoading ? (
-                            <div className="flex flex-col items-center gap-3 text-gray-300">
+                            <div className="flex flex-col items-center gap-3 text-gray-500 dark:text-gray-300">
                                 <RefreshSpinnerIcon/>
                                 <span>Creating task...</span>
                             </div>
                         ) : error ? (
-                             <p className="text-center text-red-400 px-4">{error}</p>
+                             <p className="text-center text-red-500 dark:text-red-400 px-4">{error}</p>
                         ) : (
-                            <p className="text-center text-gray-400 px-4">
+                            <p className="text-center text-gray-500 dark:text-gray-400 px-4">
                                 Describe your task in plain language.
                             </p>
                         )}
@@ -150,7 +151,7 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
                                     disabled={isLoading}
                                     placeholder="Type your task here..."
                                     rows={1}
-                                    className="w-full bg-gray-700 text-white placeholder-gray-400 rounded-xl py-3 pl-4 pr-14 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                                    className="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl py-3 pl-4 pr-14 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
                                 />
                                 <button
                                     type="submit"

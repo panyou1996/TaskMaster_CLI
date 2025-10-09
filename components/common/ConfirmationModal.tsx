@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface ConfirmationModalProps {
@@ -53,15 +54,15 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-sm p-6 mx-4 bg-white rounded-2xl modal-shadow transform transition-all duration-300 animate-card-fade-in">
-        <h2 id="confirmation-title" className="text-xl font-bold text-gray-900 text-center">
+      <div className="relative w-full max-w-sm p-6 mx-4 bg-[var(--color-surface-container)] rounded-2xl modal-shadow transform transition-all duration-300 animate-card-fade-in">
+        <h2 id="confirmation-title" className="text-xl font-bold text-[var(--color-text-primary)] text-center">
           {title}
         </h2>
-        <p className="mt-2 text-gray-600 text-center text-sm">{message}</p>
+        <p className="mt-2 text-[var(--color-text-secondary)] text-center text-sm">{message}</p>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button
             onClick={handleCancel}
-            className="w-full px-4 py-3 font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+            className="w-full px-4 py-3 font-semibold text-[var(--color-text-secondary)] bg-[var(--color-surface-container-low)] rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
           >
             {cancelText}
           </button>

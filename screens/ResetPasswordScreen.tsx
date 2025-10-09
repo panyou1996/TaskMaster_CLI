@@ -36,7 +36,7 @@ const ResetPasswordScreen: React.FC = () => {
       </p>
       <form className="space-y-4" onSubmit={handleSendLink}>
         <InputField id="email" label="Email" type="email" placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
-        {message && <p className="text-green-600 text-xs text-center">{message}</p>}
+        {message && <p className="text-green-600 dark:text-green-400 text-xs text-center">{message}</p>}
         {error && <p className="text-[var(--color-functional-red)] text-xs text-center">{error}</p>}
         <Button type="submit" variant="primary" disabled={loading}>
           {loading ? 'Sending...' : 'Send Reset Link'}

@@ -49,7 +49,7 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
               {dots.map(step => (
                 <div
                   key={step}
-                  className={`h-2 rounded-full transition-all duration-300 ${step === currentStep ? 'w-6 bg-[var(--color-primary-500)]' : 'w-2 bg-gray-300'}`}
+                  className={`h-2 rounded-full transition-all duration-300 ${step === currentStep ? 'w-6 bg-[var(--color-primary-500)]' : 'w-2 bg-gray-300 dark:bg-gray-700'}`}
                 />
               ))}
             </div>

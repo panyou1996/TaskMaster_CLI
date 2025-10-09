@@ -361,83 +361,83 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
                     aria-hidden="true"
                 />
                 <div
-                    className={`w-full bg-white rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
+                    className={`w-full bg-white dark:bg-gray-800 rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="add-moment-title"
                 >
-                    <header className="pt-3 px-4 pb-3 border-b border-gray-200" style={{ paddingTop: `calc(0.75rem + env(safe-area-inset-top))` }}>
-                        <div className="w-8 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+                    <header className="pt-3 px-4 pb-3 border-b border-gray-200 dark:border-gray-700" style={{ paddingTop: `calc(0.75rem + env(safe-area-inset-top))` }}>
+                        <div className="w-8 h-1 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto mb-3" />
                         <div className="flex justify-between items-center h-8">
-                            <button onClick={onClose} className="p-1 text-gray-600 hover:text-gray-900">
+                            <button onClick={onClose} className="p-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                                <CloseIcon />
                             </button>
-                            <h2 id="add-moment-title" className="text-lg font-bold text-gray-900">Add New Moment</h2>
-                            <button onClick={handleSave} disabled={loading} className="p-1 text-blue-600 hover:text-blue-800 disabled:opacity-50">
+                            <h2 id="add-moment-title" className="text-lg font-bold text-gray-900 dark:text-gray-100">Add New Moment</h2>
+                            <button onClick={handleSave} disabled={loading} className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50">
                                {loading ? <RefreshSpinnerIcon /> : <CheckIcon />}
                             </button>
                         </div>
                     </header>
                     
-                    <div className="p-4 space-y-4 overflow-y-auto max-h-[75vh] pb-8 bg-gray-50" style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom))` }}>
-                        {error && <p className="text-red-500 text-sm text-center -mt-2 mb-2 px-4 bg-red-50 py-2 rounded-lg">{error}</p>}
+                    <div className="p-4 space-y-4 overflow-y-auto max-h-[75vh] pb-8 bg-gray-50 dark:bg-gray-900" style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom))` }}>
+                        {error && <p className="text-red-500 dark:text-red-400 text-sm text-center -mt-2 mb-2 px-4 bg-red-50 dark:bg-red-900/20 py-2 rounded-lg">{error}</p>}
                         
-                        <div className="rounded-xl px-4 py-1 bg-white">
+                        <div className="rounded-xl px-4 py-1 bg-white dark:bg-gray-800">
                             <input
                                 type="text"
                                 placeholder="Title"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full bg-transparent py-3 border-b border-gray-200 focus:outline-none text-base text-gray-900 placeholder-gray-400"
+                                className="w-full bg-transparent py-3 border-b border-gray-200 dark:border-gray-700 focus:outline-none text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                             />
                             <textarea
                                 rows={5}
                                 placeholder="Notes"
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                className="w-full bg-transparent py-3 focus:outline-none resize-none text-base text-gray-900 placeholder-gray-400"
+                                className="w-full bg-transparent py-3 focus:outline-none resize-none text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                             />
                         </div>
                         
-                         <div className="rounded-xl p-4 bg-white">
-                            <label className="block text-sm font-medium text-gray-700 mb-3">Tags</label>
+                         <div className="rounded-xl p-4 bg-white dark:bg-gray-800">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Tags</label>
                             <div className="flex flex-wrap gap-2">
                                 {selectedTags.map(tag => (
-                                    <button key={tag} onClick={() => handleToggleTag(tag)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-purple-100 text-purple-700">
+                                    <button key={tag} onClick={() => handleToggleTag(tag)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
                                         <span>{tag}</span>
                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                                     </button>
                                 ))}
                             </div>
                             {unselectedTags.length > 0 && (
-                                <div className="mt-3 pt-3 border-t border-gray-100">
-                                    <p className="text-xs font-medium text-gray-500 mb-2">Suggestions</p>
+                                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Suggestions</p>
                                     <div className="flex flex-wrap gap-2">
                                         {unselectedTags.map(tag => (
-                                            <button key={tag} onClick={() => handleToggleTag(tag)} className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">
+                                            <button key={tag} onClick={() => handleToggleTag(tag)} className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                                                 + {tag}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                             )}
-                             <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                             <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                                  <input
                                     type="text"
                                     placeholder="Add new tag..."
                                     value={newTag}
                                     onChange={(e) => setNewTag(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                                    className="w-full bg-transparent focus:outline-none text-gray-600 placeholder-gray-500 text-base"
+                                    className="w-full bg-transparent focus:outline-none text-base text-gray-600 dark:text-gray-400 placeholder-gray-500 dark:placeholder-gray-400"
                                 />
-                                <button onClick={handleAddTag} className="text-blue-500 p-1">
+                                <button onClick={handleAddTag} className="text-blue-500 dark:text-blue-400 p-1">
                                     <PlusIconHeader />
                                 </button>
                             </div>
                         </div>
                         
-                        <div className="rounded-xl bg-white p-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
+                        <div className="rounded-xl bg-white dark:bg-gray-800 p-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Image</label>
                              <input
                                 type="file"
                                 ref={fileInputRef}
@@ -447,32 +447,17 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
                             />
                             {imagePreview ? (
                                 <div className="relative group">
-                                    <img src={imagePreview} alt="Preview" className="w-full aspect-[4/3] object-cover rounded-xl shadow-sm"/>
+                                    <img src={imagePreview} alt="Preview" className="w-full aspect-[4/3] object-cover rounded-xl shadow-sm" />
                                     <div className="absolute inset-0 bg-black/20 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setIsImageSourceSelectorOpen(true)} 
-                                            className="bg-white/90 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-white transition-all text-sm"
-                                        >
-                                            Change Image
-                                        </button>
+                                        <button type="button" onClick={() => setIsImageSourceSelectorOpen(true)} className="bg-white/90 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-white transition-all text-sm">Change Image</button>
                                     </div>
-                                    <button 
-                                        type="button" 
-                                        onClick={handleRemoveImage}
-                                        className="absolute top-2 right-2 w-7 h-7 bg-black/40 text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-colors backdrop-blur-sm"
-                                        aria-label="Remove image"
-                                    >
+                                    <button type="button" onClick={handleRemoveImage} className="absolute top-2 right-2 w-7 h-7 bg-black/40 text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-colors backdrop-blur-sm" aria-label="Remove image">
                                         <CloseIcon className="w-4 h-4" />
                                     </button>
                                 </div>
                             ) : (
-                                <button 
-                                    type="button"
-                                    onClick={() => setIsImageSourceSelectorOpen(true)}
-                                    className="w-full flex flex-col items-center justify-center gap-2 bg-gray-100 text-gray-500 font-medium py-10 rounded-xl hover:bg-gray-200 border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors"
-                                >
-                                    <UploadImageIcon className="w-8 h-8 text-gray-400"/>
+                                <button type="button" onClick={() => setIsImageSourceSelectorOpen(true)} className="w-full flex flex-col items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-medium py-10 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+                                    <UploadImageIcon className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                                     <span>Add Image</span>
                                 </button>
                             )}
@@ -480,7 +465,8 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
                     </div>
                 </div>
             </div>
-
+            
+            {/* Image Cropper Modal */}
             {imageToCrop && (
                 <ImageCropperModal
                     imageSrc={imageToCrop}
@@ -488,20 +474,16 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
                     onCancel={handleCropCancel}
                 />
             )}
-
-            {/* Image Source Selector Action Sheet */}
+            
+            {/* Image Source Selector Sheet */}
             <div className={`fixed inset-0 z-[60] flex items-end transition-all duration-300 ${isImageSourceSelectorOpen ? 'visible' : 'invisible'}`}>
-                <div
-                    className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${isImageSourceSelectorOpen ? 'opacity-100' : 'opacity-0'}`}
-                    onClick={() => setIsImageSourceSelectorOpen(false)}
-                    aria-hidden="true"
-                />
-                <div className={`w-full bg-gray-100 rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out transform ${isImageSourceSelectorOpen ? 'translate-y-0' : 'translate-y-full'} p-4 pb-5 space-y-2`} style={{ paddingBottom: `calc(1.25rem + env(safe-area-inset-bottom))` }}>
-                     <div className="space-y-2 bg-white/80 backdrop-blur-sm rounded-xl">
-                        <button onClick={handleTakePhoto} className="w-full text-center p-3 text-lg text-blue-500 border-b border-gray-200">Take Photo</button>
-                        <button onClick={handleChooseFromLibrary} className="w-full text-center p-3 text-lg text-blue-500">Choose from Library</button>
+                <div className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${isImageSourceSelectorOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsImageSourceSelectorOpen(false)} aria-hidden="true" />
+                <div className={`w-full bg-gray-100 dark:bg-gray-900 rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out transform ${isImageSourceSelectorOpen ? 'translate-y-0' : 'translate-y-full'} p-4 pb-5 space-y-2`} style={{ paddingBottom: `calc(1.25rem + env(safe-area-inset-bottom))` }}>
+                    <div className="space-y-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl">
+                        <button onClick={handleTakePhoto} className="w-full text-center p-3 text-lg text-blue-500 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700">Take Photo</button>
+                        <button onClick={handleChooseFromLibrary} className="w-full text-center p-3 text-lg text-blue-500 dark:text-blue-400">Choose from Library</button>
                     </div>
-                    <button onClick={() => setIsImageSourceSelectorOpen(false)} className="w-full text-center p-3 text-lg text-blue-500 font-bold bg-white/80 backdrop-blur-sm rounded-xl">Cancel</button>
+                    <button onClick={() => setIsImageSourceSelectorOpen(false)} className="w-full text-center p-3 text-lg text-blue-500 dark:text-blue-400 font-bold bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl">Cancel</button>
                 </div>
             </div>
         </>

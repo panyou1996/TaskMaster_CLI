@@ -118,7 +118,7 @@ const MomentDetailScreen: React.FC = () => {
     return (
         <MainLayout>
             <div 
-                className="absolute inset-0 bg-gray-50 flex flex-col z-10 animate-page-fade-in"
+                className="absolute inset-0 bg-gray-50 dark:bg-gray-900 flex flex-col z-10 animate-page-fade-in"
             >
                 <header
                     className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-4 pt-5 bg-gradient-to-b from-black/30 to-transparent"
@@ -153,19 +153,19 @@ const MomentDetailScreen: React.FC = () => {
                     </div>
                     
                     <div className="p-6">
-                        <h1 className="text-3xl font-bold text-gray-900">{moment.title}</h1>
-                        <p className="text-sm text-gray-500 mt-1">Created on {moment.date}</p>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{moment.title}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Created on {moment.date}</p>
                         
                         <div className="mt-6">
-                            <h2 className="text-lg font-semibold text-gray-800">Notes</h2>
-                            <p className="text-base text-gray-700 mt-2 leading-relaxed whitespace-pre-wrap">{moment.notes}</p>
+                            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Notes</h2>
+                            <p className="text-base text-gray-700 dark:text-gray-300 mt-2 leading-relaxed whitespace-pre-wrap">{moment.notes}</p>
                         </div>
                         
                         <div className="mt-6">
-                             <h2 className="text-lg font-semibold text-gray-800">Tags</h2>
+                             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Tags</h2>
                              <div className="flex flex-wrap gap-2 mt-2">
                                 {moment.tags && moment.tags.map(tag => (
-                                    <span key={tag} className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                                    <span key={tag} className="px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-sm font-medium rounded-full">
                                         #{tag}
                                     </span>
                                 ))}

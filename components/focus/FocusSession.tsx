@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Task } from '../../data/mockData';
 import Button from '../common/Button';
@@ -100,7 +101,7 @@ const FocusSession: React.FC<FocusSessionProps> = ({ task, onComplete, plantType
                 <div className="min-h-[3rem] flex items-center justify-center">
                     {quote && (
                         <div className="px-6 animate-quote-fade">
-                            <p className="text-lg font-medium text-gray-600 italic">"{quote}"</p>
+                            <p className="text-lg font-medium text-gray-600 dark:text-gray-400 italic">"{quote}"</p>
                         </div>
                     )}
                 </div>
@@ -108,7 +109,7 @@ const FocusSession: React.FC<FocusSessionProps> = ({ task, onComplete, plantType
             
             <div className="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center my-4 z-10">
                 <svg className="absolute w-full h-full" viewBox="0 0 100 100">
-                    <circle className="text-gray-300/50" strokeWidth="4" stroke="currentColor" fill="transparent" r="48" cx="50" cy="50" />
+                    <circle className="text-gray-300/50 dark:text-gray-700/50" strokeWidth="4" stroke="currentColor" fill="transparent" r="48" cx="50" cy="50" />
                     <circle
                         className="text-[var(--color-primary-500)]"
                         style={{ transition: 'stroke-dashoffset 1s linear' }}
@@ -125,7 +126,7 @@ const FocusSession: React.FC<FocusSessionProps> = ({ task, onComplete, plantType
                     />
                 </svg>
                 <div className="z-10">
-                    <h2 className="text-6xl md:text-7xl font-bold text-gray-800 tabular-nums tracking-tighter">
+                    <h2 className="text-6xl md:text-7xl font-bold text-gray-800 dark:text-gray-200 tabular-nums tracking-tighter">
                         {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
                     </h2>
                 </div>
@@ -156,7 +157,7 @@ const FocusSession: React.FC<FocusSessionProps> = ({ task, onComplete, plantType
                 <div className="relative">
                     <button
                         onClick={() => setIsSoundMenuOpen(!isSoundMenuOpen)}
-                        className="p-3 bg-white/50 backdrop-blur-sm rounded-full text-gray-700 hover:bg-white/80 transition-colors"
+                        className="p-3 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-full text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-700/80 transition-colors"
                         aria-haspopup="true"
                         aria-expanded={isSoundMenuOpen}
                     >
@@ -164,20 +165,20 @@ const FocusSession: React.FC<FocusSessionProps> = ({ task, onComplete, plantType
                     </button>
 
                     {isSoundMenuOpen && (
-                        <div className="absolute bottom-full right-0 mb-2 w-36 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-2 space-y-1 animate-page-fade-in">
+                        <div className="absolute bottom-full right-0 mb-2 w-36 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-2 space-y-1 animate-page-fade-in">
                             {sounds.map(sound => (
                                 <button
                                     key={sound.name}
                                     onClick={() => handleSoundSelect(sound.file)}
-                                    className={`w-full text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${currentSound === sound.file ? 'bg-purple-100 text-purple-700' : 'text-gray-700 hover:bg-gray-200/50'}`}
+                                    className={`w-full text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${currentSound === sound.file ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'}`}
                                 >
                                     {sound.name}
                                 </button>
                             ))}
-                            <div className="border-t border-gray-900/10 my-1"/>
+                            <div className="border-t border-gray-900/10 dark:border-gray-500/20 my-1"/>
                             <button
                                 onClick={() => handleSoundSelect(null)}
-                                className={`w-full text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${!currentSound ? 'bg-gray-200 text-gray-800' : 'text-gray-700 hover:bg-gray-200/50'}`}
+                                className={`w-full text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${!currentSound ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'}`}
                             >
                                 Mute
                             </button>

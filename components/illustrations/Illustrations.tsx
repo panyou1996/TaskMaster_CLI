@@ -1,9 +1,10 @@
+
 import React from 'react';
 import Button from '../common/Button';
 
 const IllustrationContainer: React.FC<{ children: React.ReactNode; title: string; message: string; cta?: React.ReactNode }> = ({ children, title, message, cta }) => (
     <div className="flex flex-col items-center justify-center text-center p-8 h-full animate-page-fade-in">
-        <div className="w-40 h-40 text-gray-400">
+        <div className="w-40 h-40 text-gray-400 dark:text-gray-600">
             {children}
         </div>
         <h3 className="text-lg font-bold text-[var(--color-text-primary)] mt-6">{title}</h3>

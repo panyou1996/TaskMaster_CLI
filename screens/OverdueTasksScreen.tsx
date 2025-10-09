@@ -16,13 +16,13 @@ interface OverdueTasksScreenProps {
 }
 
 const colorVariants = {
-    green: { bg: 'bg-green-100' },
-    blue: { bg: 'bg-blue-100' },
-    pink: { bg: 'bg-pink-100' },
-    purple: { bg: 'bg-purple-100' },
-    yellow: { bg: 'bg-yellow-100' },
-    red: { bg: 'bg-red-100' },
-    orange: { bg: 'bg-orange-100' },
+    green: { bg: 'bg-green-100 dark:bg-green-900/30' },
+    blue: { bg: 'bg-blue-100 dark:bg-blue-900/30' },
+    pink: { bg: 'bg-pink-100 dark:bg-pink-900/30' },
+    purple: { bg: 'bg-purple-100 dark:bg-purple-900/30' },
+    yellow: { bg: 'bg-yellow-100 dark:bg-yellow-900/30' },
+    red: { bg: 'bg-red-100 dark:bg-red-900/30' },
+    orange: { bg: 'bg-orange-100 dark:bg-orange-900/30' },
 };
 
 const OverdueTasksScreen: React.FC<OverdueTasksScreenProps> = ({ isOpen, onClose, tasks, onAddTaskToToday, listInfoMap }) => {
@@ -55,18 +55,18 @@ const OverdueTasksScreen: React.FC<OverdueTasksScreenProps> = ({ isOpen, onClose
       
       {/* Modal Sheet */}
       <div 
-        className={`w-full bg-white rounded-t-3xl modal-shadow transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'} flex flex-col max-h-[80vh]`}
+        className={`w-full bg-white dark:bg-gray-800 rounded-t-3xl modal-shadow transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'} flex flex-col max-h-[80vh]`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="overdue-title"
       >
         {/* Header */}
-        <div className="pt-3 px-4 pb-3 border-b border-gray-200 flex-shrink-0">
-          <div className="w-8 h-1 bg-gray-300 rounded-full mx-auto mb-3" />
+        <div className="pt-3 px-4 pb-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-3" />
           <div className="flex justify-between items-center h-8">
-            <button className="p-1 text-gray-500 hover:text-gray-800"><TrashIcon /></button>
-            <h2 id="overdue-title" className="text-base font-bold text-gray-900">Overdue Tasks</h2>
-            <button className="p-1 text-blue-600 hover:text-blue-800"><RegenerateIcon /></button>
+            <button className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"><TrashIcon /></button>
+            <h2 id="overdue-title" className="text-base font-bold text-gray-900 dark:text-gray-100">Overdue Tasks</h2>
+            <button className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"><RegenerateIcon /></button>
           </div>
         </div>
         
@@ -80,24 +80,24 @@ const OverdueTasksScreen: React.FC<OverdueTasksScreenProps> = ({ isOpen, onClose
                  const listInfo = listInfoMap.get(task.category) || { icon: '💼', color: 'blue' };
                  const colors = colorVariants[listInfo.color as keyof typeof colorVariants] || colorVariants.blue;
                 return (
-                    <div key={task.id} className="bg-white border border-gray-200 p-3 rounded-xl flex items-center justify-between">
+                    <div key={task.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-xl flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                         <div className={`w-10 h-10 flex items-center justify-center rounded-full ${colors.bg}`}>
                             <span className="text-xl">{listInfo.icon}</span>
                         </div>
                         <div>
-                        <p className="font-semibold text-sm text-gray-800">{task.title}</p>
-                        <p className="text-xs text-red-500">{task.reason}</p>
+                        <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{task.title}</p>
+                        <p className="text-xs text-red-500 dark:text-red-400">{task.reason}</p>
                         </div>
                     </div>
-                    <button onClick={() => handleAdd(task.id)} className="text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full">
+                    <button onClick={() => handleAdd(task.id)} className="text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/40 p-1.5 rounded-full">
                         <PlusCircleIcon />
                     </button>
                     </div>
                 );
               })
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <p>No overdue tasks. Great job!</p>
             </div>
           )}

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,15 +17,15 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ title, children }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full w-full flex flex-col bg-gray-50">
+    <div className="h-full w-full flex flex-col bg-[var(--color-background-primary)]">
       <header
-        className="flex-shrink-0 p-4 flex items-center border-b bg-white sticky top-0"
+        className="flex-shrink-0 p-4 flex items-center border-b border-[var(--color-border)] bg-[var(--color-surface-container)] sticky top-0"
         style={{ paddingTop: `calc(1rem + env(safe-area-inset-top))` }}
       >
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-600 hover:text-indigo-600">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)]">
           <BackIcon />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900 ml-2">{title}</h1>
+        <h1 className="text-2xl font-bold text-[var(--color-text-primary)] ml-2">{title}</h1>
       </header>
       <main className="flex-grow overflow-y-auto p-6">
         {children}

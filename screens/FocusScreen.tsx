@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import { Task } from '../data/mockData';
@@ -83,32 +84,32 @@ const FocusScreen: React.FC = () => {
                 style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
             >
                 <div className="flex justify-start">
-                    <Link to="/today" className="text-gray-600 hover:text-gray-900 p-2 -m-2" aria-label="Back to Today">
+                    <Link to="/today" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 p-2 -m-2" aria-label="Back to Today">
                         <ChevronLeftIcon />
                     </Link>
                 </div>
                 <div className="flex justify-center">
                     {inSelectionMode ? (
-                        <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full max-w-48">
+                        <div className="grid grid-cols-2 bg-gray-200 dark:bg-gray-700 rounded-lg p-1 w-full max-w-48">
                             <button
                                 onClick={() => setViewMode('session')}
-                                className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'session' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
+                                className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'session' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
                             >
                                 Session
                             </button>
                             <button
                                 onClick={() => setViewMode('garden')}
-                                className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'garden' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
+                                className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'garden' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
                             >
                                 Garden
                             </button>
                         </div>
                     ) : (
-                        <h1 className="text-xl font-bold text-gray-900">Focus</h1>
+                        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Focus</h1>
                     )}
                 </div>
                  <div className="flex justify-end">
-                    <button className="text-gray-600 p-1" aria-label="Focus mode information">
+                    <button className="text-gray-600 dark:text-gray-400 p-1" aria-label="Focus mode information">
                         <InfoIcon className="w-6 h-6" />
                     </button>
                 </div>

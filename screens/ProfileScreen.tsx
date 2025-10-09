@@ -1,3 +1,4 @@
+
 import React, { useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
@@ -187,20 +188,20 @@ const ProfileScreen: React.FC = () => {
 
     return (
         <MainLayout hideNavBar>
-            <div className="absolute inset-0 flex flex-col bg-gray-50">
+            <div className="absolute inset-0 flex flex-col bg-gray-50 dark:bg-gray-900">
                 {/* Header */}
                 <header
-                    className="px-4 pt-6 pb-4 grid grid-cols-3 items-center flex-shrink-0 bg-white border-b sticky top-0 z-10"
+                    className="px-4 pt-6 pb-4 grid grid-cols-3 items-center flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10"
                     style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                 >
                     <div className="flex justify-start">
-                        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-600 hover:text-gray-800" aria-label="Go back">
+                        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100" aria-label="Go back">
                             <ChevronLeftIcon />
                         </button>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 text-center">Profile</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 text-center">Profile</h1>
                     <div className="flex justify-end">
-                       <button onClick={handleProfileUpdate} className="font-semibold text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-50">Save</button>
+                       <button onClick={handleProfileUpdate} className="font-semibold text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30">Save</button>
                     </div>
                 </header>
 
@@ -212,7 +213,7 @@ const ProfileScreen: React.FC = () => {
                             <img 
                                 src={profile.avatar_url}
                                 alt={profile.name}
-                                className="w-32 h-32 rounded-full border-4 border-white card-shadow object-cover"
+                                className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-800 card-shadow object-cover"
                             />
                             <input
                                 type="file"
@@ -223,38 +224,38 @@ const ProfileScreen: React.FC = () => {
                             />
                             <button 
                                 onClick={handleAvatarClick}
-                                className="absolute bottom-1 right-1 w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-md border-2 border-white hover:bg-blue-700 transition-colors" 
+                                className="absolute bottom-1 right-1 w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800 hover:bg-blue-700 transition-colors" 
                                 aria-label="Edit avatar"
                             >
                                 <EditIcon />
                             </button>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mt-4">{profile.name}</h2>
-                        <p className="text-gray-500">{profile.email}</p>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-4">{profile.name}</h2>
+                        <p className="text-gray-500 dark:text-gray-400">{profile.email}</p>
                     </section>
 
                     {/* Personal Info */}
                     <section>
-                        <h3 className="text-lg font-bold text-gray-800 mb-3">Personal Info</h3>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3">Personal Info</h3>
                         <div className="space-y-4">
                             <div>
-                                <label htmlFor="username" className="block text-sm font-medium text-gray-600 mb-1">Username</label>
+                                <label htmlFor="username" className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Username</label>
                                 <input
                                     id="username"
                                     type="text"
                                     value={profile.username}
                                     onChange={(e) => setProfile(prev => prev ? { ...prev, username: e.target.value } : null)}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
                                 />
                             </div>
                             <div>
-                                <label htmlFor="bio" className="block text-sm font-medium text-gray-600 mb-1">Bio</label>
+                                <label htmlFor="bio" className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Bio</label>
                                 <textarea
                                     id="bio"
                                     rows={3}
                                     value={profile.bio}
                                     onChange={(e) => setProfile(prev => prev ? { ...prev, bio: e.target.value } : null)}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl min-h-[80px] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-gray-900"
+                                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl min-h-[80px] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-gray-900 dark:text-gray-100"
                                 />
                             </div>
                         </div>
@@ -262,25 +263,25 @@ const ProfileScreen: React.FC = () => {
                     
                     {/* Stats */}
                     <section>
-                        <h3 className="text-lg font-bold text-gray-800 mb-3">Stats</h3>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3">Stats</h3>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white rounded-xl card-shadow p-4 text-center">
-                                <p className="text-3xl font-bold text-blue-600">{tasksCompleted}</p>
-                                <p className="text-sm text-gray-500 mt-1">Tasks Completed</p>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 text-center">
+                                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{tasksCompleted}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Tasks Completed</p>
                             </div>
-                             <div className="bg-white rounded-xl card-shadow p-4 text-center">
-                                <p className="text-3xl font-bold text-blue-600">{momentsCreated}</p>
-                                <p className="text-sm text-gray-500 mt-1">Moments Created</p>
+                             <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 text-center">
+                                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{momentsCreated}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Moments Created</p>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4 mt-4">
-                            <div className="bg-white rounded-xl card-shadow p-4 text-center">
-                                <p className="text-3xl font-bold text-purple-600">{totalFocusTime}</p>
-                                <p className="text-sm text-gray-500 mt-1">Total Focus Time</p>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 text-center">
+                                <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{totalFocusTime}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Total Focus Time</p>
                             </div>
-                             <div className="bg-white rounded-xl card-shadow p-4 text-center">
-                                <p className="text-3xl font-bold text-purple-600">{focusStreak} <span className="text-lg">days</span></p>
-                                <p className="text-sm text-gray-500 mt-1">Focus Streak</p>
+                             <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 text-center">
+                                <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{focusStreak} <span className="text-lg">days</span></p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Focus Streak</p>
                             </div>
                         </div>
                     </section>
@@ -289,7 +290,7 @@ const ProfileScreen: React.FC = () => {
                     <section className="pb-4">
                          <button 
                             onClick={handleLogout}
-                            className="w-full bg-gray-200 text-red-600 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors"
+                            className="w-full bg-gray-200 dark:bg-gray-700 text-red-600 dark:text-red-400 font-bold py-3 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                          >
                             Logout
                          </button>

@@ -91,14 +91,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const isClickRef = useRef(true);
 
     const pillColorVariants = {
-        yellow: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
-        purple: { bg: 'bg-purple-100', text: 'text-purple-800' },
-        green: { bg: 'bg-green-100', text: 'text-green-800' },
-        blue: { bg: 'bg-blue-100', text: 'text-blue-800' },
-        pink: { bg: 'bg-pink-100', text: 'text-pink-800' },
-        red: { bg: 'bg-red-100', text: 'text-red-800' },
-        orange: { bg: 'bg-orange-100', text: 'text-orange-800' },
-        gray: { bg: 'bg-gray-100', text: 'text-gray-700' },
+        yellow: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+        purple: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+        green: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+        blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+        pink: 'bg-pink-100 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300',
+        red: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+        orange: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+        gray: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
     };
 
     const checkmarkColorVariants = {
@@ -164,8 +164,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
     }, [cancelLongPress, onClick]);
 
     const containerClasses = variant === 'card' 
-        ? 'bg-white rounded-xl card-shadow border border-gray-100' 
-        : 'bg-white';
+        ? 'bg-white dark:bg-gray-800 rounded-xl card-shadow border border-gray-100 dark:border-gray-700' 
+        : 'bg-white dark:bg-gray-800';
 
     const contentClasses = variant === 'card' ? 'p-3' : 'py-3 pr-3';
 
@@ -201,7 +201,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                             className={`relative w-5 h-5 rounded-md border-2 shrink-0 transition-colors flex items-center justify-center
                                 ${isCompleting 
                                     ? 'animate-checkmark' 
-                                    : `border-gray-400 hover:border-gray-500`
+                                    : `border-gray-400 dark:border-gray-500 hover:border-gray-500 dark:hover:border-gray-400`
                                 }
                             `}
                             aria-label="Mark task as complete"
@@ -237,9 +237,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <div className="flex-grow min-w-0">
                     <div className="flex justify-between items-start gap-2">
                         <div className="flex-grow flex items-baseline gap-2 min-w-0">
-                             <p className={`truncate text-lg font-semibold ${completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>{title}</p>
+                             <p className={`truncate text-lg font-semibold ${completed ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-900 dark:text-gray-100'}`}>{title}</p>
                             {subtasks && subtasks.length > 0 && !completed && (
-                                <span className="text-xs font-medium text-gray-400 shrink-0">
+                                <span className="text-xs font-medium text-gray-400 dark:text-gray-500 shrink-0">
                                     [{subtasks.filter(s => s.completed).length}/{subtasks.length}]
                                 </span>
                             )}
@@ -248,11 +248,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
                             <button
                                 // FIX: Removed 'as number' cast
                                 onClick={(e) => { e.stopPropagation(); if (!completed) onToggleImportant?.(id); }}
-                                className={`p-1 -m-1 rounded-full ${!completed ? 'hover:bg-red-50' : 'cursor-not-allowed'}`}
+                                className={`p-1 -m-1 rounded-full ${!completed ? 'hover:bg-red-50 dark:hover:bg-red-900/20' : 'cursor-not-allowed'}`}
                                 aria-label={important ? "Remove importance" : "Mark as important"}
                                 disabled={completed}
                             >
-                                <FlagIcon className={`w-4 h-4 transition-colors ${important ? (completed ? 'text-red-300' : 'text-red-500') : 'text-gray-300'}`} />
+                                <FlagIcon className={`w-4 h-4 transition-colors ${important ? (completed ? 'text-red-300 dark:text-red-700' : 'text-red-500 dark:text-red-400') : 'text-gray-300 dark:text-gray-600'}`} />
                             </button>
                         </div>
                     </div>
@@ -260,12 +260,12 @@ const TaskCard: React.FC<TaskCardProps> = ({
                     {!completed && (
                         <div className="flex justify-between items-center mt-1.5">
                             <div className="flex flex-wrap items-center gap-2 text-xs">
-                                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${pillColors.bg} ${pillColors.text}`}>
+                                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${pillColors}`}>
                                     {categoryIcon && <span>{categoryIcon}</span>}
                                     <span className="font-medium">{category}</span>
                                 </div>
                                 {duration && (
-                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-medium">
+                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
                                         {endTime ? (
                                             <span>{duration}m &rarr; {endTime}</span>
                                         ) : (
@@ -277,7 +277,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                             {subtasks && subtasks.length > 0 && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onToggleSubtaskVisibility?.(); }}
-                                    className="p-1.5 -m-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all shrink-0"
+                                    className="p-1.5 -m-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all shrink-0"
                                     aria-label={hideSubtasks ? "Expand subtasks" : "Collapse subtasks"}
                                 >
                                     <ChevronRightElegantIcon className={`w-3.5 h-3.5 transition-transform duration-300 ${hideSubtasks ? '' : 'rotate-90'}`} />
@@ -288,7 +288,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${(!hideSubtasks && subtasks && subtasks.length > 0) ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                         <div className="overflow-hidden">
-                            <div className="mt-2 pt-2 border-t border-gray-200/60 space-y-1.5">
+                            <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-gray-700 space-y-1.5">
                                 {subtasks?.map(sub => (
                                     <div key={sub.id} className="flex items-center gap-2">
                                         <input
@@ -296,13 +296,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
                                             id={`subtask-${sub.id}`}
                                             checked={sub.completed}
                                             onChange={(e) => { e.stopPropagation(); !completed && onToggleSubtask?.(id, sub.id); }}
-                                            className="h-3.5 w-3.5 rounded-sm border-gray-400 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="h-3.5 w-3.5 rounded-sm border-gray-400 dark:border-gray-500 text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:focus:ring-offset-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                             disabled={completed}
                                         />
                                         <label 
                                             htmlFor={`subtask-${sub.id}`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className={`text-sm ${completed ? 'cursor-not-allowed' : 'cursor-pointer'} ${sub.completed || completed ? 'text-gray-500 line-through' : 'text-gray-700'}`}>
+                                            className={`text-sm ${completed ? 'cursor-not-allowed' : 'cursor-pointer'} ${sub.completed || completed ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {sub.text}
                                         </label>
                                     </div>

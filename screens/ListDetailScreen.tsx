@@ -11,13 +11,13 @@ import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
 
 const colorVariants = {
-    green: { bg: 'bg-green-100', text: 'text-green-600' },
-    blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
-    pink: { bg: 'bg-pink-100', text: 'text-pink-600' },
-    purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
-    yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600' },
-    red: { bg: 'bg-red-100', text: 'text-red-600' },
-    orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
+    green: { bg: 'bg-green-100 dark:bg-green-900/30' },
+    blue: { bg: 'bg-blue-100 dark:bg-blue-900/30' },
+    pink: { bg: 'bg-pink-100 dark:bg-pink-900/30' },
+    purple: { bg: 'bg-purple-100 dark:bg-purple-900/30' },
+    yellow: { bg: 'bg-yellow-100 dark:bg-yellow-900/30' },
+    red: { bg: 'bg-red-100 dark:bg-red-900/30' },
+    orange: { bg: 'bg-orange-100 dark:bg-orange-900/30' },
 };
 
 type FilterType = 'overdue' | 'dueIn3Days' | 'dueThisWeek' | 'startIn3Days' | 'startThisWeek' | 'custom' | null;
@@ -71,10 +71,10 @@ const CustomDateRangeSheet: React.FC<CustomDateRangeSheetProps> = ({
     return (
         <div className={`fixed inset-0 z-50 flex items-end transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
             <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
-            <div className={`w-full bg-white rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`} role="dialog">
-                <header className="pt-3 px-4 pb-3 border-b border-gray-200">
-                    <div className="w-8 h-1 bg-gray-300 rounded-full mx-auto mb-3" />
-                    <h2 className="text-base font-bold text-gray-900 text-center">Custom Date Range</h2>
+            <div className={`w-full bg-white dark:bg-gray-800 rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`} role="dialog">
+                <header className="pt-3 px-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-3" />
+                    <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 text-center">Custom Date Range</h2>
                 </header>
                 <div
                     className="p-4 space-y-4 pb-8"
@@ -82,19 +82,19 @@ const CustomDateRangeSheet: React.FC<CustomDateRangeSheetProps> = ({
                 >
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                            <input type="date" id="start-date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                            <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+                            <input type="date" id="start-date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                         </div>
                         <div>
-                            <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                            <input type="date" id="end-date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                            <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                            <input type="date" id="end-date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Apply range to</label>
-                        <div className="flex bg-gray-200 rounded-lg p-1">
-                            <button type="button" onClick={() => setRangeType('due')} className={`w-1/2 py-1.5 text-sm font-semibold rounded-md transition-all ${rangeType === 'due' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Due Date</button>
-                            <button type="button" onClick={() => setRangeType('start')} className={`w-1/2 py-1.5 text-sm font-semibold rounded-md transition-all ${rangeType === 'start' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Start Date</button>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Apply range to</label>
+                        <div className="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+                            <button type="button" onClick={() => setRangeType('due')} className={`w-1/2 py-1.5 text-sm font-semibold rounded-md transition-all ${rangeType === 'due' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Due Date</button>
+                            <button type="button" onClick={() => setRangeType('start')} className={`w-1/2 py-1.5 text-sm font-semibold rounded-md transition-all ${rangeType === 'start' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Start Date</button>
                         </div>
                     </div>
                     <button onClick={handleApply} className="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors mt-2 !-mb-2">
@@ -130,23 +130,23 @@ const FilterSheet: React.FC<{
     return (
         <div className={`fixed inset-0 z-50 flex items-end transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
             <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
-            <div className={`w-full bg-white rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`} role="dialog" aria-modal="true" aria-labelledby="filter-title">
-                <header className="pt-3 px-4 pb-3 border-b border-gray-200">
-                    <div className="w-8 h-1 bg-gray-300 rounded-full mx-auto mb-3" />
-                    <h2 id="filter-title" className="text-base font-bold text-gray-900 text-center">Filter Tasks</h2>
+            <div className={`w-full bg-white dark:bg-gray-800 rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`} role="dialog" aria-modal="true" aria-labelledby="filter-title">
+                <header className="pt-3 px-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-3" />
+                    <h2 id="filter-title" className="text-base font-bold text-gray-900 dark:text-gray-100 text-center">Filter Tasks</h2>
                 </header>
                 <div
                     className="p-4 space-y-2 pb-8"
                     style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom))` }}
                 >
                     {filters.map(filter => (
-                        <button key={filter.label} onClick={() => handleSelect(filter.value)} className={`w-full text-left p-3 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${currentFilter === filter.value ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-800'}`}>
+                        <button key={filter.label} onClick={() => handleSelect(filter.value)} className={`w-full text-left p-3 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${currentFilter === filter.value ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
                             <span>{filter.label}</span>
                             {currentFilter === filter.value && <CheckIcon />}
                         </button>
                     ))}
-                    <div className="border-t border-gray-200 my-2 !mt-4" />
-                     <button onClick={onCustomRangeClick} className={`w-full text-left p-3 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${currentFilter === 'custom' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-800'}`}>
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-2 !mt-4" />
+                     <button onClick={onCustomRangeClick} className={`w-full text-left p-3 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${currentFilter === 'custom' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
                         <span>Custom Range...</span>
                         {currentFilter === 'custom' && <CheckIcon />}
                     </button>
@@ -178,17 +178,17 @@ const SortSheet: React.FC<{
     return (
          <div className={`fixed inset-0 z-50 flex items-end transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
             <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
-            <div className={`w-full bg-white rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`} role="dialog" aria-modal="true" aria-labelledby="sort-title">
-                <header className="pt-3 px-4 pb-3 border-b border-gray-200">
-                    <div className="w-8 h-1 bg-gray-300 rounded-full mx-auto mb-3" />
-                    <h2 id="sort-title" className="text-base font-bold text-gray-900 text-center">Sort Tasks</h2>
+            <div className={`w-full bg-white dark:bg-gray-800 rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`} role="dialog" aria-modal="true" aria-labelledby="sort-title">
+                <header className="pt-3 px-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-3" />
+                    <h2 id="sort-title" className="text-base font-bold text-gray-900 dark:text-gray-100 text-center">Sort Tasks</h2>
                 </header>
                 <div
                     className="p-4 space-y-2 pb-8"
                     style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom))` }}
                 >
                     {sortOptions.map(option => (
-                        <button key={option.value} onClick={() => handleSelect(option.value)} className={`w-full text-left p-3 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${currentSort === option.value ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-800'}`}>
+                        <button key={option.value} onClick={() => handleSelect(option.value)} className={`w-full text-left p-3 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${currentSort === option.value ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
                             <span>{option.label}</span>
                             {currentSort === option.value && <CheckIcon />}
                         </button>
@@ -453,24 +453,24 @@ const ListDetailScreen: React.FC = () => {
                     className="px-4 pt-6 pb-4 flex items-center gap-2 flex-shrink-0"
                     style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                 >
-                    <button onClick={() => navigate('/plan')} className="p-2 text-gray-600 hover:text-blue-600">
+                    <button onClick={() => navigate('/plan')} className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                         <ChevronLeftIcon />
                     </button>
                     <div className={`p-2 rounded-lg flex items-center justify-center w-10 h-10 ${listColor.bg}`}>
                         <span className="text-xl">{currentList.icon}</span>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900">{currentList.name}</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{currentList.name}</h1>
                     <div className="flex-grow" />
                     <button 
                         onClick={() => setIsSortOpen(true)}
-                        className={`p-2 rounded-full transition-colors ${activeSort !== 'default' ? 'text-blue-600 bg-blue-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                        className={`p-2 rounded-full transition-colors ${activeSort !== 'default' ? 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                         aria-label="Sort tasks"
                     >
                         <SortIcon />
                     </button>
                     <button 
                         onClick={() => setIsFilterOpen(true)}
-                        className={`p-2 rounded-full transition-colors ${activeFilter ? 'text-blue-600 bg-blue-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                        className={`p-2 rounded-full transition-colors ${activeFilter ? 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                         aria-label="Filter tasks"
                     >
                         <FilterIcon />
@@ -480,9 +480,9 @@ const ListDetailScreen: React.FC = () => {
                 <main className="px-6 pb-6 overflow-y-auto flex-grow">
                     {(tasks.length === 0 && finishedTasks.length === 0 && activeFilter) ? (
                         <div className="text-center py-16">
-                             <p className="text-lg font-semibold text-gray-700">No tasks match your filter</p>
-                            <p className="text-gray-500 mt-1">Try adjusting or clearing the filter.</p>
-                            <button onClick={clearFilter} className="mt-4 px-4 py-2 text-sm font-semibold bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                             <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">No tasks match your filter</p>
+                            <p className="text-gray-500 dark:text-gray-400 mt-1">Try adjusting or clearing the filter.</p>
+                            <button onClick={clearFilter} className="mt-4 px-4 py-2 text-sm font-semibold bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
                                 Clear Filter
                             </button>
                         </div>
@@ -492,7 +492,7 @@ const ListDetailScreen: React.FC = () => {
                         <>
                             {tasks.length > 0 && (
                                 <section>
-                                    <h2 className="text-base font-bold text-gray-800 mb-3">Tasks</h2>
+                                    <h2 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-3">Tasks</h2>
                                     <div className="space-y-3">
                                         {tasks.map(task => {
                                              const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
@@ -524,8 +524,8 @@ const ListDetailScreen: React.FC = () => {
                                         className="w-full flex justify-between items-center mb-3"
                                         aria-expanded={isFinishedTasksVisible}
                                     >
-                                        <h2 className="text-base font-bold text-gray-800">Finished Tasks</h2>
-                                        <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isFinishedTasksVisible ? 'rotate-180' : ''}`} />
+                                        <h2 className="text-base font-bold text-gray-800 dark:text-gray-200">Finished Tasks</h2>
+                                        <ChevronDownIcon className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isFinishedTasksVisible ? 'rotate-180' : ''}`} />
                                     </button>
                                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isFinishedTasksVisible ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                         <div className="overflow-hidden">

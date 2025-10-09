@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export const RecommendIcon: React.FC = () => (
@@ -197,7 +198,7 @@ export const ChevronLeftIcon: React.FC = () => (
 );
 
 export const ChevronRightIcon: React.FC = () => (
-    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg className="w-5 h-5 text-[var(--color-text-tertiary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
     </svg>
 );

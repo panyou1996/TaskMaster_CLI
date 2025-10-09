@@ -21,13 +21,13 @@ import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
 
 const colorVariants = {
-    green: { bg: 'bg-green-100', text: 'text-green-600' },
-    blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
-    pink: { bg: 'bg-pink-100', text: 'text-pink-600' },
-    purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
-    yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600' },
-    red: { bg: 'bg-red-100', text: 'text-red-600' },
-    orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
+    green: { bg: 'bg-green-100 dark:bg-green-900/30' },
+    blue: { bg: 'bg-blue-100 dark:bg-blue-900/30' },
+    pink: { bg: 'bg-pink-100 dark:bg-pink-900/30' },
+    purple: { bg: 'bg-purple-100 dark:bg-purple-900/30' },
+    yellow: { bg: 'bg-yellow-100 dark:bg-yellow-900/30' },
+    red: { bg: 'bg-red-100 dark:bg-red-900/30' },
+    orange: { bg: 'bg-orange-100 dark:bg-orange-900/30' },
 };
 
 const formatDateToYYYYMMDD = (date: Date) => {
@@ -334,7 +334,7 @@ const PlanScreen: React.FC = () => {
         <MainLayout>
              <div className="absolute inset-0 flex flex-col overflow-hidden">
                 <div className={`absolute top-0 left-0 right-0 h-14 flex justify-center items-center transition-opacity duration-300 pointer-events-none ${pullDelta > 0 || isRefreshing ? 'opacity-100' : 'opacity-0'}`}>
-                    {isRefreshing ? <RefreshSpinnerIcon /> : <ChevronDownIcon className={`w-6 h-6 text-gray-500 transition-transform duration-300 ${pullDelta > REFRESH_THRESHOLD ? 'rotate-180' : ''}`} />}
+                    {isRefreshing ? <RefreshSpinnerIcon /> : <ChevronDownIcon className={`w-6 h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${pullDelta > REFRESH_THRESHOLD ? 'rotate-180' : ''}`} />}
                 </div>
                 <div
                     className="h-full flex flex-col"
@@ -348,21 +348,21 @@ const PlanScreen: React.FC = () => {
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                         <div className="flex justify-start">
-                            <button className="text-gray-600 p-1" onClick={() => setIsSearchVisible(true)}>
+                            <button className="text-gray-600 dark:text-gray-400 p-1" onClick={() => setIsSearchVisible(true)}>
                                 <SearchIcon />
                             </button>
                         </div>
                         <div className="flex justify-center">
-                            <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full max-w-48">
-                                <button onClick={() => setViewMode('lists')} className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'lists' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Lists</button>
-                                <button onClick={() => setViewMode('calendar')} className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>Calendar</button>
+                            <div className="grid grid-cols-2 bg-gray-200 dark:bg-gray-700 rounded-lg p-1 w-full max-w-48">
+                                <button onClick={() => setViewMode('lists')} className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'lists' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Lists</button>
+                                <button onClick={() => setViewMode('calendar')} className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Calendar</button>
                             </div>
                         </div>
                         <div className="flex justify-end">
                             {viewMode === 'lists' ? (
-                                <button className="text-gray-800" onClick={() => setIsAddListOpen(true)}><PlusIconHeader /></button>
+                                <button className="text-gray-800 dark:text-gray-200" onClick={() => setIsAddListOpen(true)}><PlusIconHeader /></button>
                             ) : (
-                                <button onClick={() => setTaskFilterMode(p => p === 'due' ? 'start' : 'due')} className="text-gray-600 p-1 rounded-full hover:bg-gray-100"><HamburgerMenuIcon /></button>
+                                <button onClick={() => setTaskFilterMode(p => p === 'due' ? 'start' : 'due')} className="text-gray-600 dark:text-gray-400 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><HamburgerMenuIcon /></button>
                             )}
                         </div>
                     </header>
@@ -381,9 +381,9 @@ const PlanScreen: React.FC = () => {
                                         {taskLists.map(list => {
                                             const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
                                             return (
-                                                <div key={list.id} onPointerDown={() => onPointerDown(list)} onPointerUp={() => onPointerUp(list.id)} onPointerLeave={cancelLongPress} onPointerCancel={cancelLongPress} className="bg-white p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 transition-colors select-none" onContextMenu={(e) => e.preventDefault()}>
+                                                <div key={list.id} onPointerDown={() => onPointerDown(list)} onPointerUp={() => onPointerUp(list.id)} onPointerLeave={cancelLongPress} onPointerCancel={cancelLongPress} className="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors select-none" onContextMenu={(e) => e.preventDefault()}>
                                                     <div className={`p-2 rounded-lg flex items-center justify-center w-12 h-12 ${colors.bg}`}><span className="text-2xl">{list.icon}</span></div>
-                                                    <div><p className="font-semibold text-gray-800">{list.name}</p><p className="text-sm text-gray-500">{taskCounts[list.name] || 0} tasks</p></div>
+                                                    <div><p className="font-semibold text-gray-800 dark:text-gray-200">{list.name}</p><p className="text-sm text-gray-500 dark:text-gray-400">{taskCounts[list.name] || 0} tasks</p></div>
                                                 </div>
                                             );
                                         })}
@@ -395,22 +395,22 @@ const PlanScreen: React.FC = () => {
                                 <div className="pt-4 -mx-1">
                                     <div className="mb-6 flex-shrink-0">
                                         <div className={`flex items-center mb-4 ${isCalendarCollapsed ? 'justify-center' : 'justify-between'}`}>
-                                            {!isCalendarCollapsed && <button onClick={handlePrevMonth} className="p-1 text-gray-500 hover:text-gray-800"><ChevronLeftIcon /></button>}
-                                            <button onClick={() => setIsCalendarCollapsed(!isCalendarCollapsed)} className="flex items-center gap-1 font-bold text-lg text-gray-800 focus:outline-none rounded-md px-2 py-1 hover:bg-gray-100">
+                                            {!isCalendarCollapsed && <button onClick={handlePrevMonth} className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"><ChevronLeftIcon /></button>}
+                                            <button onClick={() => setIsCalendarCollapsed(!isCalendarCollapsed)} className="flex items-center gap-1 font-bold text-lg text-gray-800 dark:text-gray-200 focus:outline-none rounded-md px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700">
                                                 {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                                <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isCalendarCollapsed ? 'rotate-180' : ''}`} />
+                                                <ChevronDownIcon className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isCalendarCollapsed ? 'rotate-180' : ''}`} />
                                             </button>
-                                            {!isCalendarCollapsed && <button onClick={handleNextMonth} className="p-1 text-gray-500 hover:text-gray-800"><ChevronRightIcon /></button>}
+                                            {!isCalendarCollapsed && <button onClick={handleNextMonth} className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"><ChevronRightIcon /></button>}
                                         </div>
                                         <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCalendarCollapsed ? 'max-h-20' : 'max-h-96'}`}>
                                             <div className="grid grid-cols-7 gap-y-2 text-center">
-                                                {dayHeaders.map(day => <div key={day} className="text-sm font-medium text-gray-500">{day}</div>)}
+                                                {dayHeaders.map(day => <div key={day} className="text-sm font-medium text-gray-500 dark:text-gray-400">{day}</div>)}
                                                 {displayedDays.map((dayObj, index) => {
                                                     const isSelected = dayObj.date && isSameDay(dayObj.date, selectedDate);
                                                     const isToday = dayObj.date && isSameDay(dayObj.date, today);
-                                                    let buttonClass = 'text-gray-700 hover:bg-gray-100';
+                                                    let buttonClass = 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700';
                                                     if (isSelected) buttonClass = 'bg-blue-600 text-white';
-                                                    else if (isToday) buttonClass = 'bg-gray-100 text-gray-800';
+                                                    else if (isToday) buttonClass = 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
                                                     return (
                                                         <div key={index} className="py-1.5 flex justify-center items-center">
                                                             {dayObj.day && (<button onClick={() => dayObj.date && handleSelectDate(dayObj.date)} className={`w-8 h-8 rounded-full text-sm font-medium flex flex-col items-center justify-center transition-colors relative ${buttonClass}`}>
@@ -424,7 +424,7 @@ const PlanScreen: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="flex-grow flex flex-col">
-                                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex-shrink-0">
+                                        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex-shrink-0">
                                             {taskFilterMode === 'due' ? 'Tasks Due for ' : 'Tasks Starting '}
                                             {selectedDate.toLocaleString('default', { month: 'long' })} {selectedDate.getDate()}
                                         </h2>
@@ -440,7 +440,7 @@ const PlanScreen: React.FC = () => {
             </div>
 
             {/* Search Overlay */}
-            <div className={`fixed inset-0 z-40 bg-gray-50 flex flex-col transition-transform duration-300 ease-in-out ${isSearchVisible ? 'translate-y-0' : 'translate-y-full'}`}
+            <div className={`fixed inset-0 z-40 bg-gray-50 dark:bg-gray-900 flex flex-col transition-transform duration-300 ease-in-out ${isSearchVisible ? 'translate-y-0' : 'translate-y-full'}`}
                  style={{ paddingTop: `env(safe-area-inset-top)` }}>
                 <div className="flex-shrink-0 px-4 pt-4 pb-3 flex items-center gap-2">
                     <div className="relative flex-grow">
@@ -453,12 +453,12 @@ const PlanScreen: React.FC = () => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search lists..."
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
                         />
                     </div>
                     <button 
                         onClick={() => { setIsSearchVisible(false); setSearchQuery(''); }}
-                        className="font-semibold text-blue-600 px-2"
+                        className="font-semibold text-blue-600 dark:text-blue-400 px-2"
                     >
                         Cancel
                     </button>
@@ -467,17 +467,17 @@ const PlanScreen: React.FC = () => {
                 <div className="flex-grow overflow-y-auto px-6 pb-24">
                     {filteredTaskLists.length === 0 && searchQuery ? (
                         <div className="text-center py-16">
-                            <p className="text-lg font-semibold text-gray-700">No lists found</p>
-                            <p className="text-gray-500 mt-1">Try a different search term.</p>
+                            <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">No lists found</p>
+                            <p className="text-gray-500 dark:text-gray-400 mt-1">Try a different search term.</p>
                         </div>
                     ) : (
                         <div className="space-y-3 pt-4">
                             {filteredTaskLists.map(list => {
                                 const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
                                 return (
-                                    <div key={list.id} onPointerDown={() => onPointerDown(list)} onPointerUp={() => onPointerUp(list.id)} onPointerLeave={cancelLongPress} onPointerCancel={cancelLongPress} className="bg-white p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 transition-colors select-none" onContextMenu={(e) => e.preventDefault()}>
+                                    <div key={list.id} onPointerDown={() => onPointerDown(list)} onPointerUp={() => onPointerUp(list.id)} onPointerLeave={cancelLongPress} onPointerCancel={cancelLongPress} className="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors select-none" onContextMenu={(e) => e.preventDefault()}>
                                         <div className={`p-2 rounded-lg flex items-center justify-center w-12 h-12 ${colors.bg}`}><span className="text-2xl">{list.icon}</span></div>
-                                        <div><p className="font-semibold text-gray-800">{list.name}</p><p className="text-sm text-gray-500">{taskCounts[list.name] || 0} tasks</p></div>
+                                        <div><p className="font-semibold text-gray-800 dark:text-gray-200">{list.name}</p><p className="text-sm text-gray-500 dark:text-gray-400">{taskCounts[list.name] || 0} tasks</p></div>
                                     </div>
                                 );
                             })}

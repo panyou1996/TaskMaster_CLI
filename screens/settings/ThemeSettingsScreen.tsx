@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import SettingsLayout from '../../components/layouts/SettingsLayout';
 import useLocalStorage from '../../hooks/useLocalStorage';
@@ -16,13 +17,13 @@ const ThemeOption: React.FC<{ theme: Theme; selected: boolean; onSelect: () => v
     return (
         <div 
             onClick={onSelect} 
-            className={`cursor-pointer rounded-lg p-4 border-2 transition-all ${selected ? 'border-indigo-600' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'}`}
+            className={`cursor-pointer rounded-lg p-4 border-2 transition-all ${selected ? 'border-[var(--color-primary-500)]' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'}`}
         >
             <div className={`w-full h-24 rounded-md flex flex-col p-2 justify-between ${visual.bg} ${visual.border} border`}>
-                <div className={`w-3/4 h-2 rounded-sm ${selected ? 'bg-indigo-400' : 'bg-gray-400'}`}></div>
-                <div className={`w-1/2 h-2 rounded-sm ${selected ? 'bg-indigo-300' : 'bg-gray-300'}`}></div>
+                <div className={`w-3/4 h-2 rounded-sm ${selected ? 'bg-[var(--color-primary-500)]' : 'bg-gray-400'}`}></div>
+                <div className={`w-1/2 h-2 rounded-sm ${selected ? 'bg-[var(--color-primary-200)]' : 'bg-gray-300'}`}></div>
             </div>
-            <p className={`mt-3 text-center font-medium ${selected ? 'text-indigo-600' : 'text-gray-700 dark:text-gray-300'}`}>{theme} Mode</p>
+            <p className={`mt-3 text-center font-medium ${selected ? 'text-[var(--color-primary-500)]' : 'text-gray-700 dark:text-gray-300'}`}>{theme} Mode</p>
         </div>
     );
 };
@@ -43,10 +44,10 @@ const FontSizeOption: React.FC<{
   return (
     <div
       onClick={onSelect}
-      className={`cursor-pointer rounded-lg p-3 border-2 flex flex-col items-center justify-center transition-all h-24 ${selected ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'}`}
+      className={`cursor-pointer rounded-lg p-3 border-2 flex flex-col items-center justify-center transition-all h-24 ${selected ? 'border-[var(--color-primary-500)] bg-primary-100 dark:bg-primary-900/20' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'}`}
     >
       <div className={`font-semibold ${sizeClasses[size]}`}>Aa</div>
-      <p className={`mt-2 text-center text-xs font-medium ${selected ? 'text-indigo-600' : 'text-gray-700 dark:text-gray-300'}`}>{label}</p>
+      <p className={`mt-2 text-center text-xs font-medium ${selected ? 'text-[var(--color-primary-500)]' : 'text-gray-700 dark:text-gray-300'}`}>{label}</p>
     </div>
   );
 };

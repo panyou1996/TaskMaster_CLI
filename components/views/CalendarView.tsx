@@ -88,26 +88,26 @@ const CalendarView: React.FC = () => {
             <div className="pt-4">
                 <div className="mb-6 flex-shrink-0">
                     <div className={`flex items-center mb-4 ${isCalendarCollapsed ? 'justify-center' : 'justify-between'}`}>
-                        {!isCalendarCollapsed && <button onClick={handlePrevMonth} className="p-1 text-gray-500 hover:text-gray-800" aria-label="Previous month"><ChevronLeftIcon /></button>}
+                        {!isCalendarCollapsed && <button onClick={handlePrevMonth} className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" aria-label="Previous month"><ChevronLeftIcon /></button>}
                         <button 
                             onClick={() => setIsCalendarCollapsed(!isCalendarCollapsed)} 
-                            className="flex items-center gap-1 font-bold text-lg text-gray-800 focus:outline-none rounded-md px-2 py-1 hover:bg-gray-100"
+                            className="flex items-center gap-1 font-bold text-lg text-gray-800 dark:text-gray-200 focus:outline-none rounded-md px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
                             aria-expanded={!isCalendarCollapsed}
                         >
                             {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                            <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isCalendarCollapsed ? 'rotate-180' : ''}`} />
+                            <ChevronDownIcon className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isCalendarCollapsed ? 'rotate-180' : ''}`} />
                         </button>
-                        {!isCalendarCollapsed && <button onClick={handleNextMonth} className="p-1 text-gray-500 hover:text-gray-800" aria-label="Next month"><ChevronRightIcon /></button>}
+                        {!isCalendarCollapsed && <button onClick={handleNextMonth} className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" aria-label="Next month"><ChevronRightIcon /></button>}
                     </div>
                     <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCalendarCollapsed ? 'max-h-32' : 'max-h-[30rem]'}`}>
                         <div className="grid grid-cols-7 gap-1 text-center">
-                            {dayHeaders.map(day => <div key={day} className="text-sm h-8 flex items-center justify-center font-medium text-gray-500">{day}</div>)}
+                            {dayHeaders.map(day => <div key={day} className="text-sm h-8 flex items-center justify-center font-medium text-gray-500 dark:text-gray-400">{day}</div>)}
                             {displayedDays.map((dayObj, index) => {
                                 const isSelected = dayObj.date && isSameDay(dayObj.date, selectedDate);
                                 const isToday = dayObj.date && isSameDay(dayObj.date, today);
-                                let buttonClass = 'bg-white text-gray-700 hover:bg-gray-100';
+                                let buttonClass = 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700';
                                 if (isSelected) buttonClass = 'bg-blue-600 text-white';
-                                else if (isToday) buttonClass = 'bg-gray-100 text-gray-800';
+                                else if (isToday) buttonClass = 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
 
                                 const tagsForDay = Array.from(new Set(dayObj.moments.flatMap(m => m.tags || [])));
 
@@ -118,18 +118,18 @@ const CalendarView: React.FC = () => {
                                                 onClick={() => dayObj.date && setSelectedDate(dayObj.date)}
                                                 className={`w-full h-20 rounded-lg text-sm font-medium flex flex-col items-center pt-1.5 transition-colors relative ${buttonClass}`}
                                             >
-                                                <span className={`w-6 h-6 flex items-center justify-center rounded-full ${isSelected ? '' : isToday ? 'bg-white' : ''}`}>
+                                                <span className={`w-6 h-6 flex items-center justify-center rounded-full ${isSelected ? '' : isToday ? 'bg-white dark:bg-gray-800' : ''}`}>
                                                     {dayObj.day}
                                                 </span>
                                                  {tagsForDay.length > 0 && (
                                                     <div className="mt-1 w-full px-1 space-y-0.5 overflow-hidden">
                                                         {tagsForDay.slice(0, 2).map(tag => (
-                                                            <div key={tag} className={`text-xs text-left truncate px-1 rounded-sm ${isSelected ? 'bg-white/20 text-white' : 'bg-purple-50 text-purple-700'}`}>
+                                                            <div key={tag} className={`text-xs text-left truncate px-1 rounded-sm ${isSelected ? 'bg-white/20 text-white' : 'bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'}`}>
                                                                 {tag}
                                                             </div>
                                                         ))}
                                                         {tagsForDay.length > 2 && (
-                                                            <div className={`text-xs text-center ${isSelected ? 'text-purple-100' : 'text-gray-400'}`}>+ {tagsForDay.length - 2} more</div>
+                                                            <div className={`text-xs text-center ${isSelected ? 'text-purple-100' : 'text-gray-400 dark:text-gray-500'}`}>+ {tagsForDay.length - 2} more</div>
                                                         )}
                                                     </div>
                                                 )}
@@ -143,11 +143,11 @@ const CalendarView: React.FC = () => {
                 </div>
 
                 <div className="flex-grow flex flex-col">
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 flex-shrink-0">
+                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex-shrink-0">
                         Check-ins for {selectedDate.toLocaleString('default', { month: 'long' })} {selectedDate.getDate()}
                     </h2>
                     {selectedDayMoments.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">No check-ins for this day.</div>
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">No check-ins for this day.</div>
                     ) : (
                         <div className="grid grid-cols-3 gap-2">
                              {selectedDayMoments.map(moment => (

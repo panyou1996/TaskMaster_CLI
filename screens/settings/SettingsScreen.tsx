@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CloseIcon, ChevronRightIcon, SyncIcon, DownloadIcon, UploadIcon, RefreshSpinnerIcon, BellIcon, ListCheckIcon, PaletteIcon, InfoIcon } from '../../components/icons/Icons';
@@ -7,7 +8,7 @@ import Button from '../../components/common/Button';
 import MainLayout from '../../components/layouts/MainLayout';
 
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
-    <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 pb-2 pt-6">
+    <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-4 pb-2 pt-6">
         {title}
     </h2>
 );
@@ -20,13 +21,13 @@ interface SettingsItemProps {
 }
 
 const SettingsItem: React.FC<SettingsItemProps> = ({ children, onClick, isLink = false, icon }) => {
-    const commonClasses = "flex items-center p-4 text-gray-800";
-    const interactionClasses = isLink ? "hover:bg-gray-50 transition-colors cursor-pointer" : "";
+    const commonClasses = "flex items-center p-4 text-gray-800 dark:text-gray-200";
+    const interactionClasses = isLink ? "hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" : "";
     
     const content = (
         <>
             {icon && (
-                <div className="mr-4 w-7 h-7 flex items-center justify-center bg-gray-100 rounded-lg text-gray-600">
+                <div className="mr-4 w-7 h-7 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300">
                     {icon}
                 </div>
             )}
@@ -58,20 +59,20 @@ const SettingsScreen: React.FC = () => {
     const hasPendingChanges = offlineQueue.length > 0;
 
     let syncStatusText = "Synced";
-    let syncStatusColor = "text-green-600";
+    let syncStatusColor = "text-green-600 dark:text-green-400";
     
     if (syncError) {
         syncStatusText = "Sync Failed";
-        syncStatusColor = "text-red-600";
+        syncStatusColor = "text-red-600 dark:text-red-400";
     } else if (!isOnline) {
         syncStatusText = "Offline";
-        syncStatusColor = "text-red-600";
+        syncStatusColor = "text-red-600 dark:text-red-400";
     } else if (isSyncing) {
         syncStatusText = "Syncing...";
-        syncStatusColor = "text-blue-600";
+        syncStatusColor = "text-blue-600 dark:text-blue-400";
     } else if (hasPendingChanges) {
         syncStatusText = `${offlineQueue.length} pending change${offlineQueue.length > 1 ? 's' : ''}`;
-        syncStatusColor = "text-yellow-600";
+        syncStatusColor = "text-yellow-600 dark:text-yellow-400";
     }
 
     const handleSyncNow = () => {
@@ -194,24 +195,24 @@ const SettingsScreen: React.FC = () => {
                     className="px-6 pt-6 pb-4 flex justify-center items-center flex-shrink-0"
                     style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                 >
-                    <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
                 </header>
                 <main className="overflow-y-auto">
                     <div className="p-4" style={{ paddingBottom: `calc(6rem + env(safe-area-inset-bottom))` }}>
                         <SectionHeader title="Account" />
                         <Link to="/profile" className="block">
-                            <div className="bg-white rounded-xl p-4 flex items-center gap-4 card-shadow hover:bg-gray-50 transition-colors">
+                            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 flex items-center gap-4 card-shadow hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                 <img src={profile.avatar_url} alt="User Avatar" className="w-14 h-14 rounded-full object-cover" />
                                 <div className="flex-grow">
-                                    <p className="font-semibold text-lg text-gray-900">{profile.name}</p>
-                                    <p className="text-gray-500">{profile.email}</p>
+                                    <p className="font-semibold text-lg text-gray-900 dark:text-gray-100">{profile.name}</p>
+                                    <p className="text-gray-500 dark:text-gray-400">{profile.email}</p>
                                 </div>
                                 <ChevronRightIcon />
                             </div>
                         </Link>
 
                         <SectionHeader title="Preferences" />
-                        <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-100">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
                             <Link to="/settings/notifications">
                                 <SettingsItem isLink icon={<BellIcon />}>
                                     <span>Notifications</span>
@@ -226,12 +227,12 @@ const SettingsScreen: React.FC = () => {
                             </Link>
                             <SettingsItem isLink>
                                 <span className="flex items-center gap-4">
-                                    <div className="w-7 h-7 flex items-center justify-center bg-gray-100 rounded-lg text-gray-600">
+                                    <div className="w-7 h-7 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300">
                                         <ListCheckIcon />
                                     </div>
                                     <span>Default List</span>
                                 </span>
-                                <div className="flex items-center gap-2 text-gray-500">
+                                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                                     <span>Personal</span>
                                     <ChevronRightIcon />
                                 </div>
@@ -241,35 +242,35 @@ const SettingsScreen: React.FC = () => {
                         {syncError && (
                             <>
                                 <SectionHeader title="Sync Error" />
-                                <div className="bg-white rounded-xl card-shadow p-4 space-y-3">
-                                    <p className="text-sm text-red-600">{syncError}</p>
+                                <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 space-y-3">
+                                    <p className="text-sm text-red-600 dark:text-red-400">{syncError}</p>
                                     <Button variant="secondary" onClick={() => setIsClearConfirmOpen(true)}>Clear Queue & Retry</Button>
                                 </div>
                             </>
                         )}
 
                         <SectionHeader title="Data Management" />
-                        <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-100">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
                             <SettingsItem icon={<InfoIcon />}>
                                 <span>Sync Status</span>
                                 <span className={syncStatusColor}>{syncStatusText}</span>
                             </SettingsItem>
-                            <SettingsItem isLink onClick={handleSyncNow} icon={<SyncIcon className="w-5 h-5 text-gray-600" />}>
-                                <span className="text-blue-600">Sync Now</span>
+                            <SettingsItem isLink onClick={handleSyncNow} icon={<SyncIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />}>
+                                <span className="text-blue-600 dark:text-blue-400">Sync Now</span>
                             </SettingsItem>
-                            <SettingsItem isLink onClick={handleExportData} icon={<DownloadIcon className="w-5 h-5 text-gray-600" />}>
-                                <span className="text-blue-600">Export Data</span>
+                            <SettingsItem isLink onClick={handleExportData} icon={<DownloadIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />}>
+                                <span className="text-blue-600 dark:text-blue-400">Export Data</span>
                             </SettingsItem>
-                            <SettingsItem isLink onClick={handleImportClick} icon={<UploadIcon className="w-5 h-5 text-gray-600" />}>
-                                <span className="text-blue-600">Import Data</span>
+                            <SettingsItem isLink onClick={handleImportClick} icon={<UploadIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />}>
+                                <span className="text-blue-600 dark:text-blue-400">Import Data</span>
                             </SettingsItem>
                         </div>
                         
                         <SectionHeader title="About & Help" />
-                        <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-100">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
                             <SettingsItem icon={<InfoIcon />}>
                                 <span>Version</span>
-                                <span className="text-gray-500">1.0.0</span>
+                                <span className="text-gray-500 dark:text-gray-400">1.0.0</span>
                             </SettingsItem>
                             <Link to="/settings/about">
                                 <SettingsItem isLink>

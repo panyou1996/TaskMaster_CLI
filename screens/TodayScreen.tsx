@@ -755,7 +755,7 @@ const TodayScreen: React.FC = () => {
         <MainLayout>
             <div className="absolute inset-0 flex flex-col overflow-hidden">
                 <div className={`absolute top-0 left-0 right-0 h-14 flex justify-center items-center transition-opacity duration-300 pointer-events-none ${pullDelta > 0 || isRefreshing ? 'opacity-100' : 'opacity-0'}`}>
-                    {isRefreshing ? <RefreshSpinnerIcon /> : <ChevronDownIcon className={`w-6 h-6 text-gray-500 transition-transform duration-300 ${pullDelta > REFRESH_THRESHOLD ? 'rotate-180' : ''}`} />}
+                    {isRefreshing ? <RefreshSpinnerIcon /> : <ChevronDownIcon className={`w-6 h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${pullDelta > REFRESH_THRESHOLD ? 'rotate-180' : ''}`} />}
                 </div>
 
                 <div 
@@ -770,28 +770,28 @@ const TodayScreen: React.FC = () => {
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                         <div className="flex justify-start">
-                            <Link to="/focus" className="text-gray-600 hover:text-[var(--color-primary-500)] transition-colors p-1 -m-1">
+                            <Link to="/focus" className="text-gray-600 dark:text-gray-300 hover:text-[var(--color-primary-500)] transition-colors p-1 -m-1">
                                 <FocusHeaderIcon />
                             </Link>
                         </div>
                         <div className="flex justify-center">
-                            <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full max-w-48">
+                            <div className="grid grid-cols-2 bg-gray-200 dark:bg-gray-700 rounded-lg p-1 w-full max-w-48">
                                 <button
                                     onClick={() => setViewMode('list')}
-                                    className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'list' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
+                                    className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
                                 >
                                     List
                                 </button>
                                 <button
                                     onClick={() => setViewMode('timeline')}
-                                    className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'timeline' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}
+                                    className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'timeline' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
                                 >
                                     Timeline
                                 </button>
                             </div>
                         </div>
                         <div className="flex justify-end">
-                             <button className="text-gray-800" onClick={() => setIsAddTaskOpen(true)}>
+                             <button className="text-gray-800 dark:text-gray-200" onClick={() => setIsAddTaskOpen(true)}>
                                 <PlusIconHeader />
                             </button>
                         </div>
@@ -808,11 +808,11 @@ const TodayScreen: React.FC = () => {
                                 {(recommendedTasks.length > 0 || overdueTasks.length > 0) && (
                                     <div className={`p-3 rounded-xl mb-4 text-sm flex items-center gap-3 flex-shrink-0 ${
                                         overdueTasks.length > 0
-                                            ? 'bg-red-50 border-red-200'
-                                            : 'bg-blue-50 border-blue-200'
+                                            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                                            : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
                                     }`}>
                                         {overdueTasks.length > 0 ? <OverdueIcon /> : <RecommendIcon />}
-                                        <p className={`flex-grow ${overdueTasks.length > 0 ? 'text-red-800' : 'text-blue-800'}`}>
+                                        <p className={`flex-grow ${overdueTasks.length > 0 ? 'text-red-800 dark:text-red-300' : 'text-blue-800 dark:text-blue-300'}`}>
                                             {overdueTasks.length > 0 && (
                                                 <>
                                                     <button onClick={() => setIsOverdueOpen(true)} className="font-semibold hover:underline focus:outline-none">
@@ -823,7 +823,7 @@ const TodayScreen: React.FC = () => {
                                             )}
                                             {recommendedTasks.length > 0 && (
                                                 <>
-                                                    <button onClick={() => setIsRecommendOpen(true)} className={`font-semibold hover:underline focus:outline-none ${overdueTasks.length > 0 ? 'text-blue-600' : ''}`}>
+                                                    <button onClick={() => setIsRecommendOpen(true)} className={`font-semibold hover:underline focus:outline-none ${overdueTasks.length > 0 ? 'text-blue-600 dark:text-blue-400' : ''}`}>
                                                         {recommendedTasks.length} recommended
                                                     </button>
                                                     {overdueTasks.length > 0 
@@ -840,13 +840,13 @@ const TodayScreen: React.FC = () => {
                                         <div className="mb-4 flex-shrink-0">
                                             <div className="flex justify-between items-center mb-2">
                                                 <div className="flex items-baseline gap-2">
-                                                    <h2 className="text-lg font-bold text-gray-800">Today's Tasks</h2>
-                                                    <span className="text-sm font-medium text-gray-500">{finishedTasks.length}/{totalTodayTasks}</span>
+                                                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Today's Tasks</h2>
+                                                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{finishedTasks.length}/{totalTodayTasks}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => setIsPlanningSettingsOpen(true)}
-                                                        className="flex-shrink-0 p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
+                                                        className="flex-shrink-0 p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                                                         aria-label="Planning Settings"
                                                     >
                                                         <SettingsHeaderIcon className="w-5 h-5" />
@@ -854,7 +854,7 @@ const TodayScreen: React.FC = () => {
                                                     <button
                                                         onClick={handlePlanMyDay}
                                                         disabled={isPlanning}
-                                                        className="flex-shrink-0 flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold text-xs transition-colors ease-in-out bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:bg-indigo-50 disabled:text-indigo-300 disabled:cursor-not-allowed"
+                                                        className="flex-shrink-0 flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold text-xs transition-colors ease-in-out bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:bg-indigo-50 dark:disabled:bg-gray-700 disabled:text-indigo-300 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
                                                         aria-label="Plan My Day"
                                                     >
                                                         {isPlanning ? (
@@ -868,7 +868,7 @@ const TodayScreen: React.FC = () => {
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                                 <div
                                                     className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
                                                     style={{ width: `${progress}%` }}
@@ -878,7 +878,7 @@ const TodayScreen: React.FC = () => {
                                         <div className="space-y-4">
                                             {unfinishedTasks.length > 0 && (
                                                 <section>
-                                                    <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-200/60">
+                                                    <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-200/60 dark:divide-gray-700">
                                                         {unfinishedTasks.map(task => {
                                                             const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
                                                             const timeParts = task.startTime ? task.startTime.split(':').map(Number) : null;
@@ -906,15 +906,15 @@ const TodayScreen: React.FC = () => {
                                                                         >
                                                                             {task.startTime ? (
                                                                                 <div className="flex">
-                                                                                    <span className={`w-9 text-right text-3xl font-bold leading-none tracking-tight ${isOverdue ? 'text-[var(--color-functional-red)]' : 'text-gray-800'}`}>{displayHour}</span>
-                                                                                    <div className={`flex flex-col items-start font-semibold leading-tight ml-0.5 text-[11px] mt-0.5 ${isOverdue ? 'text-[var(--color-functional-red)]' : 'text-gray-500'}`}>
+                                                                                    <span className={`w-9 text-right text-3xl font-bold leading-none tracking-tight ${isOverdue ? 'text-[var(--color-functional-red)]' : 'text-gray-800 dark:text-gray-200'}`}>{displayHour}</span>
+                                                                                    <div className={`flex flex-col items-start font-semibold leading-tight ml-0.5 text-[11px] mt-0.5 ${isOverdue ? 'text-[var(--color-functional-red)]' : 'text-gray-500 dark:text-gray-400'}`}>
                                                                                         <span>{displayMinute}</span>
                                                                                         <span className="-mt-0.5">{displayPeriod}</span>
                                                                                     </div>
                                                                                 </div>
                                                                             ) : (
                                                                                 <div className="flex items-center justify-center h-[36px]">
-                                                                                    <span className="font-semibold text-gray-400 text-2xl tracking-widest">--</span>
+                                                                                    <span className="font-semibold text-gray-400 dark:text-gray-500 text-2xl tracking-widest">--</span>
                                                                                 </div>
                                                                             )}
                                                                         </button>
@@ -924,7 +924,7 @@ const TodayScreen: React.FC = () => {
                                                                                 className="p-1 -m-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
                                                                                 aria-label={`Toggle task type for ${task.title}. Current: ${task.type}`}
                                                                             >
-                                                                                <LockIcon className={`w-3.5 h-3.5 transition-colors ${task.type === 'Fixed' ? 'text-gray-600' : 'text-gray-300'}`} />
+                                                                                <LockIcon className={`w-3.5 h-3.5 transition-colors ${task.type === 'Fixed' ? 'text-gray-600 dark:text-gray-300' : 'text-gray-300 dark:text-gray-600'}`} />
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -959,12 +959,12 @@ const TodayScreen: React.FC = () => {
                                                         className="w-full flex justify-between items-center mb-3"
                                                         aria-expanded={isFinishedTasksVisible}
                                                     >
-                                                        <h2 className="text-base font-bold text-gray-800">Finished Tasks ({finishedTasks.length})</h2>
-                                                        <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isFinishedTasksVisible ? 'rotate-180' : ''}`} />
+                                                        <h2 className="text-base font-bold text-gray-800 dark:text-gray-200">Finished Tasks ({finishedTasks.length})</h2>
+                                                        <ChevronDownIcon className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isFinishedTasksVisible ? 'rotate-180' : ''}`} />
                                                     </button>
                                                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isFinishedTasksVisible ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                         <div className="overflow-hidden">
-                                                            <div className="bg-white rounded-xl card-shadow overflow-hidden divide-y divide-gray-200/60">
+                                                            <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-200/60 dark:divide-gray-700">
                                                                 {finishedTasks.map(task => {
                                                                     const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
                                                                     return (
@@ -972,7 +972,7 @@ const TodayScreen: React.FC = () => {
                                                                             <div className="w-20 shrink-0 flex flex-col items-center pt-3.5 pb-2">
                                                                                 {task.completed_at && (
                                                                                     <div className="text-center">
-                                                                                        <span className="text-[10px] font-medium text-gray-500">done at</span>
+                                                                                        <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">done at</span>
                                                                                         <div className="flex items-start justify-center w-full mt-0.5">
                                                                                             {(() => {
                                                                                                 const completedDate = new Date(task.completed_at);
@@ -982,8 +982,8 @@ const TodayScreen: React.FC = () => {
                                                                                                 const displayPeriod = completedDate.getHours() >= 12 ? 'pm' : 'am';
                                                                                                 return (
                                                                                                     <div className="flex">
-                                                                                                        <span className="text-3xl font-bold leading-none tracking-tight text-gray-400">{displayHour}</span>
-                                                                                                        <div className="flex flex-col items-start font-semibold leading-tight ml-0.5 text-[11px] mt-0.5 text-gray-400">
+                                                                                                        <span className="text-3xl font-bold leading-none tracking-tight text-gray-400 dark:text-gray-500">{displayHour}</span>
+                                                                                                        <div className="flex flex-col items-start font-semibold leading-tight ml-0.5 text-[11px] mt-0.5 text-gray-400 dark:text-gray-500">
                                                                                                             <span>{displayMinute}</span>
                                                                                                             <span className="-mt-0.5">{displayPeriod}</span>
                                                                                                         </div>

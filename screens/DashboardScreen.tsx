@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -12,18 +13,18 @@ const CogIcon = () => (
 
 const DashboardScreen: React.FC = () => {
   return (
-    <div className="h-full w-full flex flex-col bg-gray-50 text-gray-900">
-      <header className="flex-shrink-0 p-4 flex justify-between items-center border-b bg-white">
-        <h1 className="text-xl font-bold text-gray-800">My Tasks</h1>
-        <Link to="/settings" className="text-gray-600 hover:text-indigo-600">
+    <div className="h-full w-full flex flex-col bg-[var(--color-background-primary)] text-[var(--color-text-primary)]">
+      <header className="flex-shrink-0 p-4 flex justify-between items-center border-b border-[var(--color-border)] bg-[var(--color-surface-container)]">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">My Tasks</h1>
+        <Link to="/settings" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)]">
           <CogIcon />
         </Link>
       </header>
       <main className="flex-grow p-6 flex flex-col items-center justify-center text-center">
-        <h2 className="text-lg font-semibold text-gray-700">Welcome to TaskMaster!</h2>
-        <p className="mt-2 text-gray-500">Your task list is currently empty.</p>
-        <p className="mt-1 text-gray-500">Add a new task to get started.</p>
-        <button className="mt-6 px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+        <h2 className="text-lg font-semibold text-[var(--color-text-secondary)]">Welcome to TaskMaster!</h2>
+        <p className="mt-2 text-[var(--color-text-tertiary)]">Your task list is currently empty.</p>
+        <p className="mt-1 text-[var(--color-text-tertiary)]">Add a new task to get started.</p>
+        <button className="mt-6 px-5 py-2.5 bg-[var(--color-primary-500)] text-[var(--color-on-primary)] font-semibold rounded-lg hover:opacity-90 transition">
             + Add Task
         </button>
       </main>
