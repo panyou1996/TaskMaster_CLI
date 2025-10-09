@@ -2,17 +2,15 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
 import TaskCard from '../components/common/TaskCard';
-import { RecommendIcon, OverdueIcon, ChevronDownIcon, RefreshSpinnerIcon, SparklesIcon, TimelineIcon, ListsIcon, PlusIconHeader, LockIcon } from '../components/icons/Icons';
+import { RecommendIcon, OverdueIcon, ChevronDownIcon, RefreshSpinnerIcon, SparklesIcon, TimelineIcon, ListsIcon, PlusIconHeader, LockIcon, FocusHeaderIcon } from '../components/icons/Icons';
 import RecommendTasksScreen from './RecommendTasksScreen';
 import OverdueTasksScreen from './OverdueTasksScreen';
 import AddTaskScreen, { NewTaskData } from './AddTaskScreen';
 import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
-import SettingsScreen from './settings/SettingsScreen';
 import { EmptyTodayIllustration } from '../components/illustrations/Illustrations';
 import { useData } from '../contexts/DataContext';
 import { Task } from '../data/mockData';
-import SyncStatusIndicator from '../components/common/SyncStatusIndicator';
 import TimePickerModal from './TimePickerModal';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 import TimelineView from '../components/views/TimelineView';
@@ -45,7 +43,6 @@ const TodayScreen: React.FC = () => {
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
     const [isDurationPickerOpen, setIsDurationPickerOpen] = useState(false);
     const [isTimeChangeConfirmOpen, setIsTimeChangeConfirmOpen] = useState(false);
@@ -69,6 +66,15 @@ const TodayScreen: React.FC = () => {
     const timelineViewRef = useRef<HTMLDivElement>(null);
     const REFRESH_THRESHOLD = 80;
     const MIN_SWIPE_DISTANCE = 50;
+
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 60000); // Update every minute to check overdue status
+        return () => clearInterval(timer);
+    }, []);
 
 
     const listColorMap = useMemo(() => {
@@ -294,7 +300,7 @@ const TodayScreen: React.FC = () => {
     
     const handleOpenTimePicker = (task: Task) => {
         setSelectedTask(task);
-        if (task.startTime) {
+        if (task.startTime && task.type === 'Fixed') {
             setIsTimeChangeConfirmOpen(true);
         } else {
             setIsTimePickerOpen(true);
@@ -376,6 +382,15 @@ const TodayScreen: React.FC = () => {
         if (!timeStr || !timeStr.includes(':')) return 0;
         const [hours, minutes] = timeStr.split(':').map(Number);
         return hours * 60 + minutes;
+    };
+    
+    const isTaskOverdue = (task: Task, now: Date): boolean => {
+        if (task.completed || !task.startTime || !task.duration) {
+            return false;
+        }
+        const endMinutes = timeToMinutes(task.startTime) + task.duration;
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+        return endMinutes < nowMinutes;
     };
     
     const minutesToTime = (totalMinutes: number): string => {
@@ -572,7 +587,9 @@ const TodayScreen: React.FC = () => {
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                         <div className="flex justify-start">
-                            <SyncStatusIndicator profile={profile} onClick={() => setIsSettingsOpen(true)} />
+                            <Link to="/focus" className="text-gray-600 hover:text-[var(--color-primary-500)] transition-colors p-1 -m-1">
+                                <FocusHeaderIcon />
+                            </Link>
                         </div>
                         <div className="flex justify-center">
                             <div className="grid grid-cols-2 bg-gray-200 rounded-lg p-1 w-full max-w-48">
@@ -675,6 +692,7 @@ const TodayScreen: React.FC = () => {
                                                         {unfinishedTasks.map(task => {
                                                             const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
                                                             const timeParts = task.startTime ? task.startTime.split(':').map(Number) : null;
+                                                            const isOverdue = isTaskOverdue(task, currentTime);
                                                             let displayHour: number | string = '';
                                                             let displayMinute: string = '';
                                                             let displayPeriod: string = '';
@@ -698,8 +716,8 @@ const TodayScreen: React.FC = () => {
                                                                         >
                                                                             {task.startTime ? (
                                                                                 <div className="flex">
-                                                                                    <span className="w-9 text-right text-3xl font-bold text-gray-800 leading-none tracking-tight">{displayHour}</span>
-                                                                                    <div className="flex flex-col items-start font-semibold text-gray-500 leading-tight ml-0.5 text-[11px] mt-0.5">
+                                                                                    <span className={`w-9 text-right text-3xl font-bold leading-none tracking-tight ${isOverdue ? 'text-[var(--color-functional-red)]' : 'text-gray-800'}`}>{displayHour}</span>
+                                                                                    <div className={`flex flex-col items-start font-semibold leading-tight ml-0.5 text-[11px] mt-0.5 ${isOverdue ? 'text-[var(--color-functional-red)]' : 'text-gray-500'}`}>
                                                                                         <span>{displayMinute}</span>
                                                                                         <span className="-mt-0.5">{displayPeriod}</span>
                                                                                     </div>
@@ -798,6 +816,7 @@ const TodayScreen: React.FC = () => {
                                 <TimelineView
                                     tasks={allTasks}
                                     lists={taskLists}
+                                    currentTime={currentTime}
                                     onUnscheduledTaskClick={handleOpenTimePicker}
                                     onScheduledTaskShortPress={handleOpenTaskDetail}
                                     onScheduledTaskLongPress={handleOpenTimePicker}
@@ -841,10 +860,6 @@ const TodayScreen: React.FC = () => {
                 onClose={handleCloseEditTask}
                 task={selectedTask}
                 onSave={handleSaveTask}
-            />
-            <SettingsScreen 
-                isOpen={isSettingsOpen}
-                onClose={() => setIsSettingsOpen(false)}
             />
             <TimePickerModal
                 isOpen={isTimePickerOpen}

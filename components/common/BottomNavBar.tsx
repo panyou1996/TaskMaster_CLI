@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
-import { TodayIcon, ListsIcon, FocusIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon } from '../icons/Icons';
+import { TodayIcon, ListsIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon, SettingsIcon } from '../icons/Icons';
 import AddMomentScreen, { NewMomentData } from '../../screens/AddMomentScreen';
 import { takePhotoWithCapacitor } from '../../utils/permissions';
 import { useData } from '../../contexts/DataContext';
@@ -253,8 +253,8 @@ const BottomNavBar: React.FC = () => {
                     
                     <div /> {/* Placeholder for FAB */}
                     
-                    <NavItem to="/focus" icon={<FocusIcon />} label="Focus" />
                     <NavItem to="/moments" icon={<MomentsIcon />} label="Moments" />
+                    <NavItem to="/settings" icon={<SettingsIcon />} label="Settings" />
                 </div>
             </div>
 

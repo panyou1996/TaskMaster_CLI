@@ -76,6 +76,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/focus" element={<FocusScreen />} />
           
           {/* Settings Flow */}
+          <Route path="/settings" element={<SettingsScreen />} />
           <Route path="/settings/notifications" element={<NotificationSettingsScreen />} />
           <Route path="/settings/data" element={<DataManagementScreen />} />
           <Route path="/settings/about" element={<AboutHelpScreen />} />

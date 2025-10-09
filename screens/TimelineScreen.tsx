@@ -69,7 +69,7 @@ const TimelineScreen: React.FC = () => {
 
     const handleOpenTimePicker = (task: Task) => {
         setSelectedTask(task);
-        if (task.type === 'Fixed') {
+        if (task.startTime && task.type === 'Fixed') {
             setIsTimeChangeConfirmOpen(true);
         } else {
             setIsTimePickerOpen(true);

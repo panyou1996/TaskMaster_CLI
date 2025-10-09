@@ -56,9 +56,10 @@ interface ScheduledTaskProps {
     onUncomplete: (id: number | string) => void;
     isCompleting: boolean;
     isUncompleting: boolean;
+    isOverdue: boolean;
 }
 
-const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height, onShortPress, onLongPress, onComplete, onUncomplete, isCompleting, isUncompleting }) => {
+const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height, onShortPress, onLongPress, onComplete, onUncomplete, isCompleting, isUncompleting, isOverdue }) => {
     const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isClickRef = useRef(true);
     const interactionStartedOnButton = useRef(false);
@@ -162,8 +163,8 @@ const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height
                 )}
             </div>
             <div className="flex-grow min-w-0">
-                <p className={`font-bold text-sm truncate ${colors.text}`}>{task.title}</p>
-                <p className={`text-xs ${colors.subtext}`}>{task.startTime} - {minutesToTime(timeToMinutes(task.startTime!) + (task.duration || 30))}</p>
+                <p className={`font-bold text-sm truncate ${isOverdue && !task.completed ? 'text-[var(--color-functional-red)]' : colors.text}`}>{task.title}</p>
+                <p className={`text-xs ${isOverdue && !task.completed ? 'text-[var(--color-functional-red)]' : colors.subtext}`}>{task.startTime} - {minutesToTime(timeToMinutes(task.startTime!) + (task.duration || 30))}</p>
             </div>
         </div>
     );
@@ -172,6 +173,7 @@ const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height
 interface TimelineViewProps {
   tasks: Task[];
   lists: TaskList[];
+  currentTime: Date;
   onUnscheduledTaskClick: (task: Task) => void;
   onScheduledTaskShortPress: (task: Task) => void;
   onScheduledTaskLongPress: (task: Task) => void;
@@ -181,9 +183,20 @@ interface TimelineViewProps {
   uncompletingTaskId: number | string | null;
 }
 
+const isTaskOverdue = (task: Task, now: Date): boolean => {
+    if (task.completed || !task.startTime || !task.duration) {
+        return false;
+    }
+    const endMinutes = timeToMinutes(task.startTime) + task.duration;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    return endMinutes < nowMinutes;
+};
+
+
 const TimelineView: React.FC<TimelineViewProps> = ({
     tasks,
     lists,
+    currentTime,
     onUnscheduledTaskClick,
     onScheduledTaskShortPress,
     onScheduledTaskLongPress,
@@ -284,6 +297,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                             const height = ((task.duration || 30) / 60) * PIXELS_PER_HOUR;
                             const colorName = listColorMap[task.category] || 'gray';
                             let colors = colorVariants[colorName as keyof typeof colorVariants] || colorVariants.gray;
+                            const isOverdue = isTaskOverdue(task, currentTime);
 
                             if (task.completed) {
                                 colors = {
@@ -307,6 +321,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                                     onUncomplete={onUncompleteTask}
                                     isCompleting={completingTaskId === task.id}
                                     isUncompleting={uncompletingTaskId === task.id}
+                                    isOverdue={isOverdue}
                                 />
                             );
                         })}

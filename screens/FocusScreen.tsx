@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import { Task } from '../data/mockData';
@@ -7,9 +6,8 @@ import FocusSession from '../components/focus/FocusSession';
 import SessionComplete from '../components/focus/SessionComplete';
 import FocusGarden from '../components/focus/FocusGarden';
 import MainLayout from '../components/layouts/MainLayout';
-import SyncStatusIndicator from '../components/common/SyncStatusIndicator';
-import SettingsScreen from './settings/SettingsScreen';
-import { InfoIcon } from '../components/icons/Icons';
+import { InfoIcon, ChevronLeftIcon } from '../components/icons/Icons';
+import { Link } from 'react-router-dom';
 
 type FocusState = 'selecting' | 'session' | 'complete' | 'break';
 const plantTypes = ['cactus', 'fern', 'orchid', 'sunflower', 'bonsai'];
@@ -20,7 +18,6 @@ const FocusScreen: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [currentPlant, setCurrentPlant] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'session' | 'garden'>('session');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const todayTasks = tasks.filter(t => t.today && !t.completed && t.duration);
 
@@ -84,7 +81,9 @@ const FocusScreen: React.FC = () => {
                 style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
             >
                 <div className="flex justify-start">
-                    <SyncStatusIndicator profile={profile} onClick={() => setIsSettingsOpen(true)} />
+                    <Link to="/today" className="text-gray-600 hover:text-gray-900 p-2 -m-2" aria-label="Back to Today">
+                        <ChevronLeftIcon />
+                    </Link>
                 </div>
                 <div className="flex justify-center">
                     {inSelectionMode ? (
@@ -134,7 +133,6 @@ const FocusScreen: React.FC = () => {
                 )}
             </main>
         </div>
-        <SettingsScreen isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </MainLayout>
   );
 };

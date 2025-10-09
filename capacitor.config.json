@@ -1,4 +1,3 @@
-
 {
   "appId": "com.taskmaster.app",
   "appName": "TaskMaster",
@@ -7,5 +6,10 @@
   "server": {
     "androidScheme": "https",
     "iosScheme": "capacitor"
+  },
+  "plugins": {
+    "WebView": {
+      "backgroundColor": "#F9F9FC"
+    }
   }
 }
