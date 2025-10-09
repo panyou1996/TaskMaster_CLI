@@ -144,7 +144,7 @@ const BottomNavBar: React.FC = () => {
 
         try {
             const permissions = await SpeechRecognition.requestPermissions();
-            if (permissions.speechRecognition !== 'granted') {
+            if (permissions.state !== 'granted') {
                 alert('Microphone access was denied. Please allow it in your app settings.');
                 return;
             }
