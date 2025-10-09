@@ -164,8 +164,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
     }, [cancelLongPress, onClick]);
 
     const containerClasses = variant === 'card' 
-        ? 'bg-white dark:bg-gray-800 rounded-xl card-shadow border border-gray-100 dark:border-gray-700' 
-        : 'bg-white dark:bg-gray-800';
+        ? 'bg-[var(--color-surface-container)] rounded-xl card-shadow border border-[var(--color-border)]' 
+        : 'bg-[var(--color-surface-container)]';
 
     const contentClasses = variant === 'card' ? 'p-3' : 'py-3 pr-3';
 
@@ -237,9 +237,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <div className="flex-grow min-w-0">
                     <div className="flex justify-between items-start gap-2">
                         <div className="flex-grow flex items-baseline gap-2 min-w-0">
-                             <p className={`truncate text-lg font-semibold ${completed ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-900 dark:text-gray-100'}`}>{title}</p>
+                             <p className={`truncate text-lg font-semibold ${completed ? 'text-[var(--color-text-tertiary)] line-through' : 'text-[var(--color-text-primary)]'}`}>{title}</p>
                             {subtasks && subtasks.length > 0 && !completed && (
-                                <span className="text-xs font-medium text-gray-400 dark:text-gray-500 shrink-0">
+                                <span className="text-xs font-medium text-[var(--color-text-tertiary)] shrink-0">
                                     [{subtasks.filter(s => s.completed).length}/{subtasks.length}]
                                 </span>
                             )}
@@ -252,7 +252,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                                 aria-label={important ? "Remove importance" : "Mark as important"}
                                 disabled={completed}
                             >
-                                <FlagIcon className={`w-4 h-4 transition-colors ${important ? (completed ? 'text-red-300 dark:text-red-700' : 'text-red-500 dark:text-red-400') : 'text-gray-300 dark:text-gray-600'}`} />
+                                <FlagIcon className={`w-4 h-4 transition-colors ${important ? (completed ? 'text-red-300 dark:text-red-700' : 'text-[var(--color-functional-red)]') : 'text-gray-300 dark:text-gray-600'}`} />
                             </button>
                         </div>
                     </div>
@@ -265,7 +265,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                                     <span className="font-medium">{category}</span>
                                 </div>
                                 {duration && (
-                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--color-surface-container-low)] text-[var(--color-text-secondary)] font-medium">
                                         {endTime ? (
                                             <span>{duration}m &rarr; {endTime}</span>
                                         ) : (
@@ -288,7 +288,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${(!hideSubtasks && subtasks && subtasks.length > 0) ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                         <div className="overflow-hidden">
-                            <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-gray-700 space-y-1.5">
+                            <div className="mt-2 pt-2 border-t border-[var(--color-border)] space-y-1.5">
                                 {subtasks?.map(sub => (
                                     <div key={sub.id} className="flex items-center gap-2">
                                         <input
@@ -302,7 +302,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                                         <label 
                                             htmlFor={`subtask-${sub.id}`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className={`text-sm ${completed ? 'cursor-not-allowed' : 'cursor-pointer'} ${sub.completed || completed ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-700 dark:text-gray-300'}`}>
+                                            className={`text-sm ${completed ? 'cursor-not-allowed' : 'cursor-pointer'} ${sub.completed || completed ? 'text-[var(--color-text-tertiary)] line-through' : 'text-[var(--color-text-secondary)]'}`}>
                                             {sub.text}
                                         </label>
                                     </div>

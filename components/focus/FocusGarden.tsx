@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { FocusSession } from '../../data/mockData';
 
@@ -7,7 +6,7 @@ interface FocusGardenProps {
 }
 
 const EmptyGardenIllustration: React.FC = () => (
-    <div className="w-24 h-24 text-gray-300 dark:text-gray-600">
+    <div className="w-24 h-24 text-[var(--color-text-tertiary)] opacity-60">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M16.44 8.8999C16.44 8.8999 15.34 7.2099 13.59 6.7499C11.84 6.2899 10.61 7.2899 10.15 8.1699" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M12.0028 3.46997C12.0028 3.46997 12.5428 5.74997 10.1528 8.16997" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -23,11 +22,11 @@ const FocusGarden: React.FC<FocusGardenProps> = ({ history }) => {
 
   return (
     <div className="flex flex-col items-center w-full p-6">
-      <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-3">My Focus Garden</h2>
+      <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-3">My Focus Garden</h2>
       
       <div className="w-full max-w-md">
         {sortedHistory.length > 0 ? (
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl card-shadow">
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 p-4 bg-[var(--color-surface-container)] rounded-xl card-shadow">
             {sortedHistory.map((plant) => {
               const date = new Date(plant.session_date + 'T00:00:00'); // Ensure local timezone
               const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
@@ -41,16 +40,16 @@ const FocusGarden: React.FC<FocusGardenProps> = ({ history }) => {
                           <use href={`#plant-${plant.plant_type}-grown`} />
                       </svg>
                   </div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formattedDate}</span>
+                  <span className="text-xs text-[var(--color-text-secondary)] mt-1">{formattedDate}</span>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center py-10 px-4 bg-white dark:bg-gray-800 rounded-xl card-shadow">
+          <div className="flex flex-col items-center justify-center text-center py-10 px-4 bg-[var(--color-surface-container)] rounded-xl card-shadow">
               <EmptyGardenIllustration />
-              <p className="font-semibold text-gray-700 dark:text-gray-300 mt-2">Your garden is waiting to grow.</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Complete a focus session to plant your first seed.</p>
+              <p className="font-semibold text-[var(--color-text-secondary)] mt-2">Your garden is waiting to grow.</p>
+              <p className="text-sm text-[var(--color-text-tertiary)] mt-1">Complete a focus session to plant your first seed.</p>
           </div>
         )}
       </div>

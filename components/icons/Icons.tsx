@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const RecommendIcon: React.FC = () => (
@@ -19,7 +18,7 @@ export const HamburgerMenuIcon: React.FC = () => (
     </svg>
 );
 
-export const ClockIcon: React.FC<{className?: string}> = ({ className = "w-3 h-3 text-gray-400" }) => (
+export const ClockIcon: React.FC<{className?: string}> = ({ className = "w-3 h-3 text-[var(--color-text-tertiary)]" }) => (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
@@ -156,7 +155,7 @@ export const HomeIcon: React.FC = () => (
 );
 
 export const SearchIcon: React.FC = () => (
-    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg className="w-5 h-5 text-[var(--color-text-tertiary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
 );
@@ -316,7 +315,7 @@ export const UploadIcon: React.FC<{ className?: string }> = ({ className = "w-5 
 );
 
 export const RefreshSpinnerIcon: React.FC = () => (
-    <svg className="w-6 h-6 animate-ios-spinner text-gray-500" viewBox="0 0 50 50">
+    <svg className="w-6 h-6 animate-ios-spinner text-[var(--color-text-secondary)]" viewBox="0 0 50 50">
         <circle 
             className="animate-ios-spinner-path" 
             cx="25" 

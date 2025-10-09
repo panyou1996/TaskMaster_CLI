@@ -17,6 +17,7 @@ import TimelineView from '../components/views/TimelineView';
 import DurationPickerModal from './DurationPickerModal';
 import usePlanningSettings, { PlanningSettings } from '../hooks/usePlanningSettings';
 import PlanningSettingsDrawer from './PlanningSettingsDrawer';
+import useLocalStorage from '../../hooks/useLocalStorage';
 
 const parseDateAsLocal = (dateString?: string): Date | null => {
     if (!dateString) return null;
@@ -233,14 +234,30 @@ const TodayScreen: React.FC = () => {
     const [isTimeChangeConfirmOpen, setIsTimeChangeConfirmOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [timeToSet, setTimeToSet] = useState<string | null>(null);
-    const [expandedTaskIds, setExpandedTaskIds] = useState(() =>
-        new Set(allTasks.filter(t => !t.completed && t.subtasks && t.subtasks.length > 0).map(t => t.id))
-    );
     const [isPlanning, setIsPlanning] = useState(false);
-    const [isFinishedTasksVisible, setIsFinishedTasksVisible] = useState(true);
     const [isPlanConfirmOpen, setIsPlanConfirmOpen] = useState(false);
     const [fixedTasksToConvert, setFixedTasksToConvert] = useState<Task[]>([]);
     const [planningTrigger, setPlanningTrigger] = useState(0);
+
+    const [isFinishedTasksVisible, setIsFinishedTasksVisible] = useLocalStorage('today_finished_tasks_visible', true);
+    
+    const [rawExpandedTaskIds, setRawExpandedTaskIds] = useLocalStorage<Array<string|number>|null>('today_expanded_task_ids', null);
+
+    const defaultExpandedIds = useMemo(() =>
+        new Set(allTasks.filter(t => !t.completed && t.subtasks && t.subtasks.length > 0).map(t => t.id)),
+    [allTasks]);
+
+    const expandedTaskIds = useMemo(() => {
+        if (rawExpandedTaskIds !== null) {
+            return new Set(rawExpandedTaskIds);
+        }
+        return defaultExpandedIds;
+    }, [rawExpandedTaskIds, defaultExpandedIds]);
+
+    const setExpandedTaskIds = useCallback((setter: (prev: Set<string|number>) => Set<string|number>) => {
+        const newSet = setter(expandedTaskIds);
+        setRawExpandedTaskIds(Array.from(newSet));
+    }, [expandedTaskIds, setRawExpandedTaskIds]);
 
     // New planning settings state
     const [planningSettings] = usePlanningSettings();
@@ -746,7 +763,7 @@ const TodayScreen: React.FC = () => {
     if (!profile) {
         return (
             <div className="h-full w-full flex items-center justify-center">
-                <svg className="w-10 h-10 animate-ios-spinner text-gray-500" viewBox="0 0 50 50">
+                <svg className="w-10 h-10 animate-ios-spinner text-[var(--color-text-secondary)]" viewBox="0 0 50 50">
                     <circle className="animate-ios-spinner-path" cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="4" />
                 </svg>
             </div>
@@ -757,7 +774,7 @@ const TodayScreen: React.FC = () => {
         <MainLayout>
             <div className="absolute inset-0 flex flex-col overflow-hidden">
                 <div className={`absolute top-0 left-0 right-0 h-14 flex justify-center items-center transition-opacity duration-300 pointer-events-none ${pullDelta > 0 || isRefreshing ? 'opacity-100' : 'opacity-0'}`}>
-                    {isRefreshing ? <RefreshSpinnerIcon /> : <ChevronDownIcon className={`w-6 h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${pullDelta > REFRESH_THRESHOLD ? 'rotate-180' : ''}`} />}
+                    {isRefreshing ? <RefreshSpinnerIcon /> : <ChevronDownIcon className={`w-6 h-6 text-[var(--color-text-secondary)] transition-transform duration-300 ${pullDelta > REFRESH_THRESHOLD ? 'rotate-180' : ''}`} />}
                 </div>
 
                 <div 
@@ -772,28 +789,28 @@ const TodayScreen: React.FC = () => {
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                         <div className="flex justify-start">
-                            <Link to="/focus" className="text-gray-600 dark:text-gray-300 hover:text-[var(--color-primary-500)] transition-colors p-1 -m-1">
+                            <Link to="/focus" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] transition-colors p-1 -m-1">
                                 <FocusHeaderIcon />
                             </Link>
                         </div>
                         <div className="flex justify-center">
-                            <div className="grid grid-cols-2 bg-gray-200 dark:bg-gray-700 rounded-lg p-1 w-full max-w-48">
+                            <div className="grid grid-cols-2 bg-[var(--color-surface-container-low)] rounded-lg p-1 w-full max-w-48">
                                 <button
                                     onClick={() => setViewMode('list')}
-                                    className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+                                    className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'list' ? 'bg-[var(--color-surface-container)] text-[var(--color-text-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'}`}
                                 >
                                     List
                                 </button>
                                 <button
                                     onClick={() => setViewMode('timeline')}
-                                    className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'timeline' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+                                    className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'timeline' ? 'bg-[var(--color-surface-container)] text-[var(--color-text-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'}`}
                                 >
                                     Timeline
                                 </button>
                             </div>
                         </div>
                         <div className="flex justify-end">
-                             <button className="text-gray-800 dark:text-gray-200" onClick={() => setIsAddTaskOpen(true)}>
+                             <button className="text-[var(--color-text-primary)]" onClick={() => setIsAddTaskOpen(true)}>
                                 <PlusIconHeader />
                             </button>
                         </div>
@@ -842,13 +859,13 @@ const TodayScreen: React.FC = () => {
                                         <div className="mb-4 flex-shrink-0">
                                             <div className="flex justify-between items-center mb-2">
                                                 <div className="flex items-baseline gap-2">
-                                                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Today's Tasks</h2>
-                                                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{finishedTasks.length}/{totalTodayTasks}</span>
+                                                    <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Today's Tasks</h2>
+                                                    <span className="text-sm font-medium text-[var(--color-text-secondary)]">{finishedTasks.length}/{totalTodayTasks}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => setIsPlanningSettingsOpen(true)}
-                                                        className="flex-shrink-0 p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                                                        className="flex-shrink-0 p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-container-low)] rounded-full transition-colors"
                                                         aria-label="Planning Settings"
                                                     >
                                                         <SettingsHeaderIcon className="w-5 h-5" />
@@ -870,7 +887,7 @@ const TodayScreen: React.FC = () => {
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                            <div className="w-full bg-[var(--color-surface-container-low)] rounded-full h-2">
                                                 <div
                                                     className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
                                                     style={{ width: `${progress}%` }}
@@ -880,7 +897,7 @@ const TodayScreen: React.FC = () => {
                                         <div className="space-y-4">
                                             {unfinishedTasks.length > 0 && (
                                                 <section>
-                                                    <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-200/60 dark:divide-gray-700">
+                                                    <div className="bg-[var(--color-surface-container)] rounded-xl card-shadow overflow-hidden divide-y divide-[var(--color-border)]">
                                                         {unfinishedTasks.map(task => {
                                                             const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
                                                             const timeParts = task.startTime ? task.startTime.split(':').map(Number) : null;
@@ -908,15 +925,15 @@ const TodayScreen: React.FC = () => {
                                                                         >
                                                                             {task.startTime ? (
                                                                                 <div className="flex">
-                                                                                    <span className={`w-9 text-right text-3xl font-bold leading-none tracking-tight ${isOverdue ? 'text-[var(--color-functional-red)]' : 'text-gray-800 dark:text-gray-200'}`}>{displayHour}</span>
-                                                                                    <div className={`flex flex-col items-start font-semibold leading-tight ml-0.5 text-[11px] mt-0.5 ${isOverdue ? 'text-[var(--color-functional-red)]' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                                                    <span className={`w-9 text-right text-3xl font-bold leading-none tracking-tight ${isOverdue ? 'text-[var(--color-functional-red)]' : 'text-[var(--color-text-primary)]'}`}>{displayHour}</span>
+                                                                                    <div className={`flex flex-col items-start font-semibold leading-tight ml-0.5 text-[11px] mt-0.5 ${isOverdue ? 'text-[var(--color-functional-red)]' : 'text-[var(--color-text-secondary)]'}`}>
                                                                                         <span>{displayMinute}</span>
                                                                                         <span className="-mt-0.5">{displayPeriod}</span>
                                                                                     </div>
                                                                                 </div>
                                                                             ) : (
                                                                                 <div className="flex items-center justify-center h-[36px]">
-                                                                                    <span className="font-semibold text-gray-400 dark:text-gray-500 text-2xl tracking-widest">--</span>
+                                                                                    <span className="font-semibold text-[var(--color-text-tertiary)] text-2xl tracking-widest">--</span>
                                                                                 </div>
                                                                             )}
                                                                         </button>
@@ -926,7 +943,7 @@ const TodayScreen: React.FC = () => {
                                                                                 className="p-1 -m-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
                                                                                 aria-label={`Toggle task type for ${task.title}. Current: ${task.type}`}
                                                                             >
-                                                                                <LockIcon className={`w-3.5 h-3.5 transition-colors ${task.type === 'Fixed' ? 'text-gray-600 dark:text-gray-300' : 'text-gray-300 dark:text-gray-600'}`} />
+                                                                                <LockIcon className={`w-3.5 h-3.5 transition-colors ${task.type === 'Fixed' ? 'text-[var(--color-text-secondary)]' : 'text-[var(--color-text-tertiary)]'}`} />
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -961,12 +978,12 @@ const TodayScreen: React.FC = () => {
                                                         className="w-full flex justify-between items-center mb-3"
                                                         aria-expanded={isFinishedTasksVisible}
                                                     >
-                                                        <h2 className="text-base font-bold text-gray-800 dark:text-gray-200">Finished Tasks ({finishedTasks.length})</h2>
-                                                        <ChevronDownIcon className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isFinishedTasksVisible ? 'rotate-180' : ''}`} />
+                                                        <h2 className="text-base font-bold text-[var(--color-text-primary)]">Finished Tasks ({finishedTasks.length})</h2>
+                                                        <ChevronDownIcon className={`w-5 h-5 text-[var(--color-text-secondary)] transition-transform duration-300 ${isFinishedTasksVisible ? 'rotate-180' : ''}`} />
                                                     </button>
                                                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isFinishedTasksVisible ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                         <div className="overflow-hidden">
-                                                            <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-200/60 dark:divide-gray-700">
+                                                            <div className="bg-[var(--color-surface-container)] rounded-xl card-shadow overflow-hidden divide-y divide-[var(--color-border)]">
                                                                 {finishedTasks.map(task => {
                                                                     const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
                                                                     return (
@@ -974,7 +991,7 @@ const TodayScreen: React.FC = () => {
                                                                             <div className="w-20 shrink-0 flex flex-col items-center pt-3.5 pb-2">
                                                                                 {task.completed_at && (
                                                                                     <div className="text-center">
-                                                                                        <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">done at</span>
+                                                                                        <span className="text-[10px] font-medium text-[var(--color-text-secondary)]">done at</span>
                                                                                         <div className="flex items-start justify-center w-full mt-0.5">
                                                                                             {(() => {
                                                                                                 const completedDate = new Date(task.completed_at);
@@ -984,8 +1001,8 @@ const TodayScreen: React.FC = () => {
                                                                                                 const displayPeriod = completedDate.getHours() >= 12 ? 'pm' : 'am';
                                                                                                 return (
                                                                                                     <div className="flex">
-                                                                                                        <span className="text-3xl font-bold leading-none tracking-tight text-gray-400 dark:text-gray-500">{displayHour}</span>
-                                                                                                        <div className="flex flex-col items-start font-semibold leading-tight ml-0.5 text-[11px] mt-0.5 text-gray-400 dark:text-gray-500">
+                                                                                                        <span className="text-3xl font-bold leading-none tracking-tight text-[var(--color-text-tertiary)]">{displayHour}</span>
+                                                                                                        <div className="flex flex-col items-start font-semibold leading-tight ml-0.5 text-[11px] mt-0.5 text-[var(--color-text-tertiary)]">
                                                                                                             <span>{displayMinute}</span>
                                                                                                             <span className="-mt-0.5">{displayPeriod}</span>
                                                                                                         </div>

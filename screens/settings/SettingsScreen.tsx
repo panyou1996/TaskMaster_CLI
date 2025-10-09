@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CloseIcon, ChevronRightIcon, SyncIcon, DownloadIcon, UploadIcon, RefreshSpinnerIcon, BellIcon, ListCheckIcon, PaletteIcon, InfoIcon } from '../../components/icons/Icons';
@@ -8,7 +7,7 @@ import Button from '../../components/common/Button';
 import MainLayout from '../../components/layouts/MainLayout';
 
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
-    <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-4 pb-2 pt-6">
+    <h2 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 pb-2 pt-6">
         {title}
     </h2>
 );
@@ -20,26 +19,21 @@ interface SettingsItemProps {
   icon?: React.ReactNode;
 }
 
+// FIX: The SettingsItem component was not returning a ReactNode. It now returns the correct JSX.
 const SettingsItem: React.FC<SettingsItemProps> = ({ children, onClick, isLink = false, icon }) => {
-    const commonClasses = "flex items-center p-4 text-gray-800 dark:text-gray-200";
-    const interactionClasses = isLink ? "hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" : "";
+    const commonClasses = "flex items-center p-4 text-[var(--color-text-primary)]";
+    const interactionClasses = isLink ? "hover:bg-[var(--color-surface-container-low)] transition-colors cursor-pointer" : "";
     
-    const content = (
-        <>
+    return (
+        <div className={`${commonClasses} ${interactionClasses}`} onClick={onClick}>
             {icon && (
-                <div className="mr-4 w-7 h-7 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300">
+                <div className="mr-4 w-7 h-7 flex items-center justify-center bg-[var(--color-surface-container-low)] rounded-lg text-[var(--color-text-secondary)]">
                     {icon}
                 </div>
             )}
             <div className="flex-grow flex justify-between items-center">
                 {children}
             </div>
-        </>
-    );
-
-    return (
-        <div className={`${commonClasses} ${interactionClasses}`} onClick={onClick}>
-            {content}
         </div>
     );
 }
@@ -195,24 +189,24 @@ const SettingsScreen: React.FC = () => {
                     className="px-6 pt-6 pb-4 flex justify-center items-center flex-shrink-0"
                     style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                 >
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+                    <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Settings</h1>
                 </header>
                 <main className="overflow-y-auto">
                     <div className="p-4" style={{ paddingBottom: `calc(6rem + env(safe-area-inset-bottom))` }}>
                         <SectionHeader title="Account" />
                         <Link to="/profile" className="block">
-                            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 flex items-center gap-4 card-shadow hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <div className="bg-[var(--color-surface-container)] rounded-xl p-4 flex items-center gap-4 card-shadow hover:bg-[var(--color-surface-container-low)] transition-colors">
                                 <img src={profile.avatar_url} alt="User Avatar" className="w-14 h-14 rounded-full object-cover" />
                                 <div className="flex-grow">
-                                    <p className="font-semibold text-lg text-gray-900 dark:text-gray-100">{profile.name}</p>
-                                    <p className="text-gray-500 dark:text-gray-400">{profile.email}</p>
+                                    <p className="font-semibold text-lg text-[var(--color-text-primary)]">{profile.name}</p>
+                                    <p className="text-[var(--color-text-secondary)]">{profile.email}</p>
                                 </div>
                                 <ChevronRightIcon />
                             </div>
                         </Link>
 
                         <SectionHeader title="Preferences" />
-                        <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
+                        <div className="bg-[var(--color-surface-container)] rounded-xl card-shadow overflow-hidden divide-y divide-[var(--color-border)]">
                             <Link to="/settings/notifications">
                                 <SettingsItem isLink icon={<BellIcon />}>
                                     <span>Notifications</span>
@@ -227,12 +221,12 @@ const SettingsScreen: React.FC = () => {
                             </Link>
                             <SettingsItem isLink>
                                 <span className="flex items-center gap-4">
-                                    <div className="w-7 h-7 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300">
+                                    <div className="w-7 h-7 flex items-center justify-center bg-[var(--color-surface-container-low)] rounded-lg text-[var(--color-text-secondary)]">
                                         <ListCheckIcon />
                                     </div>
                                     <span>Default List</span>
                                 </span>
-                                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                                <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
                                     <span>Personal</span>
                                     <ChevronRightIcon />
                                 </div>
@@ -242,7 +236,7 @@ const SettingsScreen: React.FC = () => {
                         {syncError && (
                             <>
                                 <SectionHeader title="Sync Error" />
-                                <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 space-y-3">
+                                <div className="bg-[var(--color-surface-container)] rounded-xl card-shadow p-4 space-y-3">
                                     <p className="text-sm text-red-600 dark:text-red-400">{syncError}</p>
                                     <Button variant="secondary" onClick={() => setIsClearConfirmOpen(true)}>Clear Queue & Retry</Button>
                                 </div>
@@ -250,27 +244,27 @@ const SettingsScreen: React.FC = () => {
                         )}
 
                         <SectionHeader title="Data Management" />
-                        <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
+                        <div className="bg-[var(--color-surface-container)] rounded-xl card-shadow overflow-hidden divide-y divide-[var(--color-border)]">
                             <SettingsItem icon={<InfoIcon />}>
                                 <span>Sync Status</span>
                                 <span className={syncStatusColor}>{syncStatusText}</span>
                             </SettingsItem>
-                            <SettingsItem isLink onClick={handleSyncNow} icon={<SyncIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />}>
+                            <SettingsItem isLink onClick={handleSyncNow} icon={<SyncIcon className="w-5 h-5 text-[var(--color-text-secondary)]" />}>
                                 <span className="text-blue-600 dark:text-blue-400">Sync Now</span>
                             </SettingsItem>
-                            <SettingsItem isLink onClick={handleExportData} icon={<DownloadIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />}>
+                            <SettingsItem isLink onClick={handleExportData} icon={<DownloadIcon className="w-5 h-5 text-[var(--color-text-secondary)]" />}>
                                 <span className="text-blue-600 dark:text-blue-400">Export Data</span>
                             </SettingsItem>
-                            <SettingsItem isLink onClick={handleImportClick} icon={<UploadIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />}>
+                            <SettingsItem isLink onClick={handleImportClick} icon={<UploadIcon className="w-5 h-5 text-[var(--color-text-secondary)]" />}>
                                 <span className="text-blue-600 dark:text-blue-400">Import Data</span>
                             </SettingsItem>
                         </div>
                         
                         <SectionHeader title="About & Help" />
-                        <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
+                        <div className="bg-[var(--color-surface-container)] rounded-xl card-shadow overflow-hidden divide-y divide-[var(--color-border)]">
                             <SettingsItem icon={<InfoIcon />}>
                                 <span>Version</span>
-                                <span className="text-gray-500 dark:text-gray-400">1.0.0</span>
+                                <span className="text-[var(--color-text-secondary)]">1.0.0</span>
                             </SettingsItem>
                             <Link to="/settings/about">
                                 <SettingsItem isLink>

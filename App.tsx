@@ -45,7 +45,7 @@ const AppRoutes: React.FC = () => {
   if (loading) {
       return (
           <div className="h-full w-full flex items-center justify-center">
-              <svg className="w-10 h-10 animate-ios-spinner text-gray-500 dark:text-gray-400" viewBox="0 0 50 50">
+              <svg className="w-10 h-10 animate-ios-spinner text-[var(--color-text-secondary)]" viewBox="0 0 50 50">
                   <circle className="animate-ios-spinner-path" cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="4" />
               </svg>
           </div>
