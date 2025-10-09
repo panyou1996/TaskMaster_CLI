@@ -22,6 +22,7 @@
     "esbuild": "^0.21.5"
   },
   "scripts": {
+    "dev": "mkdir -p public && cp index.html public/ && ([ -f capacitor.js ] && cp capacitor.js public/ || true) && esbuild index.tsx --bundle --outfile=public/index.js --loader:.tsx=tsx --define:process.env.NODE_ENV='\"development\"' --define:process.env.API_KEY='\"$API_KEY\"' --servedir=public",
     "sync:ios": "npx cap sync ios",
     "sync:android": "npx cap sync android",
     "open:ios": "npx cap open ios",
