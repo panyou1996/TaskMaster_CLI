@@ -76,12 +76,17 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
             const parsed = JSON.parse(response.text);
 
             const chosenList = listNames.includes(parsed.list) ? parsed.list : (listNames[0] || 'Personal');
+            
+            const isDueToday = parsed.dueDate === today;
+            // A task starts today if it has a start time and either no due date was specified (implying today)
+            // or the specified due date is today.
+            const isStartingToday = parsed.startTime && (!parsed.dueDate || parsed.dueDate === today);
 
             const taskForContext: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'> = {
                 title: parsed.title,
                 category: chosenList,
                 important: parsed.isImportant || false,
-                today: parsed.isToday || !!parsed.startTime || false,
+                today: parsed.isToday || isDueToday || isStartingToday,
                 type: parsed.startTime ? 'Fixed' : 'Flexible',
                 dueDate: parsed.dueDate || undefined,
                 startDate: parsed.startTime ? (parsed.dueDate || today) : undefined,

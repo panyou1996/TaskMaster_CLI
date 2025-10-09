@@ -325,15 +325,17 @@ const TodayScreen: React.FC = () => {
             }
 
             // Recommend logic
+            const isFixedForAnotherDay = task.type === 'Fixed' && task.startTime && startDate && startDate.getTime() !== today.getTime();
+
             if (dueDate && dueDate >= today && dueDate <= threeDaysFromNow) {
-                if (!recommendedIds.has(task.id)) {
+                if (!isFixedForAnotherDay && !recommendedIds.has(task.id)) {
                     recTasks.push({ ...task, reason: 'Due in the next 3 days' });
                     recommendedIds.add(task.id);
                 }
             }
             
             if (task.important && dueDate && dueDate >= startOfWeek && dueDate <= endOfWeek) {
-                 if (!recommendedIds.has(task.id)) {
+                 if (!isFixedForAnotherDay && !recommendedIds.has(task.id)) {
                     recTasks.push({ ...task, reason: 'Important this week' });
                     recommendedIds.add(task.id);
                 }
