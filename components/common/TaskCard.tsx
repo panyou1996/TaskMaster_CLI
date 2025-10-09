@@ -46,12 +46,19 @@ const timeToMinutes = (timeStr: string): number => {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 };
+
 const minutesToTime = (totalMinutes: number): string => {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     const period = hours >= 12 ? 'PM' : 'AM';
     const displayHour = hours % 12 === 0 ? 12 : hours % 12;
     return `${displayHour}:${String(minutes).padStart(2, '0')} ${period}`;
+};
+
+const minutesTo24HTime = (totalMinutes: number): string => {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 
 const TaskCard: React.FC<TaskCardProps> = ({ 
@@ -94,19 +101,20 @@ const TaskCard: React.FC<TaskCardProps> = ({
         gray: { bg: 'bg-gray-100', text: 'text-gray-700' },
     };
 
-    const borderColorVariants = {
-        yellow: { border: 'border-yellow-500', hover: 'hover:border-yellow-600' },
-        purple: { border: 'border-purple-500', hover: 'hover:border-purple-600' },
-        green: { border: 'border-green-500', hover: 'hover:border-green-600' },
-        blue: { border: 'border-blue-500', hover: 'hover:border-blue-600' },
-        pink: { border: 'border-pink-500', hover: 'hover:border-pink-600' },
-        red: { border: 'border-red-500', hover: 'hover:border-red-600' },
-        orange: { border: 'border-orange-500', hover: 'hover:border-orange-600' },
-        gray: { border: 'border-gray-400', hover: 'hover:border-gray-500' },
+    const checkmarkColorVariants = {
+        yellow: 'bg-yellow-500 hover:bg-yellow-600',
+        purple: 'bg-purple-500 hover:bg-purple-600',
+        green: 'bg-green-500 hover:bg-green-600',
+        blue: 'bg-blue-500 hover:bg-blue-600',
+        pink: 'bg-pink-500 hover:bg-pink-600',
+        red: 'bg-red-500 hover:bg-red-600',
+        orange: 'bg-orange-500 hover:bg-orange-600',
+        gray: 'bg-gray-500 hover:bg-gray-600',
     };
     
     const pillColors = pillColorVariants[color as keyof typeof pillColorVariants] || pillColorVariants.gray;
-    
+    const checkmarkColorClass = checkmarkColorVariants[color as keyof typeof checkmarkColorVariants] || 'bg-blue-600 hover:bg-blue-700';
+
     const fireworksData = [
         { color: 'blue', particles: 6, delay: 0 },
         { color: 'pink', particles: 6, delay: 0.1 },
@@ -179,7 +187,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                     {completed ? (
                         <button
                             onClick={(e) => { e.stopPropagation(); onUncomplete?.(id); }}
-                            className={`w-5 h-5 rounded-md bg-blue-600 flex items-center justify-center text-white shrink-0 hover:bg-blue-700 transition-colors
+                            className={`w-5 h-5 rounded-md ${checkmarkColorClass} flex items-center justify-center text-white shrink-0 transition-colors
                                 ${isUncompleting ? 'animate-uncheck' : ''}
                             `}
                             aria-label="Mark task as incomplete"
@@ -193,7 +201,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                             className={`relative w-5 h-5 rounded-md border-2 shrink-0 transition-colors flex items-center justify-center
                                 ${isCompleting 
                                     ? 'animate-checkmark' 
-                                    : `border-${color}-400 hover:border-${color}-500`
+                                    : `border-gray-400 hover:border-gray-500`
                                 }
                             `}
                             aria-label="Mark task as complete"

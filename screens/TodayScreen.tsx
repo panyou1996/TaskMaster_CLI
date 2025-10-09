@@ -779,7 +779,31 @@ const TodayScreen: React.FC = () => {
                                                                     const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
                                                                     return (
                                                                         <div key={task.id as React.Key} className="flex items-start">
-                                                                            <div className="w-20 shrink-0" /> {/* Placeholder for alignment */}
+                                                                            <div className="w-20 shrink-0 flex flex-col items-center pt-3.5 pb-2">
+                                                                                {task.completed_at && (
+                                                                                    <div className="text-center">
+                                                                                        <span className="text-[10px] font-medium text-gray-500">done at</span>
+                                                                                        <div className="flex items-start justify-center w-full mt-0.5">
+                                                                                            {(() => {
+                                                                                                const completedDate = new Date(task.completed_at);
+                                                                                                let displayHour = completedDate.getHours() % 12;
+                                                                                                if (displayHour === 0) displayHour = 12;
+                                                                                                const displayMinute = String(completedDate.getMinutes()).padStart(2, '0');
+                                                                                                const displayPeriod = completedDate.getHours() >= 12 ? 'pm' : 'am';
+                                                                                                return (
+                                                                                                    <div className="flex">
+                                                                                                        <span className="text-3xl font-bold leading-none tracking-tight text-gray-400">{displayHour}</span>
+                                                                                                        <div className="flex flex-col items-start font-semibold leading-tight ml-0.5 text-[11px] mt-0.5 text-gray-400">
+                                                                                                            <span>{displayMinute}</span>
+                                                                                                            <span className="-mt-0.5">{displayPeriod}</span>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                );
+                                                                                            })()}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
                                                                             <div className="flex-grow min-w-0">
                                                                                 <TaskCard 
                                                                                     variant="list"

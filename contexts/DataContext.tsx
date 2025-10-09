@@ -121,6 +121,7 @@ const cleanTaskForSupabase = (task: Partial<Task>) => {
     if ('notes' in cleanedPayload && (cleanedPayload.notes === '' || cleanedPayload.notes === undefined)) cleanedPayload.notes = null;
     if ('today_assigned_date' in cleanedPayload && (cleanedPayload.today_assigned_date === '' || cleanedPayload.today_assigned_date === undefined)) cleanedPayload.today_assigned_date = null;
     if ('reminder' in cleanedPayload && cleanedPayload.reminder === undefined) cleanedPayload.reminder = null;
+    if ('completed_at' in cleanedPayload && (cleanedPayload.completed_at === '' || cleanedPayload.completed_at === undefined)) cleanedPayload.completed_at = null;
     
     if ('subtasks' in cleanedPayload && (cleanedPayload.subtasks === undefined || cleanedPayload.subtasks === null)) {
         cleanedPayload.subtasks = [];
@@ -524,6 +525,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             fullUpdates.today_assigned_date = new Date().toISOString().split('T')[0];
         } else if (fullUpdates.today === false) {
             fullUpdates.today_assigned_date = undefined;
+        }
+
+        if (fullUpdates.completed === true) {
+            fullUpdates.completed_at = new Date().toISOString();
+        } else if (fullUpdates.completed === false) {
+            fullUpdates.completed_at = undefined;
         }
 
         setTasks(current => current.map(t => {

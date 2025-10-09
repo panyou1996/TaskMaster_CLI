@@ -18,6 +18,7 @@ export interface Task {
     category: string;
     color?: string;
     completed: boolean;
+    completed_at?: string;
     important?: boolean;
     today?: boolean;
     today_assigned_date?: string;

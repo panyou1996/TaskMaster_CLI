@@ -43,7 +43,9 @@ const FocusScreen: React.FC = () => {
   
   const handleMarkComplete = () => {
     if (selectedTask) {
-      updateTask(selectedTask.id, { completed: true });
+      updateTask(selectedTask.id, { 
+        completed: true,
+      });
     }
     setSelectedTask(null);
     setFocusState('selecting');
