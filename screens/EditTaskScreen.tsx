@@ -208,7 +208,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
             <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
             
             <form onSubmit={handleSubmit} className={`w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} style={{ paddingBottom: `env(safe-area-inset-bottom)` }}>
-                <div ref={cardRef} className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4">
+                <div ref={cardRef} className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 overflow-y-auto max-h-[75vh]">
                     {error && <p className="text-red-500 text-sm text-center mb-2">{error}</p>}
                     
                     <div className="flex items-start gap-3">
@@ -266,8 +266,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                                 {taskType === 'Fixed' && (
                                      <div ref={startTimeIconRef} className="relative">
                                         <button type="button" title="Set Start Date" onClick={() => handlePopoverToggle('startTime', startTimeIconRef)} className={`p-2 rounded-full transition-colors ${startTime ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><ClockIcon className="w-5 h-5" /></button>
-                                        {activePopover === 'startTime' && (
-                                            <div className="absolute w-56 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-3 z-10 animate-page-fade-in space-y-3" style={popoverPosition}>
+                                        {activePopover === 'startTime' && (<div className="absolute w-56 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-3 z-10 animate-page-fade-in space-y-3" style={popoverPosition}>
                                                 <div><label className="text-xs font-medium text-gray-500 dark:text-gray-400">Start Date</label><input type="date" value={startDate || todayStr} onChange={e => setStartDate(e.target.value)} className="w-full mt-1 p-2 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 dark:text-white"/></div>
                                                 <div><label className="text-xs font-medium text-gray-500 dark:text-gray-400">Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full mt-1 p-2 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 dark:text-white"/></div>
                                             </div>

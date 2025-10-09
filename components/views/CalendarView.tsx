@@ -123,7 +123,7 @@ const CalendarView: React.FC = () => {
                                                 </span>
                                                  {tagsForDay.length > 0 && (
                                                     <div className="mt-1 w-full px-1 space-y-0.5 overflow-hidden">
-                                                        {tagsForDay.slice(0, 2).map(tag => (
+                                                        {tagsForDay.slice(0, 2).map((tag: string) => (
                                                             <div key={tag} className={`text-xs text-left truncate px-1 rounded-sm ${isSelected ? 'bg-white/20 text-white' : 'bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'}`}>
                                                                 {tag}
                                                             </div>

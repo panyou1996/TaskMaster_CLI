@@ -60,23 +60,23 @@ const ThemeSettingsScreen: React.FC = () => {
     // Theme effect
     useEffect(() => {
         const root = window.document.documentElement;
-        const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-        if (theme === 'Dark' || (theme === 'System' && isSystemDark)) {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
-
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const handleChange = (e: MediaQueryListEvent) => {
-            if (theme === 'System') {
-                root.classList.toggle('dark', e.matches);
-            }
+
+        const applyTheme = () => {
+            const isDark = theme === 'Dark' || (theme === 'System' && mediaQuery.matches);
+            root.classList.toggle('dark', isDark);
         };
 
-        mediaQuery.addEventListener('change', handleChange);
-        return () => mediaQuery.removeEventListener('change', handleChange);
+        applyTheme();
+
+        const handleSystemThemeChange = () => {
+            if (theme === 'System') {
+                applyTheme();
+            }
+        };
+        
+        mediaQuery.addEventListener('change', handleSystemThemeChange);
+        return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
     }, [theme]);
 
     // Font size effect

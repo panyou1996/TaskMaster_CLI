@@ -234,7 +234,7 @@ const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialD
             <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
             
             <form onSubmit={handleSubmit} className={`w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} style={{ paddingBottom: `env(safe-area-inset-bottom)` }}>
-                <div ref={cardRef} className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4">
+                <div ref={cardRef} className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 overflow-y-auto max-h-[75vh]">
                     {error && <p className="text-red-500 text-sm text-center mb-2">{error}</p>}
                     
                     <div className="flex items-start gap-3">

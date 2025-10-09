@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import MainLayout from '../components/layouts/MainLayout';
 import TimelineView from '../components/views/TimelineView';
 import { useData } from '../contexts/DataContext';
@@ -22,6 +23,15 @@ const TimelineScreen: React.FC = () => {
     const [timeToSet, setTimeToSet] = useState<string | null>(null);
     const [completingTaskId, setCompletingTaskId] = useState<number | string | null>(null);
     const [uncompletingTaskId, setUncompletingTaskId] = useState<number | string | null>(null);
+    // FIX: Add currentTime state to pass to TimelineView
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 60000); // Update every minute
+        return () => clearInterval(timer);
+    }, []);
 
     // Interaction handlers
     // FIX: Changed taskId to allow string for temporary items
@@ -126,6 +136,7 @@ const TimelineScreen: React.FC = () => {
             <TimelineView
                 tasks={allTasks}
                 lists={taskLists}
+                currentTime={currentTime}
                 onUnscheduledTaskClick={handleOpenTimePicker}
                 onScheduledTaskShortPress={handleOpenTaskDetail}
                 onScheduledTaskLongPress={handleOpenTimePicker}
