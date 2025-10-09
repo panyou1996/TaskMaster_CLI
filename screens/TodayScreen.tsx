@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
 import TaskCard from '../components/common/TaskCard';
-import { RecommendIcon, OverdueIcon, ChevronDownIcon, RefreshSpinnerIcon, SparklesIcon, TimelineIcon, ListsIcon, PlusIconHeader, LockIcon, FocusHeaderIcon } from '../components/icons/Icons';
+import { RecommendIcon, OverdueIcon, ChevronDownIcon, RefreshSpinnerIcon, SparklesIcon, TimelineIcon, ListsIcon, PlusIconHeader, LockIcon, FocusHeaderIcon, SettingsHeaderIcon } from '../components/icons/Icons';
 import RecommendTasksScreen from './RecommendTasksScreen';
 import OverdueTasksScreen from './OverdueTasksScreen';
 import AddTaskScreen, { NewTaskData } from './AddTaskScreen';
@@ -15,6 +15,8 @@ import TimePickerModal from './TimePickerModal';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 import TimelineView from '../components/views/TimelineView';
 import DurationPickerModal from './DurationPickerModal';
+import usePlanningSettings, { PlanningSettings } from '../hooks/usePlanningSettings';
+import PlanningSettingsDrawer from './PlanningSettingsDrawer';
 
 const parseDateAsLocal = (dateString?: string): Date | null => {
     if (!dateString) return null;
@@ -22,6 +24,189 @@ const parseDateAsLocal = (dateString?: string): Date | null => {
     if (parts.length !== 3 || parts.some(isNaN)) return null;
     return new Date(parts[0], parts[1] - 1, parts[2]);
 };
+
+// --- Planning Algorithm Logic ---
+
+const timeToMinutes = (timeStr: string): number => {
+    if (!timeStr || !timeStr.includes(':')) return 0;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+};
+
+const minutesToTime = (totalMinutes: number): string => {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+};
+
+const runSequentialPlanning = (
+    flexibleTasks: Task[],
+    scheduledTasks: Task[],
+    settings: PlanningSettings
+): { taskId: string | number, updates: Partial<Task> }[] => {
+    const { taskGap, workStartTime, workEndTime, lunchStartTime, lunchEndTime, dinnerStartTime, dinnerEndTime } = settings;
+
+    let busySlots = scheduledTasks
+        .filter(t => t.startTime && t.duration)
+        .map(t => ({
+            start: timeToMinutes(t.startTime!),
+            end: timeToMinutes(t.startTime!) + t.duration!
+        }));
+
+    busySlots.push(
+        { start: timeToMinutes(lunchStartTime), end: timeToMinutes(lunchEndTime) },
+        { start: timeToMinutes(dinnerStartTime), end: timeToMinutes(dinnerEndTime) }
+    );
+    
+    busySlots = busySlots.sort((a, b) => a.start - b.start);
+
+    const mergedBusySlots: { start: number, end: number }[] = [];
+    if (busySlots.length > 0) {
+        mergedBusySlots.push({ ...busySlots[0] });
+        for (let i = 1; i < busySlots.length; i++) {
+            const last = mergedBusySlots[mergedBusySlots.length - 1];
+            const current = busySlots[i];
+            if (current.start < last.end) {
+                last.end = Math.max(last.end, current.end);
+            } else {
+                mergedBusySlots.push({ ...current });
+            }
+        }
+    }
+
+    const updates: { taskId: string | number, updates: Partial<Task> }[] = [];
+    
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    // Round up to the next 15-minute interval
+    const roundedNowMinutes = Math.ceil(nowMinutes / 15) * 15;
+    const effectiveWorkStartMinutes = timeToMinutes(workStartTime);
+    let currentTime = Math.max(effectiveWorkStartMinutes, roundedNowMinutes);
+
+    const workEndMinutes = timeToMinutes(workEndTime);
+
+    for (const task of flexibleTasks) {
+        const duration = task.duration || 30;
+        let foundSlot = false;
+        let potentialStartTime = currentTime;
+
+        while (!foundSlot) {
+            const taskStart = potentialStartTime;
+            const taskEnd = taskStart + duration;
+
+            if (taskStart >= workEndMinutes + 240) { // Safety break to prevent infinite loops
+                break; 
+            }
+
+            let conflict = false;
+            for (const slot of mergedBusySlots) {
+                if (taskStart < slot.end && taskEnd > slot.start) {
+                    conflict = true;
+                    potentialStartTime = slot.end + taskGap;
+                    break;
+                }
+            }
+
+            if (!conflict) {
+                foundSlot = true;
+                const newStartTime = minutesToTime(taskStart);
+                updates.push({ taskId: task.id, updates: { startTime: newStartTime, time: newStartTime } });
+                
+                const newSlot = { start: taskStart, end: taskEnd };
+                mergedBusySlots.push(newSlot);
+                mergedBusySlots.sort((a, b) => a.start - b.start);
+                
+                currentTime = taskEnd + taskGap;
+            }
+        }
+    }
+    
+    return updates;
+};
+
+const runWeightedPlanning = (
+    flexibleTasks: Task[],
+    scheduledTasks: Task[],
+    settings: PlanningSettings
+): { taskId: string | number, updates: Partial<Task> }[] => {
+    
+    const getPermutations = (arr: Task[]): Task[][] => {
+        const output: Task[][] = [];
+        const swap = (array: Task[], i: number, j: number) => { [array[i], array[j]] = [array[j], array[i]]; };
+        const generate = (k: number, heapArr: Task[]) => {
+            if (k === 1) {
+                output.push([...heapArr]);
+                return;
+            }
+            generate(k - 1, heapArr);
+            for (let i = 0; i < k - 1; i++) {
+                if (k % 2 === 0) swap(heapArr, i, k - 1);
+                else swap(heapArr, 0, k - 1);
+                generate(k - 1, heapArr);
+            }
+        };
+        generate(arr.length, [...arr]);
+        return output;
+    };
+    
+    const allPermutations = getPermutations(flexibleTasks);
+    let bestPlan: { updates: { taskId: string | number, updates: Partial<Task> }[], weight: number } | null = null;
+    
+    const workEndMins = timeToMinutes(settings.workEndTime);
+    const lunchSlot = { start: timeToMinutes(settings.lunchStartTime), end: timeToMinutes(settings.lunchEndTime) };
+    const dinnerSlot = { start: timeToMinutes(settings.dinnerStartTime), end: timeToMinutes(settings.dinnerEndTime) };
+    const originalBusySlots = scheduledTasks.filter(t => t.startTime && t.duration).map(t => ({ start: timeToMinutes(t.startTime!), end: timeToMinutes(t.startTime!) + t.duration! }));
+    const allFixedSlots = [...originalBusySlots, lunchSlot, dinnerSlot];
+
+    for (const permutation of allPermutations) {
+        const simulationResult = runSequentialPlanning(permutation, scheduledTasks, settings);
+        
+        let weight = 0;
+        
+        const scheduledPermutation: (Task & { scheduledStartTime: string })[] = [];
+        permutation.forEach(task => {
+            const update = simulationResult.find(u => u.taskId === task.id);
+            if (update?.updates.startTime) {
+                 scheduledPermutation.push({ ...task, scheduledStartTime: update.updates.startTime });
+            }
+        });
+        
+        if (scheduledPermutation.length !== permutation.length) {
+            weight = Infinity;
+        } else {
+            let crossCount = 0;
+            scheduledPermutation.forEach((task, index) => {
+                if (task.important) weight += index * 2;
+                
+                const taskStartMins = timeToMinutes(task.scheduledStartTime);
+                for (const fixedSlot of allFixedSlots) {
+                    if (taskStartMins === fixedSlot.end + settings.taskGap) {
+                        crossCount++;
+                        break;
+                    }
+                }
+            });
+            weight += crossCount * 1;
+            
+            const lastTask = scheduledPermutation[scheduledPermutation.length - 1];
+            if(lastTask) {
+                const lastEndTime = timeToMinutes(lastTask.scheduledStartTime) + (lastTask.duration || 0);
+                if (lastEndTime > workEndMins) {
+                    const overtimeHours = (lastEndTime - workEndMins) / 60;
+                    weight += overtimeHours * 2;
+                }
+            }
+        }
+        
+        if (bestPlan === null || weight < bestPlan.weight) {
+            bestPlan = { updates: simulationResult, weight };
+        }
+    }
+    
+    return bestPlan ? bestPlan.updates : [];
+};
+
+// --- React Component ---
 
 const TodayScreen: React.FC = () => {
     const { 
@@ -56,6 +241,12 @@ const TodayScreen: React.FC = () => {
     const [isPlanConfirmOpen, setIsPlanConfirmOpen] = useState(false);
     const [fixedTasksToConvert, setFixedTasksToConvert] = useState<Task[]>([]);
     const [planningTrigger, setPlanningTrigger] = useState(0);
+
+    // New planning settings state
+    const [planningSettings] = usePlanningSettings();
+    const [isPlanningSettingsOpen, setIsPlanningSettingsOpen] = useState(false);
+    const [isAlgorithmChoiceOpen, setIsAlgorithmChoiceOpen] = useState(false);
+    const [algorithmToRun, setAlgorithmToRun] = useState<'sequential' | 'weighted' | null>(null);
 
     // Pull to refresh and swipe state
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -377,12 +568,6 @@ const TodayScreen: React.FC = () => {
         };
         await addTask(newTask);
     };
-
-    const timeToMinutes = (timeStr: string): number => {
-        if (!timeStr || !timeStr.includes(':')) return 0;
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        return hours * 60 + minutes;
-    };
     
     const isTaskOverdue = (task: Task, now: Date): boolean => {
         if (task.completed || !task.startTime || !task.duration) {
@@ -393,92 +578,74 @@ const TodayScreen: React.FC = () => {
         return endMinutes < nowMinutes;
     };
     
-    const minutesToTime = (totalMinutes: number): string => {
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-    };
+    const executePlanningLogic = useCallback(async () => {
+        if (!algorithmToRun) return;
 
-    const executePlanningLogic = async () => {
         setIsPlanning(true);
         try {
-            const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-            const workStartMinutes = 8 * 60 + 30; // 8:30 AM
-            const lunchStartMinutes = 11 * 60 + 30; // 11:30 AM
-            const lunchEndMinutes = 13 * 60; // 1:00 PM
-            const dinnerStartMinutes = 17 * 60 + 30; // 5:30 PM
-            const dinnerEndMinutes = 18 * 60; // 6:00 PM
-            const workEndMinutes = 21 * 60; // 9:00 PM
-            const scheduleStartMinutes = Math.max(currentMinutes, workStartMinutes);
+            const unfinishedTodayTasks = allTasks.filter(task => task.today && !task.completed);
+            
+            // Fixed tasks are obstacles; flexible tasks are the ones to be planned.
+            const fixedTasks = unfinishedTodayTasks.filter(t => t.type === 'Fixed');
+            const flexibleTasksToPlan = unfinishedTodayTasks.filter(t => t.type === 'Flexible');
 
-            if (scheduleStartMinutes >= workEndMinutes) {
-                alert("It's too late to plan your day. No available time slots remain.");
+            if (flexibleTasksToPlan.length === 0) {
+                alert("No flexible tasks to plan.");
+                setIsPlanning(false);
+                setAlgorithmToRun(null);
                 return;
             }
 
-            const busyBlocks = unfinishedTasks
-                .filter(task => task.startTime && task.duration)
-                .map(task => ({ start: timeToMinutes(task.startTime!), end: timeToMinutes(task.startTime!) + (task.duration || 0) }));
-            busyBlocks.push({ start: lunchStartMinutes, end: lunchEndMinutes });
-            busyBlocks.push({ start: dinnerStartMinutes, end: dinnerEndMinutes });
-            busyBlocks.sort((a, b) => a.start - b.start);
+            let planUpdates: { taskId: string | number, updates: Partial<Task> }[] = [];
 
-            const availableSlots: { start: number, end: number }[] = [];
-            let lastBusyEnd = scheduleStartMinutes;
-            for (const block of busyBlocks) {
-                if (block.start > lastBusyEnd) availableSlots.push({ start: lastBusyEnd, end: block.start });
-                lastBusyEnd = Math.max(lastBusyEnd, block.end);
-            }
-            if (workEndMinutes > lastBusyEnd) availableSlots.push({ start: lastBusyEnd, end: workEndMinutes });
-            
-            const slotsCopy = JSON.parse(JSON.stringify(availableSlots));
-            const tasksToScheduleSorted = [...tasksToSchedule].sort((a, b) => (b.important ? 1 : 0) - (a.important ? 1 : 0));
-            const updates: { taskId: string | number, updates: Partial<Task> }[] = [];
-            const unscheduledTasksList: Task[] = [];
-
-            for (const task of tasksToScheduleSorted) {
-                let scheduled = false;
-                const taskDuration = task.duration || 30;
-                for (const slot of slotsCopy) {
-                    if (slot.end - slot.start >= taskDuration) {
-                        const newStartTime = minutesToTime(slot.start);
-                        const taskUpdate: Partial<Task> = { startTime: newStartTime, time: newStartTime };
-                        if (!task.duration) taskUpdate.duration = 30;
-                        updates.push({ taskId: task.id, updates: taskUpdate });
-                        slot.start += taskDuration;
-                        scheduled = true;
-                        break;
-                    }
+            if (algorithmToRun === 'sequential') {
+                planUpdates = runSequentialPlanning(flexibleTasksToPlan, fixedTasks, planningSettings);
+            } else if (algorithmToRun === 'weighted') {
+                if (flexibleTasksToPlan.length > 8) {
+                    alert(`Too many tasks for weighted planning (max 8). Using sequential algorithm instead.`);
+                    planUpdates = runSequentialPlanning(flexibleTasksToPlan, fixedTasks, planningSettings);
+                } else {
+                    planUpdates = runWeightedPlanning(flexibleTasksToPlan, fixedTasks, planningSettings);
                 }
-                if (!scheduled) unscheduledTasksList.push(task);
             }
             
-            if (updates.length > 0) await Promise.all(updates.map(u => updateTask(u.taskId, u.updates)));
+            const scheduledTaskIds = new Set(planUpdates.map(u => u.taskId));
             
-            if (unscheduledTasksList.length > 0) {
-                const scheduledCount = updates.length;
-                const unscheduledTitles = unscheduledTasksList.map(t => t.title).join(', ');
-                let message = scheduledCount > 0 
-                    ? `Successfully scheduled ${scheduledCount} task(s). The following could not be scheduled: ${unscheduledTitles}.`
-                    : `Could not schedule: ${unscheduledTitles}.`;
-                alert(message);
-            } else if (updates.length === 0 && tasksToSchedule.length > 0) {
-                alert("No available time slots to fit your tasks.");
+            const unscheduledTasksToClear = flexibleTasksToPlan.filter(
+                t => !scheduledTaskIds.has(t.id) && t.startTime
+            );
+                
+            const clearingUpdates = unscheduledTasksToClear.map(t => ({
+                taskId: t.id,
+                updates: { startTime: undefined, time: '--:--' }
+            }));
+
+            const allUpdates = [...planUpdates, ...clearingUpdates];
+
+            if (allUpdates.length > 0) {
+                await Promise.all(allUpdates.map(u => updateTask(u.taskId, u.updates)));
             }
-        } catch (error) {
-            console.error("Failed to plan day:", error);
-            alert("An error occurred while planning your day.");
+
+            if (planUpdates.length < flexibleTasksToPlan.length) {
+                const unscheduledCount = flexibleTasksToPlan.length - planUpdates.length;
+                alert(`Successfully planned ${planUpdates.length} tasks. Could not find a time slot for ${unscheduledCount} task(s).`);
+            }
+
+        } catch (e) {
+            console.error("Planning failed", e);
+            alert("An error occurred during planning.");
         } finally {
             setIsPlanning(false);
+            setAlgorithmToRun(null);
         }
-    };
+    }, [algorithmToRun, allTasks, planningSettings, updateTask]);
+
 
     useEffect(() => {
-        if (planningTrigger > 0) {
+        if (planningTrigger > 0 && algorithmToRun) {
             executePlanningLogic();
         }
-    }, [planningTrigger]);
+    }, [planningTrigger, algorithmToRun, executePlanningLogic]);
 
     const handlePlanMyDay = () => {
         const fixedWithoutTime = unfinishedTasks.filter(t => t.type === 'Fixed' && !t.startTime);
@@ -486,16 +653,32 @@ const TodayScreen: React.FC = () => {
             setFixedTasksToConvert(fixedWithoutTime);
             setIsPlanConfirmOpen(true);
         } else {
-            setPlanningTrigger(Date.now());
+             if (planningSettings.algorithm === 'ask') {
+                setIsAlgorithmChoiceOpen(true);
+            } else {
+                setAlgorithmToRun(planningSettings.algorithm);
+                setPlanningTrigger(Date.now());
+            }
         }
     };
+    
+    const handleChooseAlgorithmAndPlan = (algo: 'sequential' | 'weighted') => {
+        setIsAlgorithmChoiceOpen(false);
+        setAlgorithmToRun(algo);
+        setPlanningTrigger(Date.now());
+    }
 
     const handleConfirmAndPlan = async () => {
         setIsPlanConfirmOpen(false);
         await Promise.all(
             fixedTasksToConvert.map(t => updateTask(t.id, { type: 'Flexible' }))
         );
-        setPlanningTrigger(Date.now());
+        if (planningSettings.algorithm === 'ask') {
+            setIsAlgorithmChoiceOpen(true);
+        } else {
+            setAlgorithmToRun(planningSettings.algorithm);
+            setPlanningTrigger(Date.now());
+        }
     };
 
 
@@ -660,7 +843,14 @@ const TodayScreen: React.FC = () => {
                                                     <h2 className="text-lg font-bold text-gray-800">Today's Tasks</h2>
                                                     <span className="text-sm font-medium text-gray-500">{finishedTasks.length}/{totalTodayTasks}</span>
                                                 </div>
-                                                {tasksToSchedule.length > 0 && (
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => setIsPlanningSettingsOpen(true)}
+                                                        className="flex-shrink-0 p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
+                                                        aria-label="Planning Settings"
+                                                    >
+                                                        <SettingsHeaderIcon className="w-5 h-5" />
+                                                    </button>
                                                     <button
                                                         onClick={handlePlanMyDay}
                                                         disabled={isPlanning}
@@ -676,7 +866,7 @@ const TodayScreen: React.FC = () => {
                                                             </>
                                                         )}
                                                     </button>
-                                                )}
+                                                </div>
                                             </div>
                                             <div className="w-full bg-gray-200 rounded-full h-2">
                                                 <div
@@ -915,6 +1105,21 @@ const TodayScreen: React.FC = () => {
                 message={`You have ${fixedTasksToConvert.length} fixed task(s) without a start time. To auto-plan, they can be converted to flexible tasks. Or you can go back and schedule them manually.`}
                 confirmText="Convert & Plan"
                 cancelText="Go Back"
+                confirmVariant="primary"
+            />
+            <PlanningSettingsDrawer 
+                isOpen={isPlanningSettingsOpen}
+                onClose={() => setIsPlanningSettingsOpen(false)}
+            />
+             <ConfirmationModal
+                isOpen={isAlgorithmChoiceOpen}
+                onClose={() => setIsAlgorithmChoiceOpen(false)}
+                onConfirm={() => handleChooseAlgorithmAndPlan('sequential')}
+                onCancel={() => handleChooseAlgorithmAndPlan('weighted')}
+                title="Choose Planning Algorithm"
+                message="How would you like to plan your day?"
+                confirmText="Sequential"
+                cancelText="Weighted"
                 confirmVariant="primary"
             />
         </MainLayout>
