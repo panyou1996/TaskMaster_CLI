@@ -20,7 +20,7 @@ const MomentDetailScreen: React.FC = () => {
     const moment = moments.find(m => m.id.toString() === id);
 
     const handleBack = () => {
-        navigate(-1);
+        navigate('/moments');
     };
 
     const handleOpenEdit = () => {

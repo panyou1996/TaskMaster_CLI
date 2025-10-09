@@ -48,7 +48,7 @@ const CalendarView: React.FC = () => {
         const generateDays = (startDate: Date, dayCount: number, offset: number = 0) => {
              const days = [];
              for(let i = 0; i < offset; i++) {
-                 days.push({ day: null, date: null, hasMoments: false });
+                 days.push({ day: null, date: null, moments: [] });
              }
              for (let i = 0; i < dayCount; i++) {
                 const date = new Date(startDate);
@@ -57,7 +57,7 @@ const CalendarView: React.FC = () => {
                 days.push({
                     day: date.getDate(),
                     date: date,
-                    hasMoments: momentsByDay.has(dateString),
+                    moments: momentsByDay.get(dateString) || [],
                 });
             }
             return days;
@@ -99,25 +99,40 @@ const CalendarView: React.FC = () => {
                         </button>
                         {!isCalendarCollapsed && <button onClick={handleNextMonth} className="p-1 text-gray-500 hover:text-gray-800" aria-label="Next month"><ChevronRightIcon /></button>}
                     </div>
-                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCalendarCollapsed ? 'max-h-20' : 'max-h-96'}`}>
-                        <div className="grid grid-cols-7 gap-y-2 text-center">
-                            {dayHeaders.map(day => <div key={day} className="text-sm font-medium text-gray-500">{day}</div>)}
+                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCalendarCollapsed ? 'max-h-32' : 'max-h-[30rem]'}`}>
+                        <div className="grid grid-cols-7 gap-1 text-center">
+                            {dayHeaders.map(day => <div key={day} className="text-sm h-8 flex items-center justify-center font-medium text-gray-500">{day}</div>)}
                             {displayedDays.map((dayObj, index) => {
                                 const isSelected = dayObj.date && isSameDay(dayObj.date, selectedDate);
                                 const isToday = dayObj.date && isSameDay(dayObj.date, today);
-                                let buttonClass = 'text-gray-700 hover:bg-gray-100';
+                                let buttonClass = 'bg-white text-gray-700 hover:bg-gray-100';
                                 if (isSelected) buttonClass = 'bg-blue-600 text-white';
                                 else if (isToday) buttonClass = 'bg-gray-100 text-gray-800';
 
+                                const tagsForDay = Array.from(new Set(dayObj.moments.flatMap(m => m.tags || [])));
+
                                 return (
-                                    <div key={index} className="py-1.5 flex justify-center items-center">
+                                    <div key={index} className="flex justify-center items-start">
                                         {dayObj.day && (
                                             <button 
                                                 onClick={() => dayObj.date && setSelectedDate(dayObj.date)}
-                                                className={`w-8 h-8 rounded-full text-sm font-medium flex flex-col items-center justify-center transition-colors relative ${buttonClass}`}
+                                                className={`w-full h-20 rounded-lg text-sm font-medium flex flex-col items-center pt-1.5 transition-colors relative ${buttonClass}`}
                                             >
-                                                {dayObj.day}
-                                                {dayObj.hasMoments && !isSelected && <div className="absolute bottom-1 w-1 h-1 bg-blue-500 rounded-full" />}
+                                                <span className={`w-6 h-6 flex items-center justify-center rounded-full ${isSelected ? '' : isToday ? 'bg-white' : ''}`}>
+                                                    {dayObj.day}
+                                                </span>
+                                                 {tagsForDay.length > 0 && (
+                                                    <div className="mt-1 w-full px-1 space-y-0.5 overflow-hidden">
+                                                        {tagsForDay.slice(0, 2).map(tag => (
+                                                            <div key={tag} className={`text-xs text-left truncate px-1 rounded-sm ${isSelected ? 'bg-white/20 text-white' : 'bg-purple-50 text-purple-700'}`}>
+                                                                {tag}
+                                                            </div>
+                                                        ))}
+                                                        {tagsForDay.length > 2 && (
+                                                            <div className={`text-xs text-center ${isSelected ? 'text-purple-100' : 'text-gray-400'}`}>+ {tagsForDay.length - 2} more</div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </button>
                                         )}
                                     </div>

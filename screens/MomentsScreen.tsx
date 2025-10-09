@@ -9,21 +9,39 @@ import AddMomentScreen, { NewMomentData } from './AddMomentScreen';
 import TagsView from '../components/views/TagsView';
 import CalendarView from '../components/views/CalendarView';
 
-// FIX: Changed id to allow string for temporary items
-const MomentCard: React.FC<{ id: number | string; title: string; description: string; imageUrl: string; index: number; }> = ({ id, title, description, imageUrl, index }) => (
-    <Link 
-        to={`/moments/${id}`} 
-        className="relative aspect-[4/3] rounded-2xl overflow-hidden group cursor-pointer block animate-card-fade-in card-shadow"
-        style={{ animationDelay: `${index * 50}ms`, willChange: 'transform, opacity' }}
-    >
-        <img src={imageUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute bottom-0 left-0 p-3 text-white">
-            <h3 className="font-bold">{title}</h3>
-            {description && <p className="text-xs mt-0.5">{description}</p>}
-        </div>
-    </Link>
-);
+const MomentCard: React.FC<{ id: number | string; title: string; description: string; imageUrl: string; index: number; createdAt?: string; tags?: string[]; }> = ({ id, title, description, imageUrl, index, createdAt, tags }) => {
+    const formattedTime = useMemo(() => {
+        if (!createdAt) return null;
+        try {
+            const date = new Date(createdAt);
+            if (isNaN(date.getTime())) return null;
+            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        } catch (e) {
+            console.error("Error formatting date:", e);
+            return null;
+        }
+    }, [createdAt]);
+    
+    return (
+        <Link 
+            to={`/moments/${id}`} 
+            className="relative aspect-[4/3] rounded-2xl overflow-hidden group cursor-pointer block animate-card-fade-in card-shadow"
+            style={{ animationDelay: `${index * 50}ms`, willChange: 'transform, opacity' }}
+        >
+            <img src={imageUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-0 left-0 p-3 text-white w-full">
+                <h3 className="font-bold truncate">{title}</h3>
+                <div className="text-xs text-gray-200 mt-0.5 flex items-center gap-1.5 truncate">
+                    {formattedTime && <span>{formattedTime}</span>}
+                    {tags && tags.length > 0 && formattedTime && <span>·</span>}
+                    {tags && tags.length > 0 && <span className="truncate">{tags.map(t => `#${t}`).join(' ')}</span>}
+                </div>
+                {description && <p className="text-xs mt-1 opacity-80 truncate">{description}</p>}
+            </div>
+        </Link>
+    );
+};
 
 
 const MomentsScreen: React.FC = () => {
@@ -47,7 +65,7 @@ const MomentsScreen: React.FC = () => {
 
     useEffect(() => {
         if (isSearchVisible) {
-            searchInputRef.current?.focus();
+            setTimeout(() => searchInputRef.current?.focus(), 300); // Wait for transition
         }
     }, [isSearchVisible]);
 
@@ -183,33 +201,6 @@ const MomentsScreen: React.FC = () => {
                         </div>
                     </header>
 
-                    <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSearchVisible ? 'max-h-20' : 'max-h-0'}`}>
-                        <div className="px-6 pt-1 pb-3">
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <SearchIcon />
-                                </div>
-                                <input
-                                    ref={searchInputRef}
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search moments..."
-                                    className="w-full pl-10 pr-20 py-2.5 border border-[var(--color-border)] rounded-[var(--border-radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition text-sm"
-                                />
-                                <button 
-                                    onClick={() => {
-                                        setIsSearchVisible(false);
-                                        setSearchQuery('');
-                                    }}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm font-semibold text-[var(--color-primary-500)]"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     <main className="overflow-hidden flex-grow flex flex-col">
                         <div
                             className="flex h-full transition-transform duration-300 ease-out"
@@ -217,35 +208,70 @@ const MomentsScreen: React.FC = () => {
                         >
                              {/* Grid View */}
                             <div ref={momentsViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto px-6 pb-24">
-                                {viewMode === 'moments' && (
-                                    momentsData.length === 0 ? (
-                                        <EmptyMomentsIllustration onAddMoment={() => setIsAddMomentOpen(true)} />
-                                    ) : filteredMoments.length === 0 ? (
-                                        <div className="text-center py-16">
-                                            <p className="text-lg font-semibold text-gray-700">No moments found</p>
-                                            <p className="text-gray-500 mt-1">Try a different search term.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pt-4">
-                                            {filteredMoments.map((moment, index) => (
-                                                <MomentCard key={moment.id} {...moment} index={index} />
-                                            ))}
-                                        </div>
-                                    )
+                                {momentsData.length === 0 ? (
+                                    <EmptyMomentsIllustration onAddMoment={() => setIsAddMomentOpen(true)} />
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pt-4">
+                                        {momentsData.map((moment, index) => (
+                                            <MomentCard key={moment.id} {...moment} index={index} createdAt={moment.created_at} />
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                             {/* Calendar View */}
                             <div ref={calendarViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto pb-24">
-                                {viewMode === 'calendar' && <CalendarView />}
+                                <CalendarView />
                             </div>
                             {/* Tags View */}
                             <div ref={tagsViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto pb-24">
-                                {viewMode === 'tags' && <TagsView />}
+                                <TagsView />
                             </div>
                         </div>
                     </main>
                 </div>
             </div>
+            
+             {/* Search Overlay */}
+            <div className={`fixed inset-0 z-40 bg-gray-50 flex flex-col transition-transform duration-300 ease-in-out ${isSearchVisible ? 'translate-y-0' : 'translate-y-full'}`}
+                 style={{ paddingTop: `env(safe-area-inset-top)` }}>
+                <div className="flex-shrink-0 px-4 pt-4 pb-3 flex items-center gap-2">
+                    <div className="relative flex-grow">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <SearchIcon />
+                        </div>
+                        <input
+                            ref={searchInputRef}
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search moments..."
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    <button 
+                        onClick={() => { setIsSearchVisible(false); setSearchQuery(''); }}
+                        className="font-semibold text-blue-600 px-2"
+                    >
+                        Cancel
+                    </button>
+                </div>
+                
+                <div className="flex-grow overflow-y-auto px-6 pb-24">
+                    {filteredMoments.length === 0 && searchQuery ? (
+                        <div className="text-center py-16">
+                            <p className="text-lg font-semibold text-gray-700">No moments found</p>
+                            <p className="text-gray-500 mt-1">Try a different search term.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-4">
+                            {filteredMoments.map((moment, index) => (
+                                <MomentCard key={moment.id} {...moment} index={index} createdAt={moment.created_at} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <AddMomentScreen
                 isOpen={isAddMomentOpen}
                 onClose={() => setIsAddMomentOpen(false)}
