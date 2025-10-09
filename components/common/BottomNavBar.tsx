@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
 import { TodayIcon, ListsIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon, SettingsIcon } from '../icons/Icons';
 import AddMomentScreen, { NewMomentData } from '../../screens/AddMomentScreen';
@@ -6,14 +6,16 @@ import { takePhotoWithCapacitor } from '../../utils/permissions';
 import { useData } from '../../contexts/DataContext';
 import { Moment } from '../../data/mockData';
 import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { Capacitor } from '@capacitor/core';
 
-// --- Web Speech API Setup ---
-// Extend the Window interface for TypeScript
-interface IWindow extends Window {
-  SpeechRecognition: any;
-  webkitSpeechRecognition: any;
+// For Web Speech API typescript support
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
 }
-const SpeechRecognition = (window as any as IWindow).SpeechRecognition || (window as any as IWindow).webkitSpeechRecognition;
 
 
 const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
@@ -49,79 +51,168 @@ const BottomNavBar: React.FC = () => {
     
     const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isLongPressRef = useRef(false);
-    const recognitionRef = useRef<any | null>(null);
     const finalTranscriptRef = useRef('');
+    const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const hadErrorRef = useRef(false);
 
-    // --- Voice Input Logic using Web Speech API ---
+    // --- Voice Input Logic (Hybrid Approach) ---
 
-    const stopRecording = useCallback(() => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-        }
-        setIsRecording(false);
-        setTimeout(() => setShowRecordingUI(false), 300); // Allow for fade-out
-    }, []);
-    
-    const startRecording = async () => {
-        if (!SpeechRecognition) {
+    const startWebRecording = () => {
+        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognitionAPI) {
             alert("Speech recognition is not supported in this browser.");
             return;
         }
 
+        if (recognitionRef.current) {
+            recognitionRef.current.onend = null;
+            recognitionRef.current.stop();
+        }
+
+        setShowRecordingUI(true);
+        setIsRecording(true);
+        finalTranscriptRef.current = '';
+        setLiveTranscription('');
+        hadErrorRef.current = false;
+
+        const recognition = new SpeechRecognitionAPI();
+        recognitionRef.current = recognition;
+
+        recognition.lang = 'zh-CN';
+        recognition.interimResults = true;
+        recognition.continuous = true;
+
+        let final_transcript = ''; // Scoped variable for this session
+
+        recognition.onresult = (event: any) => {
+            if (hadErrorRef.current) return;
+
+            let interim_transcript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    final_transcript += event.results[i][0].transcript;
+                } else {
+                    interim_transcript += event.results[i][0].transcript;
+                }
+            }
+
+            const fullTranscript = final_transcript + interim_transcript;
+            finalTranscriptRef.current = fullTranscript;
+            setLiveTranscription(fullTranscript);
+        };
+
+        recognition.onend = () => {
+            if (recognitionRef.current !== recognition) {
+                return;
+            }
+            
+            recognitionRef.current = null;
+            setIsRecording(false);
+            setShowRecordingUI(false);
+
+            if (hadErrorRef.current) {
+                return;
+            }
+            
+            const finalText = finalTranscriptRef.current.trim();
+            if (finalText) {
+                setInitialAIPrompt(finalText);
+                setIsAddTaskWithAIOpen(true);
+            }
+        };
+
+        recognition.onerror = (event: any) => {
+            if (event.error !== 'aborted' && event.error !== 'no-speech') {
+                console.error('Web Speech recognition error:', event.error);
+            }
+            hadErrorRef.current = true;
+        };
+
+        recognition.start();
+    };
+    
+    const startNativeRecording = async () => {
+        const available = await SpeechRecognition.available();
+        if (!available) {
+            alert("Speech recognition is not available on this device.");
+            return;
+        }
+
         try {
-            // Check for microphone permission implicitly by starting
+            const permissions = await SpeechRecognition.requestPermissions();
+            if (permissions.speechRecognition !== 'granted') {
+                alert('Microphone access was denied. Please allow it in your app settings.');
+                return;
+            }
+        
             setShowRecordingUI(true);
             setIsRecording(true);
             finalTranscriptRef.current = '';
             setLiveTranscription('');
 
-            recognitionRef.current = new SpeechRecognition();
-            const rec = recognitionRef.current;
-            rec.lang = 'zh-CN';
-            rec.continuous = true;
-            rec.interimResults = true;
-
-            rec.onresult = (event: any) => {
-                let interimTranscript = '';
-                finalTranscriptRef.current = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalTranscriptRef.current += event.results[i][0].transcript;
-                    } else {
-                        interimTranscript += event.results[i][0].transcript;
-                    }
+            SpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
+                if (data.matches && data.matches.length > 0) {
+                    const transcript = data.matches[0];
+                    setLiveTranscription(transcript);
+                    finalTranscriptRef.current = transcript;
                 }
-                setLiveTranscription(finalTranscriptRef.current + interimTranscript);
-            };
+            });
 
-            rec.onend = () => {
-                stopRecording();
+            await SpeechRecognition.start({
+                language: 'zh-CN',
+                partialResults: true,
+            });
+        } catch(error) {
+            console.error('Failed to start native recording:', error);
+            alert('Could not start recording. Please check microphone permissions.');
+            setIsRecording(false);
+            setShowRecordingUI(false);
+        }
+    };
+
+    const startRecording = () => {
+        if (Capacitor.isNativePlatform()) {
+            startNativeRecording();
+        } else {
+            startWebRecording();
+        }
+    };
+    
+    const stopRecordingAndProcess = () => {
+        if (Capacitor.isNativePlatform()) {
+            SpeechRecognition.stop().then(() => {
+                SpeechRecognition.removeAllListeners();
                 const finalText = finalTranscriptRef.current.trim();
                 if (finalText) {
                     setInitialAIPrompt(finalText);
                     setIsAddTaskWithAIOpen(true);
                 }
-                recognitionRef.current = null;
-            };
-
-            rec.onerror = (event: any) => {
-                console.error('Speech recognition error:', event.error);
-                if (event.error === 'not-allowed') {
-                    alert('Microphone access was denied. Please allow it in your browser settings.');
-                } else {
-                    alert(`An error occurred during voice recognition: ${event.error}`);
-                }
-                stopRecording();
-            };
-
-            rec.start();
-
-        } catch (err) {
-            console.error('Failed to start recording:', err);
-            alert('Could not start recording. Please check microphone permissions.');
-            stopRecording();
+            }).catch(e => console.error("Error stopping native speech recognition", e));
+        } else {
+            if (recognitionRef.current) {
+                hadErrorRef.current = false;
+                recognitionRef.current.stop();
+            }
         }
+        setIsRecording(false);
+        setShowRecordingUI(false);
     };
+    
+    const stopRecordingAndCancel = () => {
+        if (Capacitor.isNativePlatform()) {
+            SpeechRecognition.stop().then(() => {
+                SpeechRecognition.removeAllListeners();
+            }).catch(e => console.error("Error stopping native speech recognition", e));
+        } else {
+            if (recognitionRef.current) {
+                hadErrorRef.current = true;
+                recognitionRef.current.stop();
+            }
+        }
+        setIsRecording(false);
+        setShowRecordingUI(false);
+    };
+
 
     const handlePointerDown = () => {
         isLongPressRef.current = false;
@@ -135,7 +226,7 @@ const BottomNavBar: React.FC = () => {
     const handlePointerUp = () => {
         if(longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
         if (isLongPressRef.current) {
-            stopRecording();
+            stopRecordingAndProcess();
         } else {
             setIsMenuOpen(prev => !prev);
         }
@@ -145,7 +236,8 @@ const BottomNavBar: React.FC = () => {
     const handlePointerLeave = () => {
         if (isRecording) {
             if(longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-            stopRecording();
+            stopRecordingAndCancel();
+            isLongPressRef.current = false;
         }
     };
     
@@ -189,7 +281,7 @@ const BottomNavBar: React.FC = () => {
             {/* Recording UI */}
             {showRecordingUI && (
                 <>
-                    <div className="fixed inset-0 bg-black/50 z-40 animate-page-fade-in backdrop-blur-sm" onClick={stopRecording} />
+                    <div className="fixed inset-0 bg-black/50 z-40 animate-page-fade-in backdrop-blur-sm" onClick={handlePointerUp} />
                     <div 
                         className="fixed left-1/2 -translate-x-1/2 w-40 h-40 bg-[var(--color-primary-500)]/40 rounded-full flex items-center justify-center animate-pulse-recording z-40 pointer-events-none"
                         style={{ bottom: `calc(1rem + env(safe-area-inset-bottom) - 2.5rem)` }}
