@@ -90,7 +90,9 @@ const PlanScreen: React.FC = () => {
     const taskCounts = useMemo(() => {
         const counts: { [key: string]: number } = {};
         for (const task of allTasks) {
-            counts[task.category] = (counts[task.category] || 0) + 1;
+            if (!task.completed) {
+                counts[task.category] = (counts[task.category] || 0) + 1;
+            }
         }
         return counts;
     }, [allTasks]);
