@@ -1,10 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CloseIcon, ChevronRightIcon, SyncIcon, DownloadIcon, UploadIcon, RefreshSpinnerIcon, BellIcon, ListCheckIcon, PaletteIcon, InfoIcon } from '../../components/icons/Icons';
+import { CloseIcon, ChevronRightIcon, SyncIcon, DownloadIcon, UploadIcon, RefreshSpinnerIcon, BellIcon, ListCheckIcon, PaletteIcon, InfoIcon, CheckIcon } from '../../components/icons/Icons';
 import { useData } from '../../contexts/DataContext';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import Button from '../../components/common/Button';
 import MainLayout from '../../components/layouts/MainLayout';
+import useLocalStorage from '../../hooks/useLocalStorage';
+import { TaskList } from '../../data/mockData';
 
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
     <h2 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 pb-2 pt-6">
@@ -19,7 +21,6 @@ interface SettingsItemProps {
   icon?: React.ReactNode;
 }
 
-// FIX: The SettingsItem component was not returning a ReactNode. It now returns the correct JSX.
 const SettingsItem: React.FC<SettingsItemProps> = ({ children, onClick, isLink = false, icon }) => {
     const commonClasses = "flex items-center p-4 text-[var(--color-text-primary)]";
     const interactionClasses = isLink ? "hover:bg-[var(--color-surface-container-low)] transition-colors cursor-pointer" : "";
@@ -38,6 +39,38 @@ const SettingsItem: React.FC<SettingsItemProps> = ({ children, onClick, isLink =
     );
 }
 
+const DefaultListSheet: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  lists: TaskList[];
+  current: string;
+  onSelect: (listName: string) => void;
+}> = ({ isOpen, onClose, lists, current, onSelect }) => {
+  return (
+    <div className={`fixed inset-0 z-50 flex items-end transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
+      <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
+      <div className={`w-full bg-[var(--color-surface-container)] rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`} role="dialog" aria-modal="true" aria-labelledby="list-picker-title">
+        <header className="pt-3 px-4 pb-3 border-b border-[var(--color-border)]">
+          <div className="w-8 h-1 bg-[var(--color-border)] rounded-full mx-auto mb-3" />
+          <h2 id="list-picker-title" className="text-base font-bold text-[var(--color-text-primary)] text-center">Select Default List</h2>
+        </header>
+        <div className="p-4 space-y-2 overflow-y-auto max-h-[50vh]" style={{ paddingBottom: `calc(6rem + env(safe-area-inset-bottom))` }}>
+          {lists.map(list => (
+            <button key={list.id} onClick={() => onSelect(list.name)} className={`w-full text-left p-3 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${current === list.name ? 'bg-primary-100 text-[var(--color-primary-500)]' : 'hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]'}`}>
+              <div className="flex items-center gap-3">
+                <span className="text-lg">{list.icon}</span>
+                <span>{list.name}</span>
+              </div>
+              {current === list.name && <CheckIcon className="w-5 h-5" />}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const SettingsScreen: React.FC = () => {
     const { 
         profile, isOnline, isSyncing, offlineQueue, syncData, syncError, clearOfflineQueue,
@@ -45,10 +78,24 @@ const SettingsScreen: React.FC = () => {
     } = useData();
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
     
+    // State for default list selection
+    const [defaultList, setDefaultList] = useLocalStorage<string>('default-list', lists[0]?.name || 'Personal');
+    const [isListPickerOpen, setIsListPickerOpen] = useState(false);
+    
     // State for import functionality
     const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
     const [importFileData, setImportFileData] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Ensure default list exists, if not, reset it.
+    useEffect(() => {
+        if (lists.length > 0) {
+            const listExists = lists.some(l => l.name === defaultList);
+            if (!listExists) {
+                setDefaultList(lists[0].name);
+            }
+        }
+    }, [lists, defaultList, setDefaultList]);
     
     const hasPendingChanges = offlineQueue.length > 0;
 
@@ -219,7 +266,7 @@ const SettingsScreen: React.FC = () => {
                                     <ChevronRightIcon />
                                 </SettingsItem>
                             </Link>
-                            <SettingsItem isLink>
+                            <SettingsItem isLink onClick={() => setIsListPickerOpen(true)}>
                                 <span className="flex items-center gap-4">
                                     <div className="w-7 h-7 flex items-center justify-center bg-[var(--color-surface-container-low)] rounded-lg text-[var(--color-text-secondary)]">
                                         <ListCheckIcon />
@@ -227,7 +274,7 @@ const SettingsScreen: React.FC = () => {
                                     <span>Default List</span>
                                 </span>
                                 <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
-                                    <span>Personal</span>
+                                    <span>{defaultList}</span>
                                     <ChevronRightIcon />
                                 </div>
                             </SettingsItem>
@@ -284,7 +331,7 @@ const SettingsScreen: React.FC = () => {
                 message="This will remove all unsynced changes. This action is useful if a bad operation is blocking the sync process. Are you sure?"
                 confirmText="Clear & Retry"
             />
-                <ConfirmationModal
+            <ConfirmationModal
                 isOpen={isImportConfirmOpen}
                 onClose={() => setIsImportConfirmOpen(false)}
                 onConfirm={handleConfirmImport}
@@ -292,6 +339,16 @@ const SettingsScreen: React.FC = () => {
                 message="This will overwrite all your current local data. This action cannot be undone. Are you sure you want to proceed?"
                 confirmText="Overwrite & Import"
                 confirmVariant="primary"
+            />
+            <DefaultListSheet
+                isOpen={isListPickerOpen}
+                onClose={() => setIsListPickerOpen(false)}
+                lists={lists}
+                current={defaultList}
+                onSelect={(listName) => {
+                    setDefaultList(listName);
+                    setIsListPickerOpen(false);
+                }}
             />
         </MainLayout>
     );
