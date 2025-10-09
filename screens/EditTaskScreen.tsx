@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { CheckIcon, TrashIcon, FlagIcon, ListCheckIcon, TagIcon, CalendarIcon, StarIcon, RefreshSpinnerIcon, ClockIcon, LockIcon, BellIcon } from '../components/icons/Icons';
+import { CheckIcon, TrashIcon, FlagIcon, ListCheckIcon, TagIcon, CalendarIcon, StarIcon, RefreshSpinnerIcon, ClockIcon, LockIcon, BellIcon, DurationIcon } from '../components/icons/Icons';
 import { useData } from '../contexts/DataContext';
 import type { Task } from '../data/mockData';
 
@@ -75,6 +75,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
     const [dueDate, setDueDate] = useState('');
     const [startDate, setStartDate] = useState('');
     const [startTime, setStartTime] = useState('');
+    const [duration, setDuration] = useState('');
     const [reminder, setReminder] = useState<number | null>(null);
     
     const [activeInput, setActiveInput] = useState<'title' | 'notes' | null>(null);
@@ -88,6 +89,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
     const newSubtaskInputRef = useRef<HTMLInputElement>(null);
     const calendarIconRef = useRef<HTMLDivElement>(null);
     const startTimeIconRef = useRef<HTMLDivElement>(null);
+    const durationIconRef = useRef<HTMLDivElement>(null);
     const listIconRef = useRef<HTMLDivElement>(null);
     const reminderIconRef = useRef<HTMLDivElement>(null);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -114,6 +116,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
             setDueDate(task.dueDate || '');
             setStartDate(task.startDate || '');
             setStartTime(task.startTime || '');
+            setDuration(String(task.duration || ''));
             setReminder(task.reminder ?? null);
             setIsSubtaskSectionVisible((task.subtasks?.length || 0) > 0);
             setActiveInput(null);
@@ -175,6 +178,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                 startDate: taskType === 'Fixed' && startTime ? (startDate || new Date().toISOString().substring(0, 10)) : undefined,
                 startTime: taskType === 'Fixed' ? startTime || undefined : undefined,
                 time: taskType === 'Fixed' ? startTime || '--:--' : '--:--',
+                duration: duration ? parseInt(duration, 10) : undefined,
                 reminder: reminder,
             };
             await onSave(updatedTask);
@@ -231,6 +235,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                     </div>
                     <div className="mt-3 pt-3 border-t border-gray-100">
                          <div className="flex items-center gap-2 flex-wrap min-w-0 mb-3 min-h-[1.75rem]">
+                            {duration && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 text-gray-800 text-xs font-semibold animate-page-fade-in"><DurationIcon className="w-3.5 h-3.5" /><span>{duration} min</span></div>)}
                             {reminder !== null && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 text-xs font-semibold animate-page-fade-in"><BellIcon className="w-3.5 h-3.5" /><span className="truncate">{getReminderLabel(reminder)}</span></div>)}
                             {startTime && taskType === 'Fixed' && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-100 text-green-800 text-xs font-semibold animate-page-fade-in"><ClockIcon className="w-3.5 h-3.5" /><span className="truncate">Starts {formatChipDate(startDate || todayStr)}, {new Date('1970-01-01T' + startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div>)}
                             {dueDate && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 text-gray-800 text-xs font-semibold animate-page-fade-in"><span>Due {formatChipDate(dueDate)}</span></div>)}
@@ -239,6 +244,25 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                         <div className="flex items-center justify-end">
                             <div className="flex items-center gap-1">
                                 <button type="button" title={taskType === 'Fixed' ? "Set as Flexible" : "Set as Fixed"} onClick={() => setTaskType(p => p === 'Fixed' ? 'Flexible' : 'Fixed')} className={`p-2 rounded-full transition-colors ${taskType === 'Fixed' ? 'text-blue-600 bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}><LockIcon className="w-5 h-5" /></button>
+                                <div ref={durationIconRef} className="relative">
+                                    <button type="button" title="Set Duration" onClick={() => handlePopoverToggle('duration', durationIconRef)} className={`p-2 rounded-full transition-colors ${duration ? 'text-blue-600 bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}>
+                                        <DurationIcon className="w-5 h-5" />
+                                    </button>
+                                    {activePopover === 'duration' && (
+                                        <div className="absolute w-56 bg-white rounded-lg shadow-lg p-3 z-10 animate-page-fade-in" style={popoverPosition}>
+                                            <div>
+                                                <label className="text-xs font-medium text-gray-500">Duration (minutes)</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={duration} 
+                                                    onChange={e => setDuration(e.target.value)}
+                                                    placeholder="e.g. 30"
+                                                    className="w-full mt-1 p-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                                 {taskType === 'Fixed' && (
                                      <div ref={startTimeIconRef} className="relative">
                                         <button type="button" title="Set Start Date" onClick={() => handlePopoverToggle('startTime', startTimeIconRef)} className={`p-2 rounded-full transition-colors ${startTime ? 'text-blue-600 bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}><ClockIcon className="w-5 h-5" /></button>

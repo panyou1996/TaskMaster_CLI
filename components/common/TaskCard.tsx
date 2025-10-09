@@ -256,9 +256,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
                                     {categoryIcon && <span>{categoryIcon}</span>}
                                     <span className="font-medium">{category}</span>
                                 </div>
-                                {endTime && (
+                                {duration && (
                                     <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-medium">
-                                        <span>{duration}m &rarr; {endTime}</span>
+                                        {endTime ? (
+                                            <span>{duration}m &rarr; {endTime}</span>
+                                        ) : (
+                                            <span>{duration}m</span>
+                                        )}
                                     </div>
                                 )}
                             </div>

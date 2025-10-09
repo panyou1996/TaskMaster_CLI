@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { EditButtonIcon, DeleteButtonIcon, FlagIcon, ListCheckIcon, TagIcon, CalendarIcon, StarIcon, ClockIcon, LockIcon, BellIcon } from '../components/icons/Icons';
+import { EditButtonIcon, DeleteButtonIcon, FlagIcon, ListCheckIcon, TagIcon, CalendarIcon, StarIcon, ClockIcon, LockIcon, BellIcon, DurationIcon } from '../components/icons/Icons';
 import type { Task } from '../data/mockData';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 import { useData } from '../contexts/DataContext';
@@ -105,6 +105,12 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                         </div>
                         <div className="mt-3 pt-3 border-t border-gray-100">
                              <div className="flex items-center gap-2 flex-wrap min-w-0 mb-3 min-h-[1.75rem]">
+                                {task?.duration && (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 text-gray-800 text-xs font-semibold">
+                                        <DurationIcon className="w-3.5 h-3.5" />
+                                        <span>{task.duration} min</span>
+                                    </div>
+                                )}
                                 {task?.reminder !== null && task?.reminder !== undefined && (
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 text-xs font-semibold">
                                         <BellIcon className="w-3.5 h-3.5" />
@@ -123,6 +129,7 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                             <div className="flex items-center justify-end">
                                 <div className="flex items-center gap-1">
                                     <div title={task?.type} className={`p-2 rounded-full ${task?.type === 'Fixed' ? 'text-blue-600 bg-blue-100' : 'text-gray-500 bg-gray-100'}`}><LockIcon className="w-5 h-5" /></div>
+                                    <div title="Duration" className={`p-2 rounded-full ${(task?.duration) ? 'text-blue-600 bg-blue-100' : 'text-gray-500 bg-gray-100'}`}><DurationIcon className="w-5 h-5" /></div>
                                     {task?.type === 'Fixed' && ( <div title="Start Time" className={`p-2 rounded-full ${task?.startTime ? 'text-blue-600 bg-blue-100' : 'text-gray-500 bg-gray-100'}`}><ClockIcon className="w-5 h-5" /></div> )}
                                     <div title="Due Date" className={`p-2 rounded-full ${task?.dueDate ? 'text-blue-600 bg-blue-100' : 'text-gray-500 bg-gray-100'}`}><CalendarIcon className="w-5 h-5" /></div>
                                     <div title="List" className={`p-2 rounded-full ${task?.category ? 'text-blue-600 bg-blue-100' : 'text-gray-500 bg-gray-100'}`}><TagIcon className="w-5 h-5" /></div>

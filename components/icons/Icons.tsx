@@ -24,6 +24,13 @@ export const ClockIcon: React.FC<{className?: string}> = ({ className = "w-3 h-3
     </svg>
 );
 
+export const DurationIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3V1.5m3.75 1.75L17.25 2.25" />
+    </svg>
+);
+
 export const PlusIcon: React.FC = () => (
     <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
