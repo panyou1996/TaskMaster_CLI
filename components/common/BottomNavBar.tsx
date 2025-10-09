@@ -8,6 +8,7 @@ import { Moment } from '../../data/mockData';
 import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { Capacitor } from '@capacitor/core';
+import AddListScreen, { NewListData } from '../../screens/AddListScreen';
 
 // For Web Speech API typescript support
 declare global {
@@ -36,7 +37,7 @@ const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label
 
 const BottomNavBar: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const { addMoment } = useData();
+    const { addMoment, addList } = useData();
 
     // State for the Add Moment flow
     const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
@@ -44,6 +45,9 @@ const BottomNavBar: React.FC = () => {
     const [isAddTaskWithAIOpen, setIsAddTaskWithAIOpen] = useState(false);
     const [initialAIPrompt, setInitialAIPrompt] = useState('');
     
+    // Add List state
+    const [isAddListOpen, setIsAddListOpen] = useState(false);
+
     // --- Voice Input State & Refs ---
     const [isRecording, setIsRecording] = useState(false);
     const [showRecordingUI, setShowRecordingUI] = useState(false);
@@ -269,9 +273,18 @@ const BottomNavBar: React.FC = () => {
         await addMoment(newMoment);
     };
 
+    const handleAddListClick = () => {
+        setIsMenuOpen(false);
+        setIsAddListOpen(true);
+    };
+
+    const handleAddList = async (newListData: NewListData) => {
+        await addList(newListData);
+    };
+
     const menuItems = [
         { label: 'Moment', icon: <AddMomentMenuIcon />, action: handleMomentButtonClick },
-        { label: 'List', icon: <AddListMenuIcon />, action: () => console.log('Add List') },
+        { label: 'List', icon: <AddListMenuIcon />, action: handleAddListClick },
         { label: 'Task', icon: <AddTaskMenuIcon />, action: handleAddTaskWithAI },
     ];
 
@@ -378,6 +391,11 @@ const BottomNavBar: React.FC = () => {
                 isOpen={isAddTaskWithAIOpen}
                 onClose={() => setIsAddTaskWithAIOpen(false)}
                 initialPrompt={initialAIPrompt}
+            />
+             <AddListScreen
+                isOpen={isAddListOpen}
+                onClose={() => setIsAddListOpen(false)}
+                onAddList={handleAddList}
             />
         </>
     );
