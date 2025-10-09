@@ -13,8 +13,8 @@ import AddListScreen, { NewListData } from '../../screens/AddListScreen';
 // For Web Speech API typescript support
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
   }
 }
 
@@ -56,7 +56,7 @@ const BottomNavBar: React.FC = () => {
     const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isLongPressRef = useRef(false);
     const finalTranscriptRef = useRef('');
-    const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const recognitionRef = useRef<any | null>(null);
     const hadErrorRef = useRef(false);
 
     // --- Voice Input Logic (Hybrid Approach) ---
@@ -183,6 +183,10 @@ const BottomNavBar: React.FC = () => {
     };
     
     const stopRecordingAndProcess = () => {
+        if (!isRecording) return;
+        setIsRecording(false);
+        setShowRecordingUI(false);
+
         if (Capacitor.isNativePlatform()) {
             SpeechRecognition.stop().then(() => {
                 SpeechRecognition.removeAllListeners();
@@ -198,11 +202,13 @@ const BottomNavBar: React.FC = () => {
                 recognitionRef.current.stop();
             }
         }
-        setIsRecording(false);
-        setShowRecordingUI(false);
     };
     
     const stopRecordingAndCancel = () => {
+        if (!isRecording) return;
+        setIsRecording(false);
+        setShowRecordingUI(false);
+
         if (Capacitor.isNativePlatform()) {
             SpeechRecognition.stop().then(() => {
                 SpeechRecognition.removeAllListeners();
@@ -213,8 +219,6 @@ const BottomNavBar: React.FC = () => {
                 recognitionRef.current.stop();
             }
         }
-        setIsRecording(false);
-        setShowRecordingUI(false);
     };
 
 
@@ -294,7 +298,7 @@ const BottomNavBar: React.FC = () => {
             {/* Recording UI */}
             {showRecordingUI && (
                 <>
-                    <div className="fixed inset-0 bg-black/50 z-40 animate-page-fade-in backdrop-blur-sm" onClick={handlePointerUp} />
+                    <div className="fixed inset-0 bg-black/50 z-40 animate-page-fade-in backdrop-blur-sm" onClick={stopRecordingAndProcess} />
                     <div 
                         className="fixed left-1/2 -translate-x-1/2 w-40 h-40 bg-[var(--color-primary-500)]/40 rounded-full flex items-center justify-center animate-pulse-recording z-40 pointer-events-none"
                         style={{ bottom: `calc(1rem + env(safe-area-inset-bottom) - 2.5rem)` }}

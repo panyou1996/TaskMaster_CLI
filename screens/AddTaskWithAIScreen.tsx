@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { useData } from '../contexts/DataContext';
