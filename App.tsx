@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { DataProvider, useData } from './contexts/DataContext';
+import { DataProvider, useData, AppIconName } from './contexts/DataContext';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -28,7 +28,7 @@ import FocusScreen from './screens/FocusScreen';
 import TagDetailScreen from './screens/TagDetailScreen';
 
 const AppRoutes: React.FC = () => {
-  const { session, loading, syncError, theme, fontSize } = useData();
+  const { session, loading, syncError, theme, fontSize, appIcon } = useData();
   const navigate = useNavigate();
   const location = useLocation();
   const [toast, setToast] = useState({ show: false, message: '', isError: false });
@@ -37,6 +37,21 @@ const AppRoutes: React.FC = () => {
   const isAuthRoute = ['/login', '/signup', '/reset-password'].includes(location.pathname);
   const isOnboardingRoute = location.pathname.startsWith('/onboarding');
   
+  const appIcons: Record<AppIconName, string> = {
+    default: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`,
+    violet: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%238B5CF6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`,
+    dusk: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%23F472B6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`,
+    leaf: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%2310B981' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`
+  };
+
+  // --- App Icon effect ---
+  useEffect(() => {
+    const link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+    if (link && appIcon) {
+        link.href = appIcons[appIcon];
+    }
+  }, [appIcon]);
+
   // --- Theme effect ---
   useEffect(() => {
     const root = window.document.documentElement;

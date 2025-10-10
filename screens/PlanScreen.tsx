@@ -19,8 +19,8 @@ import AddTaskScreen, { NewTaskData } from './AddTaskScreen';
 import TaskCard from '../components/common/TaskCard';
 import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
-// FIX: Switched to a namespace import for react-window to resolve module resolution errors where named exports were not being found.
-import * as ReactWindow from 'react-window';
+// FIX: Switched from a namespace import to named imports for react-window to resolve module resolution errors.
+import { FixedSizeList, ListChildComponentProps } from 'react-window';
 
 const colorVariants = {
     green: { bg: 'bg-green-100 dark:bg-green-900/30' },
@@ -183,7 +183,8 @@ const PlanScreen: React.FC = () => {
     };
 
     // -- ROW RENDERER FOR VIRTUALIZED LIST --
-    const ListRow = ({ data, index, style }: ReactWindow.ListChildComponentProps<TaskList[]>) => {
+    // FIX: Removed `ReactWindow.` prefix to match named import.
+    const ListRow = ({ data, index, style }: ListChildComponentProps<TaskList[]>) => {
         const list = data[index];
         const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
         const count = taskCounts[list.name] || 0;
@@ -441,7 +442,8 @@ const PlanScreen: React.FC = () => {
                                     <EmptyListsIllustration onAddList={() => setIsAddListOpen(true)} />
                                 ) : (
                                     mainListSize.height > 0 && (
-                                        <ReactWindow.FixedSizeList
+                                        // FIX: Removed `ReactWindow.` prefix to match named import.
+                                        <FixedSizeList
                                             height={mainListSize.height}
                                             width={mainListSize.width}
                                             itemCount={taskLists.length}
@@ -449,7 +451,7 @@ const PlanScreen: React.FC = () => {
                                             itemData={taskLists}
                                         >
                                             {ListRow}
-                                        </ReactWindow.FixedSizeList>
+                                        </FixedSizeList>
                                     )
                                 )}
                             </div>
@@ -535,7 +537,8 @@ const PlanScreen: React.FC = () => {
                         </div>
                     ) : (
                         searchListSize.height > 0 && (
-                            <ReactWindow.FixedSizeList
+                            // FIX: Removed `ReactWindow.` prefix to match named import.
+                            <FixedSizeList
                                 height={searchListSize.height}
                                 width={searchListSize.width}
                                 itemCount={filteredTaskLists.length}
@@ -543,7 +546,7 @@ const PlanScreen: React.FC = () => {
                                 itemData={filteredTaskLists}
                             >
                                 {ListRow}
-                            </ReactWindow.FixedSizeList>
+                            </FixedSizeList>
                         )
                     )}
                 </div>

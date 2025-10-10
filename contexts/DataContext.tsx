@@ -16,6 +16,7 @@ import useLocalStorage from '../hooks/useLocalStorage';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { checkAndRequestNotificationPermission } from '../utils/permissions';
 import { Capacitor } from '@capacitor/core';
+import { AppIcon } from '@capacitor-community/app-icon';
 import { type Theme, type FontSize } from '../screens/settings/ThemeSettingsScreen';
 
 type OperationType = 
@@ -31,6 +32,8 @@ interface OfflineOperation {
     timestamp: number;
     tempId?: string; // For creation operations
 }
+
+export type AppIconName = 'default' | 'violet' | 'dusk' | 'leaf';
 
 // Define the shape of our context data
 interface DataContextType {
@@ -82,6 +85,8 @@ interface DataContextType {
     setTheme: React.Dispatch<React.SetStateAction<Theme>>;
     fontSize: FontSize;
     setFontSize: React.Dispatch<React.SetStateAction<FontSize>>;
+    appIcon: AppIconName;
+    setAppIcon: (iconName: AppIconName) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -180,6 +185,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const [theme, setTheme] = useLocalStorage<Theme>('app-theme', 'System');
     const [fontSize, setFontSize] = useLocalStorage<FontSize>('app-font-size', 'lg');
+    const [appIcon, setStoredAppIcon] = useLocalStorage<AppIconName>('app-icon', 'default');
 
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -189,6 +195,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cleanupRun = useRef(false);
     
     const webNotificationTimeouts = useRef<Map<string | number, ReturnType<typeof setTimeout>>>(new Map());
+
+    const setAppIcon = useCallback(async (iconName: AppIconName) => {
+        setStoredAppIcon(iconName);
+        
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const isSupported = await AppIcon.isSupported();
+                if (!isSupported.value) {
+                    console.log("Alternate icons not supported on this device.");
+                    return;
+                }
+    
+                const currentIcon = await AppIcon.getName();
+    
+                if (iconName === 'default' && currentIcon.value !== null) {
+                    await AppIcon.reset();
+                } else if (iconName !== 'default' && currentIcon.value !== iconName) {
+                    await AppIcon.setAlternateIcon({ name: iconName });
+                }
+            } catch (e) {
+                console.error("Failed to set app icon:", e);
+                // Optionally show an alert to the user
+                // alert('Could not change the app icon. Please ensure the app has the necessary permissions.');
+            }
+        }
+    }, [setStoredAppIcon]);
 
     const cancelNotification = useCallback(async (taskId: number | string) => {
         try {
@@ -811,8 +843,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addFocusSession,
         tags, addTag, deleteTag,
         theme, setTheme,
-        fontSize, setFontSize
-    }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, deleteTag, theme, setTheme, fontSize, setFontSize]);
+        fontSize, setFontSize,
+        appIcon, setAppIcon
+    }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, deleteTag, theme, setTheme, fontSize, setFontSize, appIcon, setAppIcon]);
 
     return (
         <DataContext.Provider value={value}>
