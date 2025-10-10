@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import SettingsLayout from '../../components/layouts/SettingsLayout';
 import useLocalStorage from '../../hooks/useLocalStorage';
+import { triggerHapticSelection } from '../../utils/permissions';
 
 export type Theme = 'Light' | 'Dark' | 'System';
 type FontSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -15,7 +16,7 @@ const ThemeOption: React.FC<{ theme: Theme; selected: boolean; onSelect: () => v
     
     return (
         <div 
-            onClick={onSelect} 
+            onClick={() => { triggerHapticSelection(); onSelect(); }} 
             className={`cursor-pointer rounded-lg p-4 border-2 transition-all ${selected ? 'border-[var(--color-primary-500)]' : 'border-[var(--color-border)] hover:opacity-80'}`}
         >
             <div className={`w-full h-24 rounded-md flex flex-col p-2 justify-between ${visual.bg} ${visual.border} border`}>
@@ -42,7 +43,7 @@ const FontSizeOption: React.FC<{
 
   return (
     <div
-      onClick={onSelect}
+      onClick={() => { triggerHapticSelection(); onSelect(); }}
       className={`cursor-pointer rounded-lg p-3 border-2 flex flex-col items-center justify-center transition-all h-24 ${selected ? 'border-[var(--color-primary-500)] bg-primary-100 dark:bg-primary-900/20' : 'border-[var(--color-border)] hover:opacity-80'}`}
     >
       <div className={`font-semibold ${sizeClasses[size]}`}>Aa</div>

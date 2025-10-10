@@ -1,6 +1,9 @@
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
+import { useEffect, useState } from 'react';
+import { Keyboard, KeyboardInfo } from '@capacitor/keyboard';
 
 // Helper to show an alert and guide user to settings
 const showSettingsAlert = (message: string) => {
@@ -103,3 +106,73 @@ export const takePhotoWithCapacitor = async (): Promise<string | null> => {
         return null;
     }
 };
+
+// --- Haptic Feedback ---
+
+/**
+ * Triggers a haptic impact feedback. Best for brief, lightweight feedback.
+ * @param style The intensity of the impact. Defaults to 'Light'.
+ */
+export const triggerHapticImpact = async (style: ImpactStyle = ImpactStyle.Light) => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await Haptics.impact({ style });
+    } catch (e) {
+      console.warn('Haptic impact failed', e);
+    }
+  }
+};
+
+/**
+ * Triggers a haptic notification feedback. Best for events like success, warning, or error.
+ * @param type The type of notification feedback. Defaults to 'Success'.
+ */
+export const triggerHapticNotification = async (type: NotificationType = NotificationType.Success) => {
+    if (Capacitor.isNativePlatform()) {
+        try {
+            await Haptics.notification({ type });
+        } catch(e) {
+            console.warn('Haptic notification failed', e);
+        }
+    }
+};
+
+/**
+ * Triggers a haptic feedback for selection changes (e.g., toggles, pickers).
+ */
+export const triggerHapticSelection = async () => {
+    if (Capacitor.isNativePlatform()) {
+        try {
+            await Haptics.selectionStart();
+            // A short delay before ending to make it feel like a single event
+            setTimeout(() => {
+                try { Haptics.selectionEnd(); } catch(e) {}
+            }, 30);
+        } catch(e) {
+            console.warn('Haptic selection failed', e);
+        }
+    }
+}
+
+// --- Keyboard Management ---
+export const useKeyboardHeight = () => {
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const showListener = Keyboard.addListener('keyboardWillShow', (info: KeyboardInfo) => {
+        setKeyboardHeight(info.keyboardHeight);
+      });
+      const hideListener = Keyboard.addListener('keyboardWillHide', () => {
+        setKeyboardHeight(0);
+      });
+
+      return () => {
+        showListener.remove();
+        hideListener.remove();
+      };
+    }
+  }, []);
+
+  return keyboardHeight;
+}

@@ -2,13 +2,15 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { NavLink } from 'react-router-dom';
 import { TodayIcon, ListsIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon, SettingsIcon } from '../icons/Icons';
 import AddMomentScreen, { NewMomentData } from '../../screens/AddMomentScreen';
-import { takePhotoWithCapacitor } from '../../utils/permissions';
+import { takePhotoWithCapacitor, triggerHapticImpact } from '../../utils/permissions';
 import { useData } from '../../contexts/DataContext';
 import { Moment } from '../../data/mockData';
 import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
 import AddListScreen, { NewListData } from '../../screens/AddListScreen';
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
+import { ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 
 // --- Gemini Live API Audio Helpers ---
@@ -214,12 +216,31 @@ const BottomNavBar: React.FC = () => {
             cleanupRecording();
         }
     }, [cleanupRecording]);
+
+    // Effect to handle app going to the background
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+
+        const handleAppStateChange = ({ isActive }: { isActive: boolean }) => {
+            if (!isActive && isRecording) {
+                // App is going to the background, stop any active recording.
+                stopRecording();
+            }
+        };
+
+        const listenerPromise = CapacitorApp.addListener('appStateChange', handleAppStateChange);
+
+        return () => {
+            listenerPromise.then(listener => listener.remove());
+        };
+    }, [isRecording, stopRecording]);
     
     const handlePointerDown = () => {
         isLongPressRef.current = false;
         longPressTimerRef.current = setTimeout(() => {
             isLongPressRef.current = true;
             if (isMenuOpen) setIsMenuOpen(false);
+            triggerHapticImpact(ImpactStyle.Medium);
             startRecording();
         }, 250);
     };
@@ -229,6 +250,7 @@ const BottomNavBar: React.FC = () => {
         if (isLongPressRef.current) {
             stopRecording();
         } else {
+            triggerHapticImpact();
             setIsMenuOpen(prev => !prev);
         }
         isLongPressRef.current = false;
@@ -243,6 +265,7 @@ const BottomNavBar: React.FC = () => {
     };
 
     const handleMomentButtonClick = async () => {
+        triggerHapticImpact();
         setIsMenuOpen(false); // Close the FAB menu immediately
         const photoDataUrl = await takePhotoWithCapacitor();
         if (photoDataUrl) {
@@ -252,6 +275,7 @@ const BottomNavBar: React.FC = () => {
     };
 
     const handleAddTaskWithAI = () => {
+        triggerHapticImpact();
         setIsMenuOpen(false);
         setIsAddTaskWithAIOpen(true);
     };
@@ -269,6 +293,7 @@ const BottomNavBar: React.FC = () => {
     };
 
     const handleAddListClick = () => {
+        triggerHapticImpact();
         setIsMenuOpen(false);
         setIsAddListOpen(true);
     };

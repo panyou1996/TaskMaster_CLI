@@ -3,7 +3,7 @@ import SettingsLayout from '../../components/layouts/SettingsLayout';
 import { CheckIcon, SoundOnIcon, VibrateIcon } from '../../components/icons/Icons';
 import { useData } from '../../contexts/DataContext';
 import useLocalStorage from '../../hooks/useLocalStorage';
-import { checkAndRequestNotificationPermission } from '../../utils/permissions';
+import { checkAndRequestNotificationPermission, triggerHapticSelection } from '../../utils/permissions';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
 const SettingsToggleItem: React.FC<{
@@ -12,29 +12,36 @@ const SettingsToggleItem: React.FC<{
   setEnabled: (enabled: boolean) => void;
   description?: string;
   icon?: React.ReactNode;
-}> = ({ label, enabled, setEnabled, description, icon }) => (
-  <div 
-    onClick={() => setEnabled(!enabled)}
-    className="flex justify-between items-center p-4 cursor-pointer rounded-lg hover:bg-[var(--color-surface-container-low)] transition-colors"
-    role="switch"
-    aria-checked={enabled}
-    aria-label={label}
-  >
-    <div className="flex items-center gap-4">
-        {icon && <div className="w-7 h-7 flex items-center justify-center bg-[var(--color-surface-container-low)] rounded-lg text-[var(--color-text-secondary)]">{icon}</div>}
-        <div>
-            <span className="font-medium text-[var(--color-text-primary)]">{label}</span>
-            {description && <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{description}</p>}
+}> = ({ label, enabled, setEnabled, description, icon }) => {
+    const handleToggle = () => {
+        triggerHapticSelection();
+        setEnabled(!enabled);
+    };
+
+    return (
+      <div 
+        onClick={handleToggle}
+        className="flex justify-between items-center p-4 cursor-pointer rounded-lg hover:bg-[var(--color-surface-container-low)] transition-colors"
+        role="switch"
+        aria-checked={enabled}
+        aria-label={label}
+      >
+        <div className="flex items-center gap-4">
+            {icon && <div className="w-7 h-7 flex items-center justify-center bg-[var(--color-surface-container-low)] rounded-lg text-[var(--color-text-secondary)]">{icon}</div>}
+            <div>
+                <span className="font-medium text-[var(--color-text-primary)]">{label}</span>
+                {description && <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{description}</p>}
+            </div>
         </div>
-    </div>
-    <button
-        aria-hidden="true"
-        className={`relative inline-flex items-center h-7 w-12 rounded-full transition-colors ${enabled ? 'bg-blue-600' : 'bg-[var(--color-border)]'}`}
-    >
-        <span className={`inline-block w-5 h-5 transform bg-white rounded-full transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-    </button>
-  </div>
-);
+        <button
+            aria-hidden="true"
+            className={`relative inline-flex items-center h-7 w-12 rounded-full transition-colors ${enabled ? 'bg-blue-600' : 'bg-[var(--color-border)]'}`}
+        >
+            <span className={`inline-block w-5 h-5 transform bg-white rounded-full transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
+      </div>
+    );
+};
 
 const NotificationSettingsScreen: React.FC = () => {
     const { rescheduleAllNotifications } = useData();

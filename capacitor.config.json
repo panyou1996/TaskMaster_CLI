@@ -10,6 +10,15 @@
   "plugins": {
     "WebView": {
       "backgroundColor": "#F9F9FC"
+    },
+    "Camera": {
+      "permissionRationale": "To capture and add photos to your Moments."
+    }
+  },
+  "ios": {
+    "infoPlist": {
+      "NSCameraUsageDescription": "To capture and add photos to your Moments.",
+      "NSMicrophoneUsageDescription": "To allow voice input for creating tasks with AI."
     }
   }
 }

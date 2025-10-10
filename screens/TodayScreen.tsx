@@ -19,6 +19,8 @@ import DurationPickerModal from './DurationPickerModal';
 import usePlanningSettings, { PlanningSettings } from '../hooks/usePlanningSettings';
 import PlanningSettingsDrawer from './PlanningSettingsDrawer';
 import useLocalStorage from '../hooks/useLocalStorage';
+import { triggerHapticImpact, triggerHapticNotification, triggerHapticSelection } from '../utils/permissions';
+import { ImpactStyle, NotificationType } from '@capacitor/haptics';
 
 const parseDateAsLocal = (dateString?: string): Date | null => {
     if (!dateString) return null;
@@ -391,6 +393,7 @@ const TodayScreen: React.FC = () => {
 
     // FIX: Changed taskId to allow string for temporary items
     const handleCompleteTask = (taskId: number | string) => {
+        triggerHapticNotification(NotificationType.Success);
         setCompletingTaskId(taskId);
         setExpandedTaskIds(prev => {
             const newSet = new Set(prev);
@@ -412,6 +415,7 @@ const TodayScreen: React.FC = () => {
 
     // FIX: Changed taskId to allow string for temporary items
     const handleUncompleteTask = (taskId: number | string) => {
+        triggerHapticImpact(ImpactStyle.Light);
         setUncompletingTaskId(taskId);
         const taskToUncomplete = allTasks.find(t => t.id === taskId);
         if (taskToUncomplete?.subtasks?.length) {
@@ -746,6 +750,7 @@ const TodayScreen: React.FC = () => {
             }
         } else if (gestureType.current === 'vertical' && gestureStart.current.y !== -1) {
             if (pullDelta > REFRESH_THRESHOLD) {
+                triggerHapticImpact(ImpactStyle.Medium);
                 setIsRefreshing(true);
                 syncData().finally(() => {
                     setIsRefreshing(false);
@@ -797,13 +802,13 @@ const TodayScreen: React.FC = () => {
                         <div className="flex justify-center">
                             <div className="grid grid-cols-2 bg-[var(--color-surface-container-low)] rounded-lg p-1 w-full max-w-48">
                                 <button
-                                    onClick={() => setViewMode('list')}
+                                    onClick={() => { setViewMode('list'); triggerHapticSelection(); }}
                                     className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'list' ? 'bg-[var(--color-surface-container)] text-[var(--color-text-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'}`}
                                 >
                                     List
                                 </button>
                                 <button
-                                    onClick={() => setViewMode('timeline')}
+                                    onClick={() => { setViewMode('timeline'); triggerHapticSelection(); }}
                                     className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'timeline' ? 'bg-[var(--color-surface-container)] text-[var(--color-text-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'}`}
                                 >
                                     Timeline

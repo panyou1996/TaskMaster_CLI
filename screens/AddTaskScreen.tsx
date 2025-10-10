@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import { CheckIcon, TrashIcon, FlagIcon, ListCheckIcon, TagIcon, CalendarIcon, StarIcon, RefreshSpinnerIcon, ClockIcon, LockIcon, BellIcon, DurationIcon } from '../components/icons/Icons';
 import { useData } from '../contexts/DataContext';
+import { useKeyboardHeight } from '../utils/permissions';
 
 export interface NewTaskData {
     title: string;
@@ -78,6 +79,7 @@ const getReminderLabel = (value: number | null) => {
 const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialDate, onAddTask }) => {
     const { lists: userLists } = useData();
     const listOptions = userLists.map(l => l.name);
+    const keyboardHeight = useKeyboardHeight();
 
     const [title, setTitle] = useState('');
     const [notes, setNotes] = useState('');
@@ -259,7 +261,10 @@ const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialD
 
     return (
         <>
-            <div className={`fixed inset-0 z-50 grid place-items-center p-4 transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
+            <div
+              className={`fixed inset-0 z-50 grid place-items-center p-4 transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}
+              style={{ paddingBottom: `max(1rem, ${keyboardHeight}px)` }}
+            >
                 <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
                 
                 <form onSubmit={handleSubmit} className={`w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} style={{ paddingBottom: `env(safe-area-inset-bottom)` }}>

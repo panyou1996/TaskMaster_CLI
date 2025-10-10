@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CheckIcon, PlusIconHeader, UploadImageIcon, RefreshSpinnerIcon } from '../components/icons/Icons';
-import { takePhotoWithCapacitor } from '../utils/permissions';
+import { takePhotoWithCapacitor, useKeyboardHeight } from '../utils/permissions';
 import { useData } from '../contexts/DataContext';
 
 const CloseIcon: React.FC<{className?: string}> = ({className}) => (
@@ -234,6 +234,7 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const keyboardHeight = useKeyboardHeight();
 
     useEffect(() => {
         if (isOpen) {
@@ -379,7 +380,10 @@ const AddMomentScreen: React.FC<AddMomentScreenProps> = ({ isOpen, onClose, onAd
                         </div>
                     </header>
                     
-                    <div className="p-4 space-y-4 overflow-y-auto max-h-[75vh] pb-8 bg-gray-50 dark:bg-gray-900" style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom))` }}>
+                    <div
+                      className="p-4 space-y-4 overflow-y-auto max-h-[75vh] pb-8 bg-gray-50 dark:bg-gray-900"
+                      style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom) + ${keyboardHeight}px)` }}
+                    >
                         {error && <p className="text-red-500 dark:text-red-400 text-sm text-center -mt-2 mb-2 px-4 bg-red-50 dark:bg-red-900/20 py-2 rounded-lg">{error}</p>}
                         
                         <div className="rounded-xl px-4 py-1 bg-white dark:bg-gray-800">
