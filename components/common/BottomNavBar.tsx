@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { TodayIcon, ListsIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon, SettingsIcon } from '../icons/Icons';
 import AddMomentScreen, { NewMomentData } from '../../screens/AddMomentScreen';
-import { takePhotoWithCapacitor, triggerHapticImpact } from '../../utils/permissions';
+import { takePhotoWithCapacitor, triggerHapticImpact, triggerHapticSelection } from '../../utils/permissions';
 import { useData } from '../../contexts/DataContext';
 import { Moment } from '../../data/mockData';
 import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
@@ -42,10 +42,18 @@ const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label
     const commonClasses = "flex flex-col items-center justify-center gap-1 transition-colors duration-200";
     const activeClass = "text-[var(--color-primary-500)]";
     const inactiveClass = "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]";
+    const location = useLocation();
+
+    const handleClick = () => {
+        if (location.pathname !== to) {
+            triggerHapticSelection();
+        }
+    };
 
     return (
         <NavLink
             to={to}
+            onClick={handleClick}
             className={({ isActive }) => `${commonClasses} ${isActive ? activeClass : inactiveClass}`}
         >
             {icon}

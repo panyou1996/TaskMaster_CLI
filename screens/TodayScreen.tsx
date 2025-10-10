@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
@@ -659,6 +660,7 @@ const TodayScreen: React.FC = () => {
             console.error("Planning failed", e);
             alert("An error occurred during planning.");
         } finally {
+            triggerHapticNotification(NotificationType.Success);
             setIsPlanning(false);
             setAlgorithmToRun(null);
         }

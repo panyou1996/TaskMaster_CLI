@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { ClockIcon, FlagIcon, ChevronRightElegantIcon } from '../icons/Icons';
+import { triggerHapticImpact } from '../../utils/permissions';
 
 interface Subtask {
     id: number;
@@ -309,7 +310,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
                                             type="checkbox"
                                             id={`subtask-${sub.id}`}
                                             checked={sub.completed}
-                                            onChange={(e) => { e.stopPropagation(); !completed && onToggleSubtask?.(id, sub.id); }}
+                                            onChange={(e) => {
+                                                e.stopPropagation();
+                                                if (!completed) {
+                                                    triggerHapticImpact();
+                                                    onToggleSubtask?.(id, sub.id);
+                                                }
+                                            }}
                                             className="h-3.5 w-3.5 rounded-sm border-gray-400 dark:border-gray-500 text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:focus:ring-offset-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                             disabled={completed}
                                         />

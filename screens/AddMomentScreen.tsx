@@ -45,6 +45,7 @@ const ImageCropperModal: React.FC<ImageCropperModalProps> = ({ imageSrc, onCrop,
     useEffect(() => {
         const img = new Image();
         img.src = imageSrc;
+        img.crossOrigin = "anonymous";
 
         const viewportEl = viewportRef.current;
         if (!viewportEl) return;

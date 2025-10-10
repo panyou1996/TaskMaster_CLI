@@ -28,10 +28,10 @@ import FocusScreen from './screens/FocusScreen';
 import TagDetailScreen from './screens/TagDetailScreen';
 
 const AppRoutes: React.FC = () => {
-  const { session, loading } = useData();
+  const { session, loading, syncError } = useData();
   const navigate = useNavigate();
   const location = useLocation();
-  const [toast, setToast] = useState({ show: false, message: '' });
+  const [toast, setToast] = useState({ show: false, message: '', isError: false });
   const backPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isAuthRoute = ['/login', '/signup', '/reset-password'].includes(location.pathname);
@@ -46,6 +46,16 @@ const AppRoutes: React.FC = () => {
       }
     }
   }, [session, loading, isAuthRoute, isOnboardingRoute, navigate]);
+
+  // Effect for displaying sync errors
+  useEffect(() => {
+    if (syncError) {
+      setToast({ show: true, message: `Sync failed. Tap sync icon for details.`, isError: true });
+    } else {
+      // If the error was resolved, hide the toast *if* it was an error toast.
+      setToast(prev => (prev.isError ? { show: false, message: '', isError: false } : prev));
+    }
+  }, [syncError]);
   
   // Back button handler for native Android
   useEffect(() => {
@@ -62,9 +72,15 @@ const AppRoutes: React.FC = () => {
           clearTimeout(backPressTimer.current);
           CapacitorApp.exitApp();
         } else {
-          setToast({ show: true, message: 'Press back again to exit' });
+          setToast({ show: true, message: 'Press back again to exit', isError: false });
           backPressTimer.current = setTimeout(() => {
-            setToast({ show: false, message: '' });
+            setToast((prev) => {
+              // Only hide the toast if it's the exit message. An error might have appeared.
+              if (prev.message === 'Press back again to exit') {
+                return { show: false, message: '', isError: false };
+              }
+              return prev;
+            });
             backPressTimer.current = null;
           }, 2000);
         }
@@ -132,7 +148,9 @@ const AppRoutes: React.FC = () => {
         </Routes>
         {toast.show && (
             <div 
-              className="fixed left-1/2 -translate-x-1/2 bg-gray-900 bg-opacity-80 text-white text-sm py-2 px-4 rounded-full animate-page-fade-in z-[100]"
+              className={`fixed left-1/2 -translate-x-1/2 text-white text-sm py-2 px-4 rounded-full animate-page-fade-in z-[100] ${
+                toast.isError ? 'bg-red-600 bg-opacity-90' : 'bg-gray-900 bg-opacity-80'
+              }`}
               style={{ bottom: `calc(6rem + env(safe-area-inset-bottom))` }}
             >
               {toast.message}

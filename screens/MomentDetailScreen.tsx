@@ -6,6 +6,8 @@ import { useData } from '../contexts/DataContext';
 import EditMomentScreen from './EditMomentScreen';
 import { Moment } from '../data/mockData';
 import ConfirmationModal from '../components/common/ConfirmationModal';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
 
 const MomentDetailScreen: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -56,31 +58,45 @@ const MomentDetailScreen: React.FC = () => {
 
     const handleShare = async () => {
         if (!moment) return;
-        if (!navigator.share) {
-            alert("Sharing is not supported on your browser.");
-            return;
-        }
-
+    
         try {
-            const response = await fetch(moment.imageUrl);
-            const blob = await response.blob();
-            const file = new File([blob], `${moment.title.replace(/\s/g, '_')}.jpg`, { type: blob.type });
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
+            if (Capacitor.isNativePlatform()) {
+                // Use Capacitor Share plugin on native for better integration
+                await Share.share({
                     title: moment.title,
                     text: moment.notes || 'Check out this moment!',
-                    files: [file],
+                    url: moment.imageUrl,
+                    dialogTitle: 'Share Moment',
                 });
             } else {
-                await navigator.share({
-                    title: moment.title,
-                    text: `${moment.notes || 'Check out this moment!'} See it here: ${moment.imageUrl}`,
-                });
+                // Fallback to Web Share API on the web
+                if (!navigator.share) {
+                    alert("Sharing is not supported on your browser.");
+                    return;
+                }
+                
+                const response = await fetch(moment.imageUrl);
+                const blob = await response.blob();
+                const file = new File([blob], `${moment.title.replace(/\s/g, '_')}.jpg`, { type: blob.type });
+    
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: moment.title,
+                        text: moment.notes || 'Check out this moment!',
+                        files: [file],
+                    });
+                } else {
+                    await navigator.share({
+                        title: moment.title,
+                        text: `${moment.notes || 'Check out this moment!'} See it here: ${moment.imageUrl}`,
+                    });
+                }
             }
         } catch (error) {
             console.error("Error sharing moment:", error);
-            if ((error as Error).name !== 'AbortError') {
+            const errorMessage = (error as Error)?.message || '';
+            // Ignore errors from the user canceling the share sheet on web ('AbortError') or native ('Share canceled').
+            if (errorMessage !== 'Share canceled' && (error as Error).name !== 'AbortError') {
                  alert("Could not share the moment.");
             }
         }
@@ -148,7 +164,7 @@ const MomentDetailScreen: React.FC = () => {
                          <img 
                             src={moment.imageUrl} 
                             alt={moment.title} 
-                            className="absolute top-1/2 left-1/2 w-full h-auto -translate-x-1/2 -translate-y-1/2"
+                            className="w-full h-full object-cover"
                          />
                     </div>
                     

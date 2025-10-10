@@ -19,6 +19,7 @@ import AddTaskScreen, { NewTaskData } from './AddTaskScreen';
 import TaskCard from '../components/common/TaskCard';
 import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
+import { FixedSizeList as List } from 'react-window';
 
 const colorVariants = {
     green: { bg: 'bg-green-100 dark:bg-green-900/30' },
@@ -80,9 +81,45 @@ const PlanScreen: React.FC = () => {
     const REFRESH_THRESHOLD = 80;
     const MIN_SWIPE_DISTANCE = 50;
 
+    // --- STATE FOR VIRTUALIZATION ---
+    const [mainListSize, setMainListSize] = useState({ width: 0, height: 0 });
+    const mainListContainerRef = useRef<HTMLDivElement>(null);
+    const [searchListSize, setSearchListSize] = useState({ width: 0, height: 0 });
+    const searchListContainerRef = useRef<HTMLDivElement>(null);
+    const LIST_ITEM_SIZE = 92; // 80px card height + 12px space-y-3
+
     useEffect(() => {
         if (isSearchVisible) {
             setTimeout(() => searchInputRef.current?.focus(), 300); // Wait for transition
+        }
+    }, [isSearchVisible]);
+
+    // --- EFFECT FOR VIRTUALIZATION ---
+    useEffect(() => {
+        const mainEl = mainListContainerRef.current;
+        if (mainEl) {
+            const resizeObserver = new ResizeObserver(entries => {
+                if (entries[0]) {
+                    const { width, height } = entries[0].contentRect;
+                    setMainListSize({ width, height });
+                }
+            });
+            resizeObserver.observe(mainEl);
+            return () => resizeObserver.disconnect();
+        }
+    }, []);
+
+    useEffect(() => {
+        const searchEl = searchListContainerRef.current;
+        if (searchEl && isSearchVisible) {
+            const resizeObserver = new ResizeObserver(entries => {
+                if (entries[0]) {
+                    const { width, height } = entries[0].contentRect;
+                    setSearchListSize({ width, height });
+                }
+            });
+            resizeObserver.observe(searchEl);
+            return () => resizeObserver.disconnect();
         }
     }, [isSearchVisible]);
     
@@ -120,7 +157,6 @@ const PlanScreen: React.FC = () => {
         await updateList(updatedList.id, updatedList);
         handleCloseEditModal();
     };
-    // FIX: Changed listId to allow string for temporary items
     const handleDeleteList = async (listId: number | string) => {
         const listToDelete = taskLists.find(l => l.id === listId);
         if (listToDelete) await deleteList(listId, listToDelete.name);
@@ -140,10 +176,39 @@ const PlanScreen: React.FC = () => {
             handleOpenEditModal(list);
         }, 500);
     };
-    // FIX: Changed listId to allow string for temporary items
     const onPointerUp = (listId: number | string) => {
         cancelLongPress();
         if (isClickRef.current) navigate(`/lists/${listId}`);
+    };
+
+    // -- ROW RENDERER FOR VIRTUALIZED LIST --
+    const ListRow = ({ data, index, style }: { data: TaskList[], index: number, style: React.CSSProperties }) => {
+        const list = data[index];
+        const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
+        const count = taskCounts[list.name] || 0;
+        
+        return (
+            <div style={style}>
+                <div style={{ paddingBottom: '12px' }} /* Simulates space-y-3 */> 
+                    <div 
+                        onPointerDown={() => onPointerDown(list)}
+                        onPointerUp={() => onPointerUp(list.id)}
+                        onPointerLeave={cancelLongPress}
+                        onPointerCancel={cancelLongPress}
+                        className="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors select-none h-[80px]"
+                        onContextMenu={(e) => e.preventDefault()}
+                    >
+                        <div className={`p-2 rounded-lg flex items-center justify-center w-12 h-12 ${colors.bg}`}>
+                            <span className="text-2xl">{list.icon}</span>
+                        </div>
+                        <div>
+                            <p className="font-semibold text-gray-800 dark:text-gray-200">{list.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{count} tasks</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     // -- LOGIC FOR CALENDAR VIEW --
@@ -199,7 +264,6 @@ const PlanScreen: React.FC = () => {
         return [...tasksToShow].sort((a, b) => (a.completed ? 1 : 0) - (b.completed ? 1 : 0));
     }, [selectedDate, tasksByDay, taskFilterMode]);
 
-    // FIX: Changed taskId to allow string for temporary items
     const handleCompleteTask = (taskId: number | string) => {
         setCompletingTaskId(taskId);
         setTimeout(async () => {
@@ -207,9 +271,7 @@ const PlanScreen: React.FC = () => {
             setCompletingTaskId(null);
         }, 300);
     };
-    // FIX: Changed taskId to allow string for temporary items
     const handleUncompleteTask = (taskId: number | string) => updateTask(taskId, { completed: false });
-    // FIX: Changed taskId to allow string for temporary items
     const handleToggleSubtask = (taskId: number | string, subtaskId: number) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task?.subtasks) {
@@ -218,12 +280,10 @@ const PlanScreen: React.FC = () => {
             if (selectedTask?.id === taskId) setSelectedTask(p => p ? { ...p, subtasks: newSubtasks } : null);
         }
     };
-    // FIX: Changed taskId to allow string for temporary items
     const handleToggleImportant = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { important: !task.important });
     };
-    // FIX: Changed taskId to allow string for temporary items
     const handleToggleToday = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { today: !task.today });
@@ -280,7 +340,7 @@ const PlanScreen: React.FC = () => {
         gestureStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         gestureType.current = 'none';
 
-        const activeScrollView = viewMode === 'lists' ? listsViewRef.current : calendarViewRef.current;
+        const activeScrollView = viewMode === 'lists' ? mainListContainerRef.current : calendarViewRef.current;
         if (activeScrollView?.scrollTop !== 0) {
             gestureStart.current.y = -1; // Disable vertical
         }
@@ -375,21 +435,21 @@ const PlanScreen: React.FC = () => {
                             style={{ transform: viewMode === 'lists' ? 'translateX(0%)' : 'translateX(-100%)' }}
                         >
                             {/* Lists View */}
-                            <div ref={listsViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto px-6 pb-24">
+                            <div ref={mainListContainerRef} className="w-full flex-shrink-0 h-full px-6 pb-24 pt-4">
                                 {taskLists.length === 0 ? (
                                     <EmptyListsIllustration onAddList={() => setIsAddListOpen(true)} />
                                 ) : (
-                                    <div className="space-y-3 pt-4">
-                                        {taskLists.map(list => {
-                                            const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
-                                            return (
-                                                <div key={list.id} onPointerDown={() => onPointerDown(list)} onPointerUp={() => onPointerUp(list.id)} onPointerLeave={cancelLongPress} onPointerCancel={cancelLongPress} className="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors select-none" onContextMenu={(e) => e.preventDefault()}>
-                                                    <div className={`p-2 rounded-lg flex items-center justify-center w-12 h-12 ${colors.bg}`}><span className="text-2xl">{list.icon}</span></div>
-                                                    <div><p className="font-semibold text-gray-800 dark:text-gray-200">{list.name}</p><p className="text-sm text-gray-500 dark:text-gray-400">{taskCounts[list.name] || 0} tasks</p></div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                    mainListSize.height > 0 && (
+                                        <List
+                                            height={mainListSize.height}
+                                            width={mainListSize.width}
+                                            itemCount={taskLists.length}
+                                            itemSize={LIST_ITEM_SIZE}
+                                            itemData={taskLists}
+                                        >
+                                            {({ data, index, style }) => <ListRow data={data} index={index} style={style} />}
+                                        </List>
+                                    )
                                 )}
                             </div>
                             {/* Calendar View */}
@@ -466,24 +526,24 @@ const PlanScreen: React.FC = () => {
                     </button>
                 </div>
                 
-                <div className="flex-grow overflow-y-auto px-6 pb-24">
-                    {filteredTaskLists.length === 0 && searchQuery ? (
+                <div ref={searchListContainerRef} className="flex-grow px-6 pb-24 pt-4">
+                     {filteredTaskLists.length === 0 && searchQuery ? (
                         <div className="text-center py-16">
                             <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">No lists found</p>
                             <p className="text-gray-500 dark:text-gray-400 mt-1">Try a different search term.</p>
                         </div>
                     ) : (
-                        <div className="space-y-3 pt-4">
-                            {filteredTaskLists.map(list => {
-                                const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
-                                return (
-                                    <div key={list.id} onPointerDown={() => onPointerDown(list)} onPointerUp={() => onPointerUp(list.id)} onPointerLeave={cancelLongPress} onPointerCancel={cancelLongPress} className="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors select-none" onContextMenu={(e) => e.preventDefault()}>
-                                        <div className={`p-2 rounded-lg flex items-center justify-center w-12 h-12 ${colors.bg}`}><span className="text-2xl">{list.icon}</span></div>
-                                        <div><p className="font-semibold text-gray-800 dark:text-gray-200">{list.name}</p><p className="text-sm text-gray-500 dark:text-gray-400">{taskCounts[list.name] || 0} tasks</p></div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        searchListSize.height > 0 && (
+                            <List
+                                height={searchListSize.height}
+                                width={searchListSize.width}
+                                itemCount={filteredTaskLists.length}
+                                itemSize={LIST_ITEM_SIZE}
+                                itemData={filteredTaskLists}
+                            >
+                                {({ data, index, style }) => <ListRow data={data} index={index} style={style} />}
+                            </List>
+                        )
                     )}
                 </div>
             </div>

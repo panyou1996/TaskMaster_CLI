@@ -663,7 +663,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const addMoment = useCallback(async (momentData: Omit<Moment, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>) => {
         if (!user) throw new Error("User not logged in");
         const tempId = `temp_${Date.now()}`;
-        const newMoment: Moment = { ...momentData, id: tempId, user_id: user.id, status: 'pending' };
+        const newMoment: Moment = { ...momentData, id: tempId, user_id: user.id, status: 'pending', created_at: new Date().toISOString() };
         setMoments(current => [newMoment, ...current]);
         addToQueue({ type: 'ADD_MOMENT', payload: { momentData }, tempId });
     }, [user, setMoments, addToQueue]);

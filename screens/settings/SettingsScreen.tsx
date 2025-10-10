@@ -7,6 +7,8 @@ import Button from '../../components/common/Button';
 import MainLayout from '../../components/layouts/MainLayout';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { TaskList } from '../../data/mockData';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
     <h2 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 pb-2 pt-6">
@@ -128,7 +130,7 @@ const SettingsScreen: React.FC = () => {
         syncData(); // Attempt a fresh sync after clearing
     };
     
-    const handleExportData = () => {
+    const handleExportData = async () => {
         try {
             const dataToExport = {
                 profile,
@@ -138,19 +140,30 @@ const SettingsScreen: React.FC = () => {
                 version: '1.0.0',
                 exportedAt: new Date().toISOString(),
             };
+            const fileName = `taskmaster_backup_${new Date().toISOString().split('T')[0]}.json`;
+            const jsonString = JSON.stringify(dataToExport, null, 2);
 
-            const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-                JSON.stringify(dataToExport, null, 2)
-            )}`;
-            
-            const link = document.createElement("a");
-            link.href = jsonString;
-            link.download = `taskmaster_backup_${new Date().toISOString().split('T')[0]}.json`;
-
-            link.click();
+            if (Capacitor.isNativePlatform()) {
+                // Native platform: Use Filesystem API
+                const result = await Filesystem.writeFile({
+                    path: fileName,
+                    data: jsonString,
+                    directory: Directory.Documents,
+                    encoding: Encoding.UTF8,
+                });
+                alert(`Data exported successfully! Saved to your Documents folder as ${fileName}`);
+                console.log('File saved to:', result.uri);
+            } else {
+                // Web platform: Use existing download link method
+                const dataUrl = `data:text/json;charset=utf-8,${encodeURIComponent(jsonString)}`;
+                const link = document.createElement("a");
+                link.href = dataUrl;
+                link.download = fileName;
+                link.click();
+            }
         } catch (error) {
             console.error("Failed to export data:", error);
-            alert("An error occurred while exporting your data.");
+            alert(`An error occurred while exporting your data: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     };
 
