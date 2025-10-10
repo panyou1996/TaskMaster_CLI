@@ -743,7 +743,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const todayStr = new Date().toISOString().split('T')[0];
             
             tasks.forEach(task => {
-                if (task.today && !task.completed && task.today_assigned_date && task.today_assigned_date !== todayStr) {
+                // If a task was assigned to 'Today' on a previous day, reset its 'today' status.
+                // This applies to both completed and uncompleted tasks, cleaning up the Today view for the new day.
+                if (task.today && task.today_assigned_date && task.today_assigned_date !== todayStr) {
                     updateTask(task.id, { today: false });
                 }
             });
