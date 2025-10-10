@@ -288,7 +288,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
                         </div>
                         <div className="flex items-center shrink-0 pt-0.5">
                             <button
-                                // FIX: Removed 'as number' cast
                                 onClick={(e) => { e.stopPropagation(); if (!completed) onToggleImportant?.(id); }}
                                 className={`p-1 -m-1 rounded-full ${!completed ? 'hover:bg-red-50 dark:hover:bg-red-900/20' : 'cursor-not-allowed'}`}
                                 aria-label={important ? "Remove importance" : "Mark as important"}

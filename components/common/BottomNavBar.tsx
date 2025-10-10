@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { TodayIcon, ListsIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon, SettingsIcon } from '../icons/Icons';
-import AddMomentScreen, { NewMomentData } from '../../screens/AddMomentScreen';
+// FIX: Changed import to use named export for AddMomentScreen.
+import { AddMomentScreen, NewMomentData } from '../../screens/AddMomentScreen';
 import { takePhotoWithCapacitor, triggerHapticImpact, triggerHapticSelection } from '../../utils/permissions';
 import { useData } from '../../contexts/DataContext';
 import { Moment } from '../../data/mockData';

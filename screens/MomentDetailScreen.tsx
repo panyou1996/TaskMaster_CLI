@@ -29,7 +29,7 @@ const MomentDetailScreen: React.FC = () => {
         setIsEditOpen(true);
     };
 
-    const handleSaveEdit = async (momentId: number, updates: Partial<Moment>) => {
+    const handleSaveEdit = async (momentId: number | string, updates: Partial<Moment>) => {
         try {
             await updateMoment(momentId, updates);
             setIsEditOpen(false);
@@ -138,7 +138,7 @@ const MomentDetailScreen: React.FC = () => {
             >
                 <header
                     className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-4 pt-5 bg-gradient-to-b from-black/30 to-transparent"
-                    style={{ paddingTop: `calc(1.25rem + env(safe-area-inset-top))` }}
+                    style={{ paddingTop: `calc(1.25rem + var(--status-bar-height, env(safe-area-inset-top)))` }}
                 >
                     <button onClick={handleBack} className="p-2 text-white bg-black/20 rounded-full hover:bg-black/40 transition-colors">
                         <ChevronLeftIcon />

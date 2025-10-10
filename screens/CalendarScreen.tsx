@@ -219,7 +219,7 @@ const CalendarScreen: React.FC = () => {
             <div className="absolute inset-0 flex flex-col font-sans">
                 <header
                     className="px-5 pt-6 pb-4 flex justify-between items-center flex-shrink-0"
-                    style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
+                    style={{ paddingTop: `calc(1.5rem + var(--status-bar-height, env(safe-area-inset-top)))` }}
                 >
                      <div className="w-6"/>
                     <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>

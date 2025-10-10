@@ -192,7 +192,7 @@ const ProfileScreen: React.FC = () => {
                 {/* Header */}
                 <header
                     className="px-4 pt-6 pb-4 grid grid-cols-3 items-center flex-shrink-0 bg-[var(--color-surface-container)] border-b border-[var(--color-border)] sticky top-0 z-10"
-                    style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
+                    style={{ paddingTop: `calc(1.5rem + var(--status-bar-height, env(safe-area-inset-top)))` }}
                 >
                     <div className="flex justify-start">
                         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100" aria-label="Go back">

@@ -81,7 +81,7 @@ const PlanningSettingsDrawer: React.FC<PlanningSettingsDrawerProps> = ({ isOpen,
                 aria-modal="true"
                 aria-labelledby="planning-settings-title"
             >
-                <header className="pt-3 px-4 pb-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-3xl sticky top-0 z-10">
+                <header className="pt-3 px-4 pb-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-3xl sticky top-0 z-10" style={{ paddingTop: `calc(0.75rem + var(--status-bar-height, env(safe-area-inset-top)))` }}>
                     <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-3" />
                     <div className="flex justify-between items-center h-8">
                         <button onClick={onClose} className="p-1 text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><CloseIcon /></button>

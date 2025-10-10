@@ -451,7 +451,7 @@ const ListDetailScreen: React.FC = () => {
             <div className="absolute inset-0 flex flex-col">
                 <header
                     className="px-4 pt-6 pb-4 flex items-center gap-2 flex-shrink-0 bg-[var(--color-surface-container)] border-b border-[var(--color-border)]"
-                    style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
+                    style={{ paddingTop: `calc(1.5rem + var(--status-bar-height, env(safe-area-inset-top)))` }}
                 >
                     <button onClick={() => navigate('/plan')} className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                         <ChevronLeftIcon />

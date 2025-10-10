@@ -5,7 +5,8 @@ import { PlusIconHeader, ChevronDownIcon, RefreshSpinnerIcon, SearchIcon } from 
 import { EmptyMomentsIllustration } from '../components/illustrations/Illustrations';
 import { useData } from '../contexts/DataContext';
 import { Moment } from '../data/mockData';
-import AddMomentScreen, { NewMomentData } from './AddMomentScreen';
+// FIX: Changed import to use named export for AddMomentScreen.
+import { AddMomentScreen, NewMomentData } from './AddMomentScreen';
 import TagsView from '../components/views/TagsView';
 import CalendarView from '../components/views/CalendarView';
 
@@ -180,7 +181,7 @@ const MomentsScreen: React.FC = () => {
                 >
                     <header
                         className="px-6 pt-6 pb-4 flex-shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-4 bg-[var(--color-surface-container)] border-b border-[var(--color-border)]"
-                        style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
+                        style={{ paddingTop: `calc(1.5rem + var(--status-bar-height, env(safe-area-inset-top)))` }}
                     >
                          <div className="flex justify-start">
                             <button className="text-gray-600 dark:text-gray-400 p-1" onClick={() => setIsSearchVisible(true)}>
@@ -233,7 +234,7 @@ const MomentsScreen: React.FC = () => {
             
              {/* Search Overlay */}
             <div className={`fixed inset-0 z-40 bg-[var(--color-background-primary)] flex flex-col transition-transform duration-300 ease-in-out ${isSearchVisible ? 'translate-y-0' : 'translate-y-full'}`}
-                 style={{ paddingTop: `env(safe-area-inset-top)` }}>
+                 style={{ paddingTop: `var(--status-bar-height, env(safe-area-inset-top))` }}>
                 <div className="flex-shrink-0 px-4 pt-4 pb-3 flex items-center gap-2">
                     <div className="relative flex-grow">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

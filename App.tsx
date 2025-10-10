@@ -93,6 +93,17 @@ const AppRoutes: React.FC = () => {
     };
   }, []);
 
+  // --- Status Bar Height effect (for Android safe-area fallback) ---
+  useEffect(() => {
+    const setStatusBarHeight = async () => {
+      if (Capacitor.isNativePlatform()) {
+        const { height } = await StatusBar.getInfo();
+        document.documentElement.style.setProperty('--status-bar-height', `${height}px`);
+      }
+    };
+    setStatusBarHeight();
+  }, []);
+
   useEffect(() => {
     if (!loading) {
       if (session && (isAuthRoute || isOnboardingRoute)) {
