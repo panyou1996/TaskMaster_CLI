@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckIcon, TrashIcon, FlagIcon, ListCheckIcon, TagIcon, CalendarIcon, StarIcon, RefreshSpinnerIcon, ClockIcon, LockIcon, BellIcon, DurationIcon } from '../components/icons/Icons';
 import { useData } from '../contexts/DataContext';
 import type { Task } from '../data/mockData';
@@ -8,7 +9,7 @@ interface EditTaskScreenProps {
   onClose: () => void;
   task: Task | null;
   onSave: (task: Task) => Promise<void>;
-  initialTab?: 'Basic' | 'Schedule' | 'Subtask'; // Kept for prop compatibility, but no longer used.
+  initialTab?: 'Basic' | 'Schedule' | 'Subtask';
 }
 
 const EmptySquareCheckIcon = () => (
@@ -84,7 +85,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
     const [error, setError] = useState<string | null>(null);
 
     const [activePopover, setActivePopover] = useState<string | null>(null);
-    const [popoverPosition, setPopoverPosition] = useState<{ top?: string, bottom?: string, left?: string, right?: string }>({});
+    const [popoverPosition, setPopoverPosition] = useState<React.CSSProperties>({});
     
     const newSubtaskInputRef = useRef<HTMLInputElement>(null);
     const calendarIconRef = useRef<HTMLDivElement>(null);
@@ -134,13 +135,28 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
         }
 
         if (ref.current) {
-            const rect = ref.current.getBoundingClientRect();
-            const popoverHeight = 220; 
-            if (rect.top < popoverHeight) { 
-                setPopoverPosition({ top: `${rect.height + 4}px`, right: '0' });
-            } else { 
-                setPopoverPosition({ bottom: `${rect.height + 4}px`, right: '0' });
+            const iconRect = ref.current.getBoundingClientRect();
+            const popoverWidth = 224;
+            const popoverHeight = 250;
+            const margin = 8;
+
+            let pos: React.CSSProperties = { position: 'fixed' };
+
+            // Vertical positioning
+            if (iconRect.bottom + popoverHeight > window.innerHeight && iconRect.top > popoverHeight) {
+                pos.bottom = window.innerHeight - iconRect.top + margin;
+            } else {
+                pos.top = iconRect.bottom + margin;
             }
+
+            // Horizontal positioning
+            if (iconRect.right - popoverWidth < 0) {
+                 pos.left = iconRect.left;
+            } else {
+                 pos.left = iconRect.right - popoverWidth;
+            }
+
+            setPopoverPosition(pos);
         }
         setActivePopover(popoverName);
     }, [activePopover]);
@@ -149,7 +165,16 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as Node;
             if (cardRef.current && !cardRef.current.contains(target)) setActiveInput(null);
-            if (activePopover && !cardRef.current?.contains(target)) setActivePopover(null);
+            if (activePopover && cardRef.current && !cardRef.current.contains(target)) {
+                 const popovers = document.querySelectorAll('.popover-content');
+                 let clickedInsidePopover = false;
+                 popovers.forEach(p => {
+                     if (p.contains(target)) clickedInsidePopover = true;
+                 });
+                 if (!clickedInsidePopover) {
+                    setActivePopover(null);
+                 }
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -202,104 +227,82 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
         if (isTodayLocked) return;
         setIsToday(prev => !prev);
     };
+    
+    const PopoverPortal: React.FC<{children: React.ReactNode}> = ({ children }) => {
+        if (!activePopover) return null;
+        return createPortal(children, document.body);
+    };
 
     return (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
-            <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
-            
-            <form onSubmit={handleSubmit} className={`w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} style={{ paddingBottom: `env(safe-area-inset-bottom)` }}>
-                <div ref={cardRef} className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 overflow-y-auto max-h-[75vh]">
-                    {error && <p className="text-red-500 text-sm text-center mb-2">{error}</p>}
-                    
-                    <div className="flex items-start gap-3">
-                        <div className="pt-1"><EmptySquareCheckIcon /></div>
-                        <div className="flex-grow">
-                            <input type="text" value={title} onChange={e => setTitle(e.target.value)} onFocus={() => setActiveInput('title')} placeholder="New To-Do" className="w-full text-base font-semibold text-gray-900 dark:text-gray-100 placeholder-gray-800 dark:placeholder-gray-200 focus:outline-none bg-transparent" />
-                            <textarea value={notes} onChange={e => setNotes(e.target.value)} onFocus={() => setActiveInput('notes')} placeholder="Notes" rows={1} className="w-full text-sm mt-1 text-gray-700 dark:text-gray-300 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none resize-none bg-transparent" />
-                            {isSubtaskSectionVisible && (
-                                <div className="mt-2 space-y-1 pt-2 border-t border-gray-100 dark:border-gray-700">
-                                    {subtasks.map((sub) => (
-                                        <div key={sub.id} className="flex items-center gap-2 group">
+        <>
+            <div className={`fixed inset-0 z-50 grid place-items-center p-4 transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
+                <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
+                
+                <form onSubmit={handleSubmit} className={`w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} style={{ paddingBottom: `env(safe-area-inset-bottom)` }}>
+                    <div ref={cardRef} className="bg-[var(--color-surface-container)] rounded-xl card-shadow p-4 overflow-y-auto max-h-[75vh]">
+                        {error && <p className="text-[var(--color-functional-red)] text-sm text-center mb-2">{error}</p>}
+                        
+                        <div className="flex items-start gap-3">
+                            <div className="pt-1"><EmptySquareCheckIcon /></div>
+                            <div className="flex-grow">
+                                <input type="text" value={title} onChange={e => setTitle(e.target.value)} onFocus={() => setActiveInput('title')} placeholder="New To-Do" className="w-full text-base font-semibold text-[var(--color-text-primary)] placeholder-[var(--color-text-primary)] focus:outline-none bg-transparent" />
+                                <textarea value={notes} onChange={e => setNotes(e.target.value)} onFocus={() => setActiveInput('notes')} placeholder="Notes" rows={1} className="w-full text-sm mt-1 text-[var(--color-text-secondary)] placeholder-[var(--color-text-secondary)] focus:outline-none resize-none bg-transparent" />
+                                {isSubtaskSectionVisible && (
+                                    <div className="mt-2 space-y-1 pt-2 border-t border-[var(--color-border)]">
+                                        {subtasks.map((sub) => (
+                                            <div key={sub.id} className="flex items-center gap-2 group">
+                                                <SubtaskCircleIcon />
+                                                <input type="text" value={sub.text} onChange={e => { const newText = e.target.value; setSubtasks(subs => subs.map(s => s.id === sub.id ? { ...s, text: newText } : s)); }} className="w-full text-sm text-[var(--color-text-primary)] focus:outline-none bg-transparent" />
+                                                <button type="button" onClick={() => setSubtasks(subs => subs.filter(s => s.id !== sub.id))} className="text-[var(--color-text-tertiary)] hover:text-[var(--color-functional-red)] opacity-0 group-hover:opacity-100"><TrashIcon /></button>
+                                            </div>
+                                        ))}
+                                        <div className="flex items-center gap-2">
                                             <SubtaskCircleIcon />
-                                            <input type="text" value={sub.text} onChange={e => { const newText = e.target.value; setSubtasks(subs => subs.map(s => s.id === sub.id ? { ...s, text: newText } : s)); }} className="w-full text-sm text-gray-800 dark:text-gray-200 focus:outline-none bg-transparent" />
-                                            <button type="button" onClick={() => setSubtasks(subs => subs.filter(s => s.id !== sub.id))} className="text-gray-400 dark:text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100"><TrashIcon /></button>
+                                            <input ref={newSubtaskInputRef} type="text" value={newSubtaskText} onChange={e => setNewSubtaskText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask(); } }} placeholder="Add item" className="w-full text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none bg-transparent" />
                                         </div>
-                                    ))}
-                                    <div className="flex items-center gap-2">
-                                        <SubtaskCircleIcon />
-                                        <input ref={newSubtaskInputRef} type="text" value={newSubtaskText} onChange={e => setNewSubtaskText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask(); } }} placeholder="Add item" className="w-full text-sm text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none bg-transparent" />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                         <div className="flex items-center gap-2 flex-wrap min-w-0 mb-3 min-h-[1.75rem]">
-                            {duration && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-semibold animate-page-fade-in"><DurationIcon className="w-3.5 h-3.5" /><span>{duration} min</span></div>)}
-                            {reminder !== null && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-semibold animate-page-fade-in"><BellIcon className="w-3.5 h-3.5" /><span className="truncate">{getReminderLabel(reminder)}</span></div>)}
-                            {startTime && taskType === 'Fixed' && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold animate-page-fade-in"><ClockIcon className="w-3.5 h-3.5" /><span className="truncate">Starts {formatChipDate(startDate || todayStr)}, {new Date('1970-01-01T' + startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div>)}
-                            {dueDate && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-semibold animate-page-fade-in"><span>Due {formatChipDate(dueDate)}</span></div>)}
-                            {category && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-semibold animate-page-fade-in"><span>{category}</span></div>)}
-                         </div>
-                        <div className="flex items-center justify-end">
-                            <div className="flex items-center gap-1">
-                                <button type="button" title={taskType === 'Fixed' ? "Set as Flexible" : "Set as Fixed"} onClick={() => setTaskType(p => p === 'Fixed' ? 'Flexible' : 'Fixed')} className={`p-2 rounded-full transition-colors ${taskType === 'Fixed' ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><LockIcon className="w-5 h-5" /></button>
-                                <div ref={durationIconRef} className="relative">
-                                    <button type="button" title="Set Duration" onClick={() => handlePopoverToggle('duration', durationIconRef)} className={`p-2 rounded-full transition-colors ${duration ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
-                                        <DurationIcon className="w-5 h-5" />
-                                    </button>
-                                    {activePopover === 'duration' && (
-                                        <div className="absolute w-56 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-3 z-10 animate-page-fade-in" style={popoverPosition}>
-                                            <div>
-                                                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Duration (minutes)</label>
-                                                <input 
-                                                    type="number" 
-                                                    value={duration} 
-                                                    onChange={e => setDuration(e.target.value)}
-                                                    placeholder="e.g. 30"
-                                                    className="w-full mt-1 p-2 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 dark:text-white"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                {taskType === 'Fixed' && (
-                                     <div ref={startTimeIconRef} className="relative">
-                                        <button type="button" title="Set Start Date" onClick={() => handlePopoverToggle('startTime', startTimeIconRef)} className={`p-2 rounded-full transition-colors ${startTime ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><ClockIcon className="w-5 h-5" /></button>
-                                        {activePopover === 'startTime' && (<div className="absolute w-56 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-3 z-10 animate-page-fade-in space-y-3" style={popoverPosition}>
-                                                <div><label className="text-xs font-medium text-gray-500 dark:text-gray-400">Start Date</label><input type="date" value={startDate || todayStr} onChange={e => setStartDate(e.target.value)} className="w-full mt-1 p-2 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 dark:text-white"/></div>
-                                                <div><label className="text-xs font-medium text-gray-500 dark:text-gray-400">Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full mt-1 p-2 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 dark:text-white"/></div>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
-                                <div ref={calendarIconRef} className="relative">
-                                    <button type="button" title="Set Due Date" onClick={() => handlePopoverToggle('dueDate', calendarIconRef)} className={`p-2 rounded-full transition-colors ${dueDate ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><CalendarIcon className="w-5 h-5" /></button>
-                                    {activePopover === 'dueDate' && (<div className="absolute w-56 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-3 z-10 animate-page-fade-in" style={popoverPosition}><div><label className="text-xs font-medium text-gray-500 dark:text-gray-400">Due Date</label><input type="date" value={dueDate} onChange={e => { setDueDate(e.target.value); }} className="w-full mt-1 p-2 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 dark:text-white"/></div></div>)}
+                            </div>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
+                             <div className="flex items-center gap-2 flex-wrap min-w-0 mb-3 min-h-[1.75rem]">
+                                {duration && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)] text-xs font-semibold animate-page-fade-in"><DurationIcon className="w-3.5 h-3.5" /><span>{duration} min</span></div>)}
+                                {reminder !== null && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-semibold animate-page-fade-in"><BellIcon className="w-3.5 h-3.5" /><span className="truncate">{getReminderLabel(reminder)}</span></div>)}
+                                {startTime && taskType === 'Fixed' && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold animate-page-fade-in"><ClockIcon className="w-3.5 h-3.5" /><span className="truncate">Starts {formatChipDate(startDate || todayStr)}, {new Date('1970-01-01T' + startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div>)}
+                                {dueDate && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)] text-xs font-semibold animate-page-fade-in"><span>Due {formatChipDate(dueDate)}</span></div>)}
+                                {category && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-semibold animate-page-fade-in"><span>{category}</span></div>)}
+                             </div>
+                            <div className="flex items-center justify-end">
+                                <div className="flex items-center gap-1">
+                                    <button type="button" title={taskType === 'Fixed' ? "Set as Flexible" : "Set as Fixed"} onClick={() => setTaskType(p => p === 'Fixed' ? 'Flexible' : 'Fixed')} className={`p-2 rounded-full transition-colors ${taskType === 'Fixed' ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><LockIcon className="w-5 h-5" /></button>
+                                    <div ref={durationIconRef}><button type="button" title="Set Duration" onClick={() => handlePopoverToggle('duration', durationIconRef)} className={`p-2 rounded-full transition-colors ${duration ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><DurationIcon className="w-5 h-5" /></button></div>
+                                    {taskType === 'Fixed' && (<div ref={startTimeIconRef}><button type="button" title="Set Start Date" onClick={() => handlePopoverToggle('startTime', startTimeIconRef)} className={`p-2 rounded-full transition-colors ${startTime ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><ClockIcon className="w-5 h-5" /></button></div>)}
+                                    <div ref={calendarIconRef}><button type="button" title="Set Due Date" onClick={() => handlePopoverToggle('dueDate', calendarIconRef)} className={`p-2 rounded-full transition-colors ${dueDate ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><CalendarIcon className="w-5 h-5" /></button></div>
+                                    <div ref={listIconRef}><button type="button" title="Select List" onClick={() => handlePopoverToggle('list', listIconRef)} className={`p-2 rounded-full transition-colors ${category ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><TagIcon className="w-5 h-5" /></button></div>
+                                    <button type="button" title="Add Subtasks" onClick={() => setIsSubtaskSectionVisible(p => !p)} className={`p-2 rounded-full transition-colors ${isSubtaskSectionVisible ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><ListCheckIcon className="w-5 h-5" /></button>
+                                    <div ref={reminderIconRef}><button type="button" title="Set Reminder" onClick={() => handlePopoverToggle('reminder', reminderIconRef)} className={`p-2 rounded-full transition-colors ${reminder !== null ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><BellIcon className="w-5 h-5" /></button></div>
+                                    <button type="button" title={isTodayLocked ? "Due today" : "Toggle Today"} onClick={handleToggleToday} className={`p-2 rounded-full transition-colors ${isToday ? 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'} ${isTodayLocked ? 'opacity-70 cursor-default' : ''}`}><StarIcon className="w-5 h-5" /></button>
+                                    <button type="button" title="Mark as Important" onClick={() => setIsImportant(p => !p)} className={`p-2 rounded-full transition-colors ${isImportant ? 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><FlagIcon className="w-4 h-4" /></button>
                                 </div>
-                                <div ref={listIconRef} className="relative">
-                                    <button type="button" title="Select List" onClick={() => handlePopoverToggle('list', listIconRef)} className={`p-2 rounded-full transition-colors ${category ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><TagIcon className="w-5 h-5" /></button>
-                                    {activePopover === 'list' && (<div className="absolute w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-2 z-10 animate-page-fade-in max-h-48 overflow-y-auto" style={popoverPosition}>{listOptions.map(listName => (<button key={listName} type="button" onClick={() => { setCategory(listName); setActivePopover(null); }} className={`w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${category === listName ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'}`}><span>{listName}</span>{category === listName && <CheckIcon className="w-4 h-4" />}</button>))}</div>)}
-                                </div>
-                                <button type="button" title="Add Subtasks" onClick={() => setIsSubtaskSectionVisible(p => !p)} className={`p-2 rounded-full transition-colors ${isSubtaskSectionVisible ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><ListCheckIcon className="w-5 h-5" /></button>
-                                <div ref={reminderIconRef} className="relative">
-                                    <button type="button" title="Set Reminder" onClick={() => handlePopoverToggle('reminder', reminderIconRef)} className={`p-2 rounded-full transition-colors ${reminder !== null ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><BellIcon className="w-5 h-5" /></button>
-                                    {activePopover === 'reminder' && (<div className="absolute w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-2 z-10 animate-page-fade-in max-h-48 overflow-y-auto" style={popoverPosition}>{reminderOptions.map(option => (<button key={option.label} type="button" onClick={() => { setReminder(option.value); setActivePopover(null); }} className={`w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${reminder === option.value ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'}`}><span>{option.label}</span>{reminder === option.value && <CheckIcon className="w-4 h-4" />}</button>))}</div>)}
-                                </div>
-                                <button type="button" title={isTodayLocked ? "Due today" : "Toggle Today"} onClick={handleToggleToday} className={`p-2 rounded-full transition-colors ${isToday ? 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'} ${isTodayLocked ? 'opacity-70 cursor-default' : ''}`}><StarIcon className="w-5 h-5" /></button>
-                                <button type="button" title="Mark as Important" onClick={() => setIsImportant(p => !p)} className={`p-2 rounded-full transition-colors ${isImportant ? 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><FlagIcon className="w-4 h-4" /></button>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div className="flex justify-end pt-2">
-                    <button type="submit" disabled={loading || !title.trim()} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl fab-shadow hover:bg-blue-700 transition-colors w-full disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                        {loading && <RefreshSpinnerIcon />}
-                        <span>{loading ? 'Saving...' : 'Save Changes'}</span>
-                    </button>
-                </div>
-            </form>
-        </div>
+                    <div className="flex justify-end pt-2">
+                        <button type="submit" disabled={loading || !title.trim()} className="px-6 py-3 bg-[var(--color-primary-500)] text-white font-bold rounded-xl fab-shadow hover:opacity-90 transition-all w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            {loading && <RefreshSpinnerIcon />}
+                            <span>{loading ? 'Saving...' : 'Save Changes'}</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <PopoverPortal>
+                {activePopover === 'duration' && (<div className="popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in" style={popoverPosition}><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Duration (minutes)</label><input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="e.g. 30" className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div></div>)}
+                {activePopover === 'startTime' && (<div className="popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in space-y-3" style={popoverPosition}><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Start Date</label><input type="date" value={startDate || todayStr} onChange={e => setStartDate(e.target.value)} className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div></div>)}
+                {activePopover === 'dueDate' && (<div className="popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in" style={popoverPosition}><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Due Date</label><input type="date" value={dueDate} onChange={e => { setDueDate(e.target.value); }} className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div></div>)}
+                {activePopover === 'list' && (<div className="popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] animate-page-fade-in max-h-48 overflow-y-auto" style={popoverPosition}>{listOptions.map(listName => (<button key={listName} type="button" onClick={() => { setCategory(listName); setActivePopover(null); }} className={`w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${category === listName ? 'bg-primary-100 text-[var(--color-primary-500)]' : 'hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]'}`}><span>{listName}</span>{category === listName && <CheckIcon className="w-4 h-4" />}</button>))}</div>)}
+                {activePopover === 'reminder' && (<div className="popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] animate-page-fade-in max-h-48 overflow-y-auto" style={popoverPosition}>{reminderOptions.map(option => (<button key={option.label} type="button" onClick={() => { setReminder(option.value); setActivePopover(null); }} className={`w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${reminder === option.value ? 'bg-primary-100 text-[var(--color-primary-500)]' : 'hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]'}`}><span>{option.label}</span>{reminder === option.value && <CheckIcon className="w-4 h-4" />}</button>))}</div>)}
+            </PopoverPortal>
+        </>
     );
 };
 

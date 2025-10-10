@@ -8,6 +8,8 @@ import { Moment } from '../../data/mockData';
 import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
 import AddListScreen, { NewListData } from '../../screens/AddListScreen';
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
+import { Capacitor } from '@capacitor/core';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 
 // --- Gemini Live API Audio Helpers ---
 
@@ -105,6 +107,23 @@ const BottomNavBar: React.FC = () => {
 
     const startRecording = useCallback(async () => {
         if (isRecording) return;
+
+        if (Capacitor.isNativePlatform()) {
+            try {
+                let permissionStatus = await SpeechRecognition.checkPermission();
+                if (permissionStatus.permission !== 'granted') {
+                    permissionStatus = await SpeechRecognition.requestPermission();
+                }
+                if (permissionStatus.permission !== 'granted') {
+                    alert('Could not start recording. Please grant microphone permissions in settings.');
+                    return;
+                }
+            } catch (e) {
+                console.error("Permission check/request failed", e);
+                alert('Could not start recording. Please check microphone permissions.');
+                return;
+            }
+        }
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });

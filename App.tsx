@@ -1,6 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { DataProvider, useData } from './contexts/DataContext';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { App as CapacitorApp } from '@capacitor/app';
 
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
@@ -28,6 +31,8 @@ const AppRoutes: React.FC = () => {
   const { session, loading } = useData();
   const navigate = useNavigate();
   const location = useLocation();
+  const [toast, setToast] = useState({ show: false, message: '' });
+  const backPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isAuthRoute = ['/login', '/signup', '/reset-password'].includes(location.pathname);
   const isOnboardingRoute = location.pathname.startsWith('/onboarding');
@@ -42,6 +47,47 @@ const AppRoutes: React.FC = () => {
     }
   }, [session, loading, isAuthRoute, isOnboardingRoute, navigate]);
   
+  // Back button handler for native Android
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let listener: PluginListenerHandle;
+
+    const handleBackButton = () => {
+      const exitRoutes = ['/today', '/plan', '/moments', '/settings', '/login', '/onboarding/welcome'];
+      const isOnExitRoute = exitRoutes.includes(location.pathname);
+
+      if (isOnExitRoute) {
+        if (backPressTimer.current) {
+          clearTimeout(backPressTimer.current);
+          CapacitorApp.exitApp();
+        } else {
+          setToast({ show: true, message: 'Press back again to exit' });
+          backPressTimer.current = setTimeout(() => {
+            setToast({ show: false, message: '' });
+            backPressTimer.current = null;
+          }, 2000);
+        }
+      } else {
+        navigate(-1);
+      }
+    };
+    
+    CapacitorApp.addListener('backButton', handleBackButton).then(handle => {
+      listener = handle;
+    });
+
+    return () => {
+      if (listener) {
+        listener.remove();
+      }
+      if (backPressTimer.current) {
+        clearTimeout(backPressTimer.current);
+      }
+    };
+  }, [location.pathname, navigate]);
+
+
   if (loading) {
       return (
           <div className="h-full w-full flex items-center justify-center">
@@ -53,40 +99,85 @@ const AppRoutes: React.FC = () => {
   }
 
   return (
-      <Routes>
-          <Route path="/" element={session ? <Navigate to="/today" /> : <Navigate to="/onboarding/welcome" />} />
-          <Route path="/login" element={<LoginScreen />} />
-          <Route path="/signup" element={<SignUpScreen />} />
-          <Route path="/reset-password" element={<ResetPasswordScreen />} />
-          
-          {/* Onboarding Flow */}
-          <Route path="/onboarding/welcome" element={<OnboardingWelcomeScreen />} />
-          <Route path="/onboarding/sync" element={<OnboardingSyncScreen />} />
-          <Route path="/onboarding/organize" element={<OnboardingOrganizeScreen />} />
-          <Route path="/onboarding/journal" element={<OnboardingJournalScreen />} />
-          <Route path="/onboarding/permissions" element={<OnboardingPermissionsScreen />} />
+      <>
+        <Routes>
+            <Route path="/" element={session ? <Navigate to="/today" /> : <Navigate to="/onboarding/welcome" />} />
+            <Route path="/login" element={<LoginScreen />} />
+            <Route path="/signup" element={<SignUpScreen />} />
+            <Route path="/reset-password" element={<ResetPasswordScreen />} />
+            
+            {/* Onboarding Flow */}
+            <Route path="/onboarding/welcome" element={<OnboardingWelcomeScreen />} />
+            <Route path="/onboarding/sync" element={<OnboardingSyncScreen />} />
+            <Route path="/onboarding/organize" element={<OnboardingOrganizeScreen />} />
+            <Route path="/onboarding/journal" element={<OnboardingJournalScreen />} />
+            <Route path="/onboarding/permissions" element={<OnboardingPermissionsScreen />} />
 
-          {/* Main App */}
-          <Route path="/today" element={<TodayScreen />} />
-          <Route path="/plan" element={<PlanScreen />} />
-          <Route path="/lists/:listId" element={<ListDetailScreen />} />
-          <Route path="/moments" element={<MomentsScreen />} />
-          <Route path="/moments/:id" element={<MomentDetailScreen />} />
-          <Route path="/moments/tags/:tagName" element={<TagDetailScreen />} />
-          <Route path="/focus" element={<FocusScreen />} />
-          
-          {/* Settings Flow */}
-          <Route path="/settings" element={<SettingsScreen />} />
-          <Route path="/settings/notifications" element={<NotificationSettingsScreen />} />
-          <Route path="/settings/data" element={<DataManagementScreen />} />
-          <Route path="/settings/about" element={<AboutHelpScreen />} />
-          <Route path="/settings/theme" element={<ThemeSettingsScreen />} />
-          <Route path="/profile" element={<ProfileScreen />} />
-      </Routes>
+            {/* Main App */}
+            <Route path="/today" element={<TodayScreen />} />
+            <Route path="/plan" element={<PlanScreen />} />
+            <Route path="/lists/:listId" element={<ListDetailScreen />} />
+            <Route path="/moments" element={<MomentsScreen />} />
+            <Route path="/moments/:id" element={<MomentDetailScreen />} />
+            <Route path="/moments/tags/:tagName" element={<TagDetailScreen />} />
+            <Route path="/focus" element={<FocusScreen />} />
+            
+            {/* Settings Flow */}
+            <Route path="/settings" element={<SettingsScreen />} />
+            <Route path="/settings/notifications" element={<NotificationSettingsScreen />} />
+            <Route path="/settings/data" element={<DataManagementScreen />} />
+            <Route path="/settings/about" element={<AboutHelpScreen />} />
+            <Route path="/settings/theme" element={<ThemeSettingsScreen />} />
+            <Route path="/profile" element={<ProfileScreen />} />
+        </Routes>
+        {toast.show && (
+            <div 
+              className="fixed left-1/2 -translate-x-1/2 bg-gray-900 bg-opacity-80 text-white text-sm py-2 px-4 rounded-full animate-page-fade-in z-[100]"
+              style={{ bottom: `calc(6rem + env(safe-area-inset-bottom))` }}
+            >
+              {toast.message}
+            </div>
+          )}
+      </>
   );
 };
 
 const App: React.FC = () => {
+  useEffect(() => {
+    const applyStatusBarStyling = () => {
+      if (!Capacitor.isNativePlatform()) {
+        return;
+      }
+      
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      
+      // Set status bar icon style
+      StatusBar.setStyle({
+        style: isDarkMode ? Style.Light : Style.Dark,
+      });
+      
+      // Allow webview to overlap status bar
+      StatusBar.setOverlaysWebView({ overlay: true });
+      
+      // Make status bar background transparent
+      StatusBar.setBackgroundColor({ color: '#00000000' });
+    };
+
+    // Apply on initial load
+    applyStatusBarStyling();
+
+    // Re-apply when theme changes (observing class change on <html>)
+    const observer = new MutationObserver(applyStatusBarStyling);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <HashRouter>
       <DataProvider>

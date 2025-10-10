@@ -14,6 +14,8 @@ import {
 } from '../data/mockData';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { checkAndRequestNotificationPermission } from '../utils/permissions';
+import { Capacitor } from '@capacitor/core';
 
 type OperationType = 
     | 'ADD_TASK' | 'UPDATE_TASK' | 'DELETE_TASK'
@@ -156,51 +158,6 @@ const areNotificationsGloballyEnabled = () => {
     }
 };
 
-const scheduleNotification = async (task: Task) => {
-    const notificationId = getNotificationId(task.id);
-    await LocalNotifications.cancel({ notifications: [{ id: notificationId }] });
-
-    if (!areNotificationsGloballyEnabled() || task.reminder === null || task.reminder === undefined || !task.dueDate || !task.startTime || task.completed) {
-        return;
-    }
-
-    const [year, month, day] = task.dueDate.split('-').map(Number);
-    const [hour, minute] = task.startTime.split(':').map(Number);
-    if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
-        return;
-    }
-    const dueAt = new Date(year, month - 1, day, hour, minute);
-    const notifyAt = new Date(dueAt.getTime() - task.reminder * 60 * 1000);
-
-    if (notifyAt < new Date()) {
-        return;
-    }
-
-    try {
-        await LocalNotifications.schedule({
-            notifications: [{
-                title: "Task Reminder",
-                body: task.title,
-                id: notificationId,
-                schedule: { at: notifyAt },
-                sound: 'default',
-            }]
-        });
-    } catch(e) {
-        console.error("Failed to schedule notification:", e)
-    }
-};
-
-const cancelNotification = async (taskId: number | string) => {
-    const notificationId = getNotificationId(taskId);
-    try {
-        await LocalNotifications.cancel({ notifications: [{ id: notificationId }] });
-    } catch(e) {
-        console.error("Failed to cancel notification:", e)
-    }
-};
-
-
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
@@ -219,6 +176,81 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [syncError, setSyncError] = useState<string | null>(null);
     const isProcessingQueue = useRef(false);
     const cleanupRun = useRef(false);
+    
+    const webNotificationTimeouts = useRef<Map<string | number, ReturnType<typeof setTimeout>>>(new Map());
+
+    const cancelNotification = useCallback(async (taskId: number | string) => {
+        try {
+            if (Capacitor.isNativePlatform()) {
+                const notificationId = getNotificationId(taskId);
+                await LocalNotifications.cancel({ notifications: [{ id: notificationId }] });
+            } else {
+                const timeoutId = webNotificationTimeouts.current.get(taskId);
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    webNotificationTimeouts.current.delete(taskId);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to cancel notification:", e);
+        }
+    }, []);
+
+    const scheduleNotification = useCallback(async (task: Task) => {
+        await cancelNotification(task.id);
+
+        if (!areNotificationsGloballyEnabled() || task.reminder === null || task.reminder === undefined || !task.dueDate || !task.startTime || task.completed) {
+            return;
+        }
+
+        const permissionGranted = await checkAndRequestNotificationPermission();
+        if (!permissionGranted) {
+            return;
+        }
+
+        const [year, month, day] = task.dueDate.split('-').map(Number);
+        const [hour, minute] = task.startTime.split(':').map(Number);
+        if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
+            console.warn('Invalid date/time for notification scheduling:', task.dueDate, task.startTime);
+            return;
+        }
+        const dueAt = new Date(year, month - 1, day, hour, minute);
+        const notifyAt = new Date(dueAt.getTime() - task.reminder * 60 * 1000);
+
+        if (notifyAt < new Date()) {
+            return; // Don't schedule notifications for past events
+        }
+
+        try {
+            if (Capacitor.isNativePlatform()) {
+                await LocalNotifications.schedule({
+                    notifications: [{
+                        title: "Task Reminder",
+                        body: task.title,
+                        id: getNotificationId(task.id),
+                        schedule: { at: notifyAt },
+                        sound: 'default',
+                    }]
+                });
+            } else {
+                const delay = notifyAt.getTime() - Date.now();
+                if (delay > 0) {
+                    const timeoutId = setTimeout(() => {
+                        if (Notification.permission === 'granted') {
+                            new Notification("Task Reminder", {
+                                body: task.title,
+                                icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>"
+                            });
+                        }
+                        webNotificationTimeouts.current.delete(task.id);
+                    }, delay);
+                    webNotificationTimeouts.current.set(task.id, timeoutId);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to schedule notification:", e);
+        }
+    }, [cancelNotification]);
 
     const processOfflineQueueInternal = useCallback(async (targetUser: User) => {
         if (!isOnline || isProcessingQueue.current || offlineQueue.length === 0) {
@@ -332,7 +364,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setOfflineQueue(current => current.filter(op => !processedOperationIds.has(op.id)));
         }
         isProcessingQueue.current = false;
-    }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments, setFocusHistory]);
+    }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments, setFocusHistory, scheduleNotification, cancelNotification]);
     
     const syncData = useCallback(async (userOverride?: User | null) => {
         const targetUser = userOverride !== undefined ? userOverride : user;
@@ -516,7 +548,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const supabaseTaskData = cleanTaskForSupabase(dataForSupabase);
         addToQueue({ type: 'ADD_TASK', payload: { taskData: supabaseTaskData }, tempId });
-    }, [user, setTasks, addToQueue]);
+    }, [user, setTasks, addToQueue, scheduleNotification]);
 
     const updateTask = useCallback(async (taskId: string | number, updates: Partial<Task>) => {
         let updatedTask: Task | undefined;
@@ -557,7 +589,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const supabaseUpdates = cleanTaskForSupabase(fullUpdates);
             addToQueue({ type: 'UPDATE_TASK', payload: { taskId, updates: supabaseUpdates } });
         }
-    }, [setTasks, setOfflineQueue, addToQueue]);
+    }, [setTasks, setOfflineQueue, addToQueue, scheduleNotification]);
 
     const deleteTask = useCallback(async (taskId: string | number) => {
         await cancelNotification(taskId);
@@ -567,7 +599,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
             addToQueue({ type: 'DELETE_TASK', payload: { taskId } });
         }
-    }, [setTasks, setOfflineQueue, addToQueue]);
+    }, [setTasks, setOfflineQueue, addToQueue, cancelNotification]);
 
     const addList = useCallback(async (listData: Omit<TaskList, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>) => {
         if (!user) throw new Error("User not logged in");
@@ -681,18 +713,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const rescheduleAllNotifications = useCallback(async () => {
         if (!areNotificationsGloballyEnabled()) return;
-        const permissions = await LocalNotifications.checkPermissions();
-        if (permissions.display !== 'granted') return;
+        
+        const permissionGranted = await checkAndRequestNotificationPermission();
+        if (!permissionGranted) return;
 
-        const pending = await LocalNotifications.getPending();
-        if (pending.notifications.length > 0) {
-            await LocalNotifications.cancel(pending);
+        // Cancel all existing notifications
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const pending = await LocalNotifications.getPending();
+                if (pending.notifications.length > 0) {
+                    await LocalNotifications.cancel(pending);
+                }
+            } catch (e) {
+                console.error("Error clearing native notifications:", e);
+            }
+        } else {
+            webNotificationTimeouts.current.forEach(timeoutId => clearTimeout(timeoutId));
+            webNotificationTimeouts.current.clear();
         }
 
+        // Reschedule for all relevant tasks
         for (const task of tasks) {
             await scheduleNotification(task);
         }
-    }, [tasks]);
+    }, [tasks, scheduleNotification]);
 
     useEffect(() => {
         if (user && tasks.length > 0 && !cleanupRun.current) {
