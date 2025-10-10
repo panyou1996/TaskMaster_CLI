@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { checkAndRequestCameraPermission } from '../../utils/permissions';
+import { checkAndRequestCameraPermission, checkAndRequestNotificationPermission } from '../../utils/permissions';
 import Button from '../../components/common/Button';
 
 const QuestionMarkIcon: React.FC = () => (
@@ -14,6 +14,7 @@ const OnboardingPermissionsScreen: React.FC = () => {
     
     const handleAllow = async () => {
         await checkAndRequestCameraPermission();
+        await checkAndRequestNotificationPermission();
         navigate('/signup');
     };
 

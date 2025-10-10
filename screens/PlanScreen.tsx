@@ -19,8 +19,8 @@ import AddTaskScreen, { NewTaskData } from './AddTaskScreen';
 import TaskCard from '../components/common/TaskCard';
 import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
-// FIX: Using star import for react-window to work around potential module resolution issues.
-import * as ReactWindow from 'react-window';
+// FIX: Switched to named imports for react-window to resolve module resolution and component access errors.
+import { FixedSizeList, type ListChildComponentProps } from 'react-window';
 
 const colorVariants = {
     green: { bg: 'bg-green-100 dark:bg-green-900/30' },
@@ -183,7 +183,7 @@ const PlanScreen: React.FC = () => {
     };
 
     // -- ROW RENDERER FOR VIRTUALIZED LIST --
-    const ListRow = ({ data, index, style }: { data: TaskList[], index: number, style: React.CSSProperties }) => {
+    const ListRow = ({ data, index, style }: ListChildComponentProps<TaskList[]>) => {
         const list = data[index];
         const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
         const count = taskCounts[list.name] || 0;
@@ -441,15 +441,15 @@ const PlanScreen: React.FC = () => {
                                     <EmptyListsIllustration onAddList={() => setIsAddListOpen(true)} />
                                 ) : (
                                     mainListSize.height > 0 && (
-                                        <ReactWindow.FixedSizeList
+                                        <FixedSizeList
                                             height={mainListSize.height}
                                             width={mainListSize.width}
                                             itemCount={taskLists.length}
                                             itemSize={LIST_ITEM_SIZE}
                                             itemData={taskLists}
                                         >
-                                            {({ data, index, style }) => <ListRow data={data} index={index} style={style} />}
-                                        </ReactWindow.FixedSizeList>
+                                            {ListRow}
+                                        </FixedSizeList>
                                     )
                                 )}
                             </div>
@@ -535,15 +535,15 @@ const PlanScreen: React.FC = () => {
                         </div>
                     ) : (
                         searchListSize.height > 0 && (
-                            <ReactWindow.FixedSizeList
+                            <FixedSizeList
                                 height={searchListSize.height}
                                 width={searchListSize.width}
                                 itemCount={filteredTaskLists.length}
                                 itemSize={LIST_ITEM_SIZE}
                                 itemData={filteredTaskLists}
                             >
-                                {({ data, index, style }) => <ListRow data={data} index={index} style={style} />}
-                            </ReactWindow.FixedSizeList>
+                                {ListRow}
+                            </FixedSizeList>
                         )
                     )}
                 </div>

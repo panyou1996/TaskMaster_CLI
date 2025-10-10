@@ -209,29 +209,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const scheduleNotification = useCallback(async (task: Task) => {
         await cancelNotification(task.id);
-
+    
+        // Corrected logic: A task MUST have a start time to trigger a notification.
         if (!areNotificationsGloballyEnabled() || task.reminder === null || task.reminder === undefined || !task.dueDate || !task.startTime || task.completed) {
             return;
         }
-
+    
         const permissionGranted = await checkAndRequestNotificationPermission();
         if (!permissionGranted) {
             return;
         }
-
+    
         const [year, month, day] = task.dueDate.split('-').map(Number);
         const [hour, minute] = task.startTime.split(':').map(Number);
+    
         if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
             console.warn('Invalid date/time for notification scheduling:', task.dueDate, task.startTime);
             return;
         }
-        const dueAt = new Date(year, month - 1, day, hour, minute);
-        const notifyAt = new Date(dueAt.getTime() - task.reminder * 60 * 1000);
-
+    
+        const eventTime = new Date(year, month - 1, day, hour, minute);
+        const notifyAt = new Date(eventTime.getTime() - task.reminder * 60 * 1000);
+    
         if (notifyAt < new Date()) {
             return; // Don't schedule notifications for past events
         }
-
+    
         try {
             if (Capacitor.isNativePlatform()) {
                 await LocalNotifications.schedule({
