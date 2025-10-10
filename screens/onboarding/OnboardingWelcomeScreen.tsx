@@ -15,7 +15,7 @@ const OnboardingWelcomeScreen: React.FC = () => {
         <p className="mt-4 text-base text-[var(--color-text-secondary)] max-w-xs">
           Organize your life, one task at a time.
         </p>
-        <img src="https://picsum.photos/seed/welcome/400/300" alt="Welcome illustration" className="w-full max-w-xs mx-auto rounded-lg mt-10" />
+        <img src="https://i.ibb.co/L5QyL3h/Work-time-pana.png" alt="Welcome illustration" className="w-72 h-72 object-contain mx-auto mt-10" />
       </div>
       <div className="w-full">
         <Link to="/onboarding/sync">

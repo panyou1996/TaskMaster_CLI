@@ -5,7 +5,7 @@ import OnboardingLayout from '../../components/layouts/OnboardingLayout';
 const OnboardingJournalScreen: React.FC = () => {
   return (
     <OnboardingLayout
-      imageSrc="https://picsum.photos/seed/journal/300/300"
+      imageSrc="https://i.ibb.co/L8T7WnS/Journaling-pana.png"
       title="Moments Journal"
       description="Capture your thoughts and memories. Our journaling feature helps you keep a visual log of your personal journey."
       currentStep={3}

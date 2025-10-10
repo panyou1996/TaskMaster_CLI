@@ -35,7 +35,7 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
       </div>
       
       <div className="flex-grow flex flex-col items-center justify-center p-8 text-center -mt-12">
-        <img src={imageSrc} alt="Onboarding illustration" className="w-64 h-64 object-cover rounded-lg mb-8" />
+        <img src={imageSrc} alt="Onboarding illustration" className="w-64 h-64 object-contain rounded-lg mb-8" />
         <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">{title}</h1>
         <p className="mt-2 text-base text-[var(--color-text-secondary)] max-w-xs">{description}</p>
       </div>

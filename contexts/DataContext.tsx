@@ -43,7 +43,7 @@ interface DataContextType {
     
     tasks: Task[];
     setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
-    addTask: (taskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'>) => Promise<void>;
+    addTask: (taskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'>) => Promise<string | undefined>;
     updateTask: (taskId: number | string, updates: Partial<Task>) => Promise<void>;
     deleteTask: (taskId: number | string) => Promise<void>;
 
@@ -532,8 +532,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSyncError(null);
     }, [setOfflineQueue]);
 
-    const addTask = useCallback(async (taskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'>) => {
-        if (!user) throw new Error("User not logged in");
+    const addTask = useCallback(async (taskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'>): Promise<string | undefined> => {
+        if (!user) {
+            console.error("User not logged in");
+            return;
+        }
         const tempId = `temp_${Date.now()}`;
 
         const dataForSupabase = { ...taskData, completed: false };
@@ -548,6 +551,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const supabaseTaskData = cleanTaskForSupabase(dataForSupabase);
         addToQueue({ type: 'ADD_TASK', payload: { taskData: supabaseTaskData }, tempId });
+        return tempId;
     }, [user, setTasks, addToQueue, scheduleNotification]);
 
     const updateTask = useCallback(async (taskId: string | number, updates: Partial<Task>) => {

@@ -331,6 +331,20 @@
       .animate-pulse-recording {
           animation: pulse-recording-bg 1.5s ease-in-out infinite;
       }
+      @keyframes task-collapse-animation {
+        from {
+            opacity: 1;
+            max-height: 200px;
+        }
+        to {
+            opacity: 0;
+            max-height: 0px;
+        }
+      }
+      .animate-task-collapse {
+          animation: task-collapse-animation 0.3s ease-in forwards;
+          overflow: hidden;
+      }
       .card-shadow {
         box-shadow: var(--shadow-subtle);
       }

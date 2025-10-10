@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
@@ -223,8 +221,11 @@ const TodayScreen: React.FC = () => {
         syncData
     } = useData();
     const [completingTaskId, setCompletingTaskId] = useState<number | string | null>(null);
+    const [collapsingTaskId, setCollapsingTaskId] = useState<number | string | null>(null);
     const [uncompletingTaskId, setUncompletingTaskId] = useState<number | string | null>(null);
     const [justUncompletedId, setJustUncompletedId] = useState<number | string | null>(null);
+    const [justCompletedId, setJustCompletedId] = useState<number | string | null>(null);
+    const [justAddedId, setJustAddedId] = useState<string | number | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
     
     // Modal states
@@ -392,29 +393,34 @@ const TodayScreen: React.FC = () => {
     const progress = totalTodayTasks > 0 ? (finishedTasks.length / totalTodayTasks) * 100 : 0;
 
 
-    // FIX: Changed taskId to allow string for temporary items
     const handleCompleteTask = (taskId: number | string) => {
         triggerHapticNotification(NotificationType.Success);
-        setCompletingTaskId(taskId);
+        setCompletingTaskId(taskId); // Starts checkmark/fireworks animation
         setExpandedTaskIds(prev => {
             const newSet = new Set(prev);
             newSet.delete(taskId);
             return newSet;
         });
 
+        // Start collapse animation after checkmark is filled
+        setTimeout(() => {
+            setCollapsingTaskId(taskId);
+        }, 300);
+
+        // After collapse finishes, update the data model
         setTimeout(async () => {
             try {
                 await updateTask(taskId, { completed: true });
+                setJustCompletedId(taskId);
             } catch (error) {
                 console.error("Failed to complete task", error);
-                // Optionally revert UI change
             } finally {
                 setCompletingTaskId(null);
+                setCollapsingTaskId(null);
             }
-        }, 600);
+        }, 600); // 300ms delay + 300ms animation
     };
 
-    // FIX: Changed taskId to allow string for temporary items
     const handleUncompleteTask = (taskId: number | string) => {
         triggerHapticImpact(ImpactStyle.Light);
         setUncompletingTaskId(taskId);
@@ -432,7 +438,7 @@ const TodayScreen: React.FC = () => {
             } finally {
                 setUncompletingTaskId(null);
             }
-        }, 300);
+        }, 300); // Match collapse animation duration
     };
     
     // FIX: Changed taskId to allow string for temporary items
@@ -591,7 +597,10 @@ const TodayScreen: React.FC = () => {
             subtasks: newTaskData.subtasks || [],
             color: listColorMap.get(newTaskData.list) || 'gray',
         };
-        await addTask(newTask);
+        const newTaskId = await addTask(newTask);
+        if (newTaskData.isToday && newTaskId) {
+            setJustAddedId(newTaskId);
+        }
     };
     
     const isTaskOverdue = (task: Task, now: Date): boolean => {
@@ -924,7 +933,10 @@ const TodayScreen: React.FC = () => {
                                                             }
 
                                                             return (
-                                                                <div key={task.id as React.Key} className="flex items-start">
+                                                                <div 
+                                                                    key={task.id as React.Key} 
+                                                                    className={`flex items-start ${collapsingTaskId === task.id ? 'animate-task-collapse' : ''}`}
+                                                                >
                                                                     <div className="w-20 shrink-0 flex flex-col items-center pt-3.5 pb-2">
                                                                         <button
                                                                             onClick={(e) => { e.stopPropagation(); handleOpenTimePicker(task); }}
@@ -968,6 +980,8 @@ const TodayScreen: React.FC = () => {
                                                                             onClick={() => handleOpenTaskDetail(task)}
                                                                             isJustUncompleted={justUncompletedId === task.id}
                                                                             onUncompleteAnimationEnd={() => setJustUncompletedId(null)}
+                                                                            isJustAdded={justAddedId === task.id}
+                                                                            onAddAnimationEnd={() => setJustAddedId(null)}
                                                                             hideSubtasks={!expandedTaskIds.has(task.id)}
                                                                             onToggleSubtaskVisibility={() => handleToggleExpansion(task.id)}
                                                                         />
@@ -995,7 +1009,10 @@ const TodayScreen: React.FC = () => {
                                                                 {finishedTasks.map(task => {
                                                                     const listInfo = listInfoMap.get(task.category) || { icon: '📝', color: 'gray' };
                                                                     return (
-                                                                        <div key={task.id as React.Key} className="flex items-start">
+                                                                        <div 
+                                                                            key={task.id as React.Key} 
+                                                                            className={`flex items-start ${uncompletingTaskId === task.id ? 'animate-task-collapse' : ''}`}
+                                                                        >
                                                                             <div className="w-20 shrink-0 flex flex-col items-center pt-3.5 pb-2">
                                                                                 {task.completed_at && (
                                                                                     <div className="text-center">
@@ -1030,6 +1047,8 @@ const TodayScreen: React.FC = () => {
                                                                                     onClick={() => handleOpenTaskDetail(task)} 
                                                                                     onUncomplete={() => handleUncompleteTask(task.id)} 
                                                                                     isUncompleting={uncompletingTaskId === task.id}
+                                                                                    isJustCompleted={justCompletedId === task.id}
+                                                                                    onCompleteAnimationEnd={() => setJustCompletedId(null)}
                                                                                     hideSubtasks={!expandedTaskIds.has(task.id)}
                                                                                     onToggleSubtaskVisibility={() => handleToggleExpansion(task.id)}
                                                                                     onToggleImportant={() => handleToggleImportant(task.id)}
@@ -1143,10 +1162,10 @@ const TodayScreen: React.FC = () => {
                 onClose={() => setIsAlgorithmChoiceOpen(false)}
                 onConfirm={() => handleChooseAlgorithmAndPlan('sequential')}
                 onCancel={() => handleChooseAlgorithmAndPlan('weighted')}
-                title="Choose Planning Algorithm"
-                message="How would you like to plan your day?"
-                confirmText="Sequential"
-                cancelText="Weighted"
+                title="Choose Your Plan"
+                message="Select how you'd like to automatically schedule your day. 'Fastest' is quick, 'Smartest' considers task importance."
+                confirmText="Fastest Plan"
+                cancelText="Smartest Plan"
                 confirmVariant="primary"
             />
         </MainLayout>

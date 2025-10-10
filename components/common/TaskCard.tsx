@@ -30,6 +30,10 @@ interface TaskCardProps {
     isUncompleting?: boolean;
     isJustUncompleted?: boolean;
     onUncompleteAnimationEnd?: () => void;
+    isJustCompleted?: boolean;
+    onCompleteAnimationEnd?: () => void;
+    isJustAdded?: boolean;
+    onAddAnimationEnd?: () => void;
     // FIX: Changed taskId to allow string for temporary items
     onToggleSubtask?: (taskId: number | string, subtaskId: number) => void;
     // FIX: Changed id to allow string for temporary items
@@ -80,6 +84,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
     isUncompleting = false,
     isJustUncompleted = false,
     onUncompleteAnimationEnd,
+    isJustCompleted = false,
+    onCompleteAnimationEnd,
+    isJustAdded = false,
+    onAddAnimationEnd,
     onToggleSubtask,
     onClick,
     onToggleImportant,
@@ -154,6 +162,24 @@ const TaskCard: React.FC<TaskCardProps> = ({
         }
     }, [isJustUncompleted, onUncompleteAnimationEnd]);
 
+    useEffect(() => {
+        if (isJustCompleted) {
+          const timer = setTimeout(() => {
+            onCompleteAnimationEnd?.();
+          }, 500); // Animation duration
+          return () => clearTimeout(timer);
+        }
+    }, [isJustCompleted, onCompleteAnimationEnd]);
+
+    useEffect(() => {
+        if (isJustAdded) {
+          const timer = setTimeout(() => {
+            onAddAnimationEnd?.();
+          }, 500); // Animation duration
+          return () => clearTimeout(timer);
+        }
+      }, [isJustAdded, onAddAnimationEnd]);
+
     const cancelLongPress = useCallback(() => {
         if (pressTimerRef.current) {
             clearTimeout(pressTimerRef.current);
@@ -193,7 +219,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
             onContextMenu={(e) => e.preventDefault()}
             className={`${containerClasses} select-none 
                 ${!completed ? 'cursor-pointer' : ''}
-                ${isCompleting ? 'animate-card-fade-out' : ''}
+                ${isJustAdded ? 'animate-card-fade-in' : ''}
+                ${isJustCompleted ? 'animate-card-fade-in' : ''}
                 ${isJustUncompleted ? 'animate-card-fade-in' : ''}
             `}
         >
