@@ -11,8 +11,8 @@ interface EditListScreenProps {
   onDeleteList: (listId: number | string) => void;
 }
 
-const colors = ['green', 'blue', 'pink', 'purple', 'yellow', 'red', 'orange'];
-const icons = ['🛒', '💼', '💪', '✈️', '🎁', '💡', '🏠', '❤️', '🎉', '📚', '💰', '🎵'];
+const colors = ['green', 'blue', 'pink', 'purple', 'yellow', 'red', 'orange', 'teal', 'cyan', 'indigo', 'lime', 'amber', 'rose', 'fuchsia'];
+const icons = ['🛒', '💼', '💪', '✈️', '🎁', '💡', '🏠', '❤️', '🎉', '📚', '💰', '🎵', '💻', '🌱', '🎨', '🍽️', '🎬', '🏀', '🐾', '💊', '🛠️', '💬', '✨', '📍'];
 
 const EditListScreen: React.FC<EditListScreenProps> = ({ isOpen, onClose, list, onSaveList, onDeleteList }) => {
     const [name, setName] = useState('');
@@ -71,6 +71,13 @@ const EditListScreen: React.FC<EditListScreenProps> = ({ isOpen, onClose, list, 
         yellow: { bg: 'bg-yellow-500', ring: 'ring-yellow-500' },
         red: { bg: 'bg-red-500', ring: 'ring-red-500' },
         orange: { bg: 'bg-orange-500', ring: 'ring-orange-500' },
+        teal: { bg: 'bg-teal-500', ring: 'ring-teal-500' },
+        cyan: { bg: 'bg-cyan-500', ring: 'ring-cyan-500' },
+        indigo: { bg: 'bg-indigo-500', ring: 'ring-indigo-500' },
+        lime: { bg: 'bg-lime-500', ring: 'ring-lime-500' },
+        amber: { bg: 'bg-amber-500', ring: 'ring-amber-500' },
+        rose: { bg: 'bg-rose-500', ring: 'ring-rose-500' },
+        fuchsia: { bg: 'bg-fuchsia-500', ring: 'ring-fuchsia-500' },
     };
 
     return (
