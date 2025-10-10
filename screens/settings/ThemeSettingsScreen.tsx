@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import SettingsLayout from '../../components/layouts/SettingsLayout';
-import useLocalStorage from '../../hooks/useLocalStorage';
+import { useData } from '../../contexts/DataContext';
 import { triggerHapticSelection } from '../../utils/permissions';
 
 export type Theme = 'Light' | 'Dark' | 'System';
-type FontSize = 'sm' | 'md' | 'lg' | 'xl';
+export type FontSize = 'sm' | 'md' | 'lg' | 'xl';
 
 const ThemeOption: React.FC<{ theme: Theme; selected: boolean; onSelect: () => void; }> = ({ theme, selected, onSelect }) => {
     const themeVisuals = {
@@ -54,38 +54,7 @@ const FontSizeOption: React.FC<{
 
 
 const ThemeSettingsScreen: React.FC = () => {
-    const [theme, setTheme] = useLocalStorage<Theme>('app-theme', 'System');
-    const [fontSize, setFontSize] = useLocalStorage<FontSize>('app-font-size', 'lg');
-
-    // Theme effect
-    useEffect(() => {
-        const root = window.document.documentElement;
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-        const applyTheme = () => {
-            const isDark = theme === 'Dark' || (theme === 'System' && mediaQuery.matches);
-            root.classList.toggle('dark', isDark);
-        };
-
-        applyTheme();
-
-        const handleSystemThemeChange = () => {
-            if (theme === 'System') {
-                applyTheme();
-            }
-        };
-        
-        mediaQuery.addEventListener('change', handleSystemThemeChange);
-        return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
-    }, [theme]);
-
-    // Font size effect
-    useEffect(() => {
-        const root = window.document.documentElement;
-        root.classList.remove('font-size-sm', 'font-size-md', 'font-size-lg', 'font-size-xl');
-        root.classList.add(`font-size-${fontSize}`);
-    }, [fontSize]);
-
+    const { theme, setTheme, fontSize, setFontSize } = useData();
 
     return (
         <SettingsLayout title="App Theme">

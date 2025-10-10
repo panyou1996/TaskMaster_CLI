@@ -1,6 +1,6 @@
 // supabase/functions/calendar-auth-start/index.ts
-// Fix: Use the correct Deno types reference for Supabase functions to make the Deno global available.
-/// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
+// FIX: Switched to jsdelivr CDN for the type reference to resolve issues with esm.sh and ensure Deno global types are loaded correctly.
+/// <reference types="https://cdn.jsdelivr.net/npm/@supabase/functions-js@2.4.1/src/edge-runtime.d.ts" />
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'

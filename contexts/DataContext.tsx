@@ -16,6 +16,7 @@ import useLocalStorage from '../hooks/useLocalStorage';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { checkAndRequestNotificationPermission } from '../utils/permissions';
 import { Capacitor } from '@capacitor/core';
+import { type Theme, type FontSize } from '../screens/settings/ThemeSettingsScreen';
 
 type OperationType = 
     | 'ADD_TASK' | 'UPDATE_TASK' | 'DELETE_TASK'
@@ -76,6 +77,11 @@ interface DataContextType {
     tags: string[];
     addTag: (tag: string) => void;
     deleteTag: (tag: string) => Promise<void>;
+
+    theme: Theme;
+    setTheme: React.Dispatch<React.SetStateAction<Theme>>;
+    fontSize: FontSize;
+    setFontSize: React.Dispatch<React.SetStateAction<FontSize>>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -171,6 +177,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [profile, setProfile] = useLocalStorage<UserProfile | null>('userProfile', null);
     const [tags, setTags] = useLocalStorage<string[]>('checkinTags', []);
     const [focusHistory, setFocusHistory] = useLocalStorage<FocusSession[]>('focusHistory', initialFocusHistoryData);
+
+    const [theme, setTheme] = useLocalStorage<Theme>('app-theme', 'System');
+    const [fontSize, setFontSize] = useLocalStorage<FontSize>('app-font-size', 'lg');
 
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -797,8 +806,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addList, updateList, deleteList,
         addMoment, updateMoment, deleteMoment,
         addFocusSession,
-        tags, addTag, deleteTag
-    }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, deleteTag]);
+        tags, addTag, deleteTag,
+        theme, setTheme,
+        fontSize, setFontSize
+    }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, deleteTag, theme, setTheme, fontSize, setFontSize]);
 
     return (
         <DataContext.Provider value={value}>

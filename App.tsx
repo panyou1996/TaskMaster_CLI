@@ -28,7 +28,7 @@ import FocusScreen from './screens/FocusScreen';
 import TagDetailScreen from './screens/TagDetailScreen';
 
 const AppRoutes: React.FC = () => {
-  const { session, loading, syncError } = useData();
+  const { session, loading, syncError, theme, fontSize } = useData();
   const navigate = useNavigate();
   const location = useLocation();
   const [toast, setToast] = useState({ show: false, message: '', isError: false });
@@ -37,6 +37,62 @@ const AppRoutes: React.FC = () => {
   const isAuthRoute = ['/login', '/signup', '/reset-password'].includes(location.pathname);
   const isOnboardingRoute = location.pathname.startsWith('/onboarding');
   
+  // --- Theme effect ---
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const applyTheme = () => {
+        const isDark = theme === 'Dark' || (theme === 'System' && mediaQuery.matches);
+        root.classList.toggle('dark', isDark);
+    };
+    applyTheme();
+    mediaQuery.addEventListener('change', applyTheme);
+    return () => mediaQuery.removeEventListener('change', applyTheme);
+  }, [theme]);
+
+  // --- Font size effect ---
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('font-size-sm', 'font-size-md', 'font-size-lg', 'font-size-xl');
+    root.classList.add(`font-size-${fontSize}`);
+  }, [fontSize]);
+  
+  // --- Status Bar effect ---
+  useEffect(() => {
+    const applyStatusBarStyling = () => {
+      if (!Capacitor.isNativePlatform()) {
+        return;
+      }
+      
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      
+      // Set status bar icon style
+      StatusBar.setStyle({
+        style: isDarkMode ? Style.Light : Style.Dark,
+      });
+      
+      // Allow webview to overlap status bar
+      StatusBar.setOverlaysWebView({ overlay: true });
+      
+      // Make status bar background transparent
+      StatusBar.setBackgroundColor({ color: '#00000000' });
+    };
+
+    // Apply on initial load
+    applyStatusBarStyling();
+
+    // Re-apply when theme changes (observing class change on <html>)
+    const observer = new MutationObserver(applyStatusBarStyling);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     if (!loading) {
       if (session && (isAuthRoute || isOnboardingRoute)) {
@@ -161,41 +217,6 @@ const AppRoutes: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  useEffect(() => {
-    const applyStatusBarStyling = () => {
-      if (!Capacitor.isNativePlatform()) {
-        return;
-      }
-      
-      const isDarkMode = document.documentElement.classList.contains('dark');
-      
-      // Set status bar icon style
-      StatusBar.setStyle({
-        style: isDarkMode ? Style.Light : Style.Dark,
-      });
-      
-      // Allow webview to overlap status bar
-      StatusBar.setOverlaysWebView({ overlay: true });
-      
-      // Make status bar background transparent
-      StatusBar.setBackgroundColor({ color: '#00000000' });
-    };
-
-    // Apply on initial load
-    applyStatusBarStyling();
-
-    // Re-apply when theme changes (observing class change on <html>)
-    const observer = new MutationObserver(applyStatusBarStyling);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
   return (
     <HashRouter>
       <DataProvider>
