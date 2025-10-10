@@ -114,6 +114,8 @@ const cleanTaskForSupabase = (task: Partial<Task>) => {
     delete cleaned.status;
     delete cleaned.color;
     delete cleaned.time;
+    delete cleaned.calendar_event_id;
+    delete cleaned.calendar_provider;
 
     const cleanedPayload: { [key: string]: any } = { ...cleaned };
 

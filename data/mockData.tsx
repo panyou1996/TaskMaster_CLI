@@ -28,6 +28,8 @@ export interface Task {
     notes?: string;
     subtasks?: Subtask[];
     reminder?: number | null; // Minutes before due time. null = no reminder, 0 = on time.
+    calendar_event_id?: string;
+    calendar_provider?: string;
 }
 
 export interface TaskList {

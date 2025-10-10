@@ -403,3 +403,17 @@ export const EditButtonIcon: React.FC = () => (
         <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
     </svg>
 );
+
+export const GoogleCalendarIcon: React.FC<{className?: string}> = ({ className = "w-5 h-5" }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+        <path d="M20 5H4C3.44772 5 3 5.44772 3 6V20C3 20.5523 3.44772 21 4 21H20C20.5523 21 21 20.5523 21 20V6C21 5.44772 20.5523 5 20 5Z" fill="#4285F4"/>
+        <path d="M16 3V1H14V3H10V1H8V3H4C3.44772 3 3 3.44772 3 4V7H21V4C21 3.44772 20.5523 3 20 3H16Z" fill="#1A73E8"/>
+        <text x="12" y="16" fontFamily="sans-serif" fontSize="9" fill="white" textAnchor="middle" fontWeight="bold">31</text>
+    </svg>
+);
+
+export const OutlookCalendarIcon: React.FC<{className?: string}> = ({ className = "w-5 h-5" }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M21 5H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-1 14H4V9h16v10zM17 3h-2v3h2V3zm-4 0h-2v3h2V3zm-4 0H7v3h2V3z"/>
+    </svg>
+);

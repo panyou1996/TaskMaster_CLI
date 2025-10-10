@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { CloseIcon, ChevronRightIcon, SyncIcon, DownloadIcon, UploadIcon, RefreshSpinnerIcon, BellIcon, ListCheckIcon, PaletteIcon, InfoIcon, CheckIcon } from '../../components/icons/Icons';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { CloseIcon, ChevronRightIcon, SyncIcon, DownloadIcon, UploadIcon, RefreshSpinnerIcon, BellIcon, ListCheckIcon, PaletteIcon, InfoIcon, CheckIcon, GoogleCalendarIcon, OutlookCalendarIcon } from '../../components/icons/Icons';
 import { useData } from '../../contexts/DataContext';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import Button from '../../components/common/Button';
@@ -9,6 +9,7 @@ import useLocalStorage from '../../hooks/useLocalStorage';
 import { TaskList } from '../../data/mockData';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { supabase } from '../../utils/supabase';
 
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
     <h2 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 pb-2 pt-6">
@@ -21,14 +22,16 @@ interface SettingsItemProps {
   onClick?: () => void;
   isLink?: boolean;
   icon?: React.ReactNode;
+  disabled?: boolean;
 }
 
-const SettingsItem: React.FC<SettingsItemProps> = ({ children, onClick, isLink = false, icon }) => {
+const SettingsItem: React.FC<SettingsItemProps> = ({ children, onClick, isLink = false, icon, disabled = false }) => {
     const commonClasses = "flex items-center p-4 text-[var(--color-text-primary)]";
-    const interactionClasses = isLink ? "hover:bg-[var(--color-surface-container-low)] transition-colors cursor-pointer" : "";
+    const interactionClasses = isLink && !disabled ? "hover:bg-[var(--color-surface-container-low)] transition-colors cursor-pointer" : "";
+    const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
     
     return (
-        <div className={`${commonClasses} ${interactionClasses}`} onClick={onClick}>
+        <div className={`${commonClasses} ${interactionClasses} ${disabledClasses}`} onClick={disabled ? undefined : onClick}>
             {icon && (
                 <div className="mr-4 w-7 h-7 flex items-center justify-center bg-[var(--color-surface-container-low)] rounded-lg text-[var(--color-text-secondary)]">
                     {icon}
@@ -75,9 +78,12 @@ const DefaultListSheet: React.FC<{
 
 const SettingsScreen: React.FC = () => {
     const { 
-        profile, isOnline, isSyncing, offlineQueue, syncData, syncError, clearOfflineQueue,
+        session, profile, isOnline, isSyncing, offlineQueue, syncData, syncError, clearOfflineQueue,
         tasks, lists, moments, setTasks, setLists, setMoments, setProfile
     } = useData();
+    const location = useLocation();
+    const navigate = useNavigate();
+
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
     
     // State for default list selection
@@ -88,6 +94,43 @@ const SettingsScreen: React.FC = () => {
     const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
     const [importFileData, setImportFileData] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // State for Calendar Sync
+    const [googleConnected, setGoogleConnected] = useState(false);
+    const [loadingGoogle, setLoadingGoogle] = useState(false);
+    const [errorGoogle, setErrorGoogle] = useState<string | null>(null);
+    const [isDisconnectConfirmOpen, setIsDisconnectConfirmOpen] = useState(false);
+    const [isCalendarSyncing, setIsCalendarSyncing] = useState(false);
+    const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+    // Check for calendar connection status on mount
+    useEffect(() => {
+        const checkConnections = async () => {
+            const { data, error } = await supabase.from('calendar_connections').select('provider');
+            if (error) {
+                console.error("Error fetching calendar connections:", error);
+                return;
+            }
+            if (data) {
+                setGoogleConnected(data.some(conn => conn.provider === 'google'));
+            }
+        };
+        
+        if (session) {
+            checkConnections();
+        }
+    }, [session]);
+
+    // Check for auth callback errors in URL
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const errorParam = params.get('error');
+        if (errorParam === 'calendar_connection_failed') {
+            setErrorGoogle("Failed to connect to Google Calendar. Please try again.");
+            // Clean up the URL
+            navigate('/settings', { replace: true });
+        }
+    }, [location, navigate]);
 
     // Ensure default list exists, if not, reset it.
     useEffect(() => {
@@ -144,7 +187,6 @@ const SettingsScreen: React.FC = () => {
             const jsonString = JSON.stringify(dataToExport, null, 2);
 
             if (Capacitor.isNativePlatform()) {
-                // Native platform: Use Filesystem API
                 const result = await Filesystem.writeFile({
                     path: fileName,
                     data: jsonString,
@@ -152,9 +194,7 @@ const SettingsScreen: React.FC = () => {
                     encoding: Encoding.UTF8,
                 });
                 alert(`Data exported successfully! Saved to your Documents folder as ${fileName}`);
-                console.log('File saved to:', result.uri);
             } else {
-                // Web platform: Use existing download link method
                 const dataUrl = `data:text/json;charset=utf-8,${encodeURIComponent(jsonString)}`;
                 const link = document.createElement("a");
                 link.href = dataUrl;
@@ -167,9 +207,7 @@ const SettingsScreen: React.FC = () => {
         }
     };
 
-    const handleImportClick = () => {
-        fileInputRef.current?.click();
-    };
+    const handleImportClick = () => fileInputRef.current?.click();
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -184,43 +222,96 @@ const SettingsScreen: React.FC = () => {
                     alert("Could not read file content.");
                 }
             };
-            reader.onerror = () => {
-                alert("Failed to read the file.");
-            };
             reader.readAsText(file);
         }
-        if (event.target) {
-            event.target.value = ''; // Reset file input to allow selecting the same file again
-        }
+        if (event.target) event.target.value = '';
     };
 
     const handleConfirmImport = () => {
         if (!importFileData) return;
-
         try {
             const importedData = JSON.parse(importFileData);
-            
             if (!Array.isArray(importedData.tasks) || !Array.isArray(importedData.lists) || !Array.isArray(importedData.moments) || !importedData.profile) {
-                throw new Error("Invalid backup file format. Missing required data keys.");
+                throw new Error("Invalid backup file format.");
             }
-            
             clearOfflineQueue();
             setTasks(importedData.tasks);
             setLists(importedData.lists);
             setMoments(importedData.moments);
             setProfile(importedData.profile);
-            
             setIsImportConfirmOpen(false);
             setImportFileData(null);
-            alert("Data imported successfully! Your data will now be synced with the server.");
-            
-            syncData(); // Trigger sync to upload imported data
-
+            alert("Data imported successfully! Your data will now be synced.");
+            syncData();
         } catch (error) {
             console.error("Failed to import data:", error);
             alert(`Import failed: ${error instanceof Error ? error.message : "Unknown error"}`);
             setIsImportConfirmOpen(false);
             setImportFileData(null);
+        }
+    };
+    
+    const handleConnectGoogle = async () => {
+        if (!session) {
+            alert("You must be logged in to connect your calendar.");
+            return;
+        }
+        setLoadingGoogle(true);
+        setErrorGoogle(null);
+
+        try {
+            const { data, error } = await supabase.functions.invoke('calendar-auth-start', {
+                body: { provider: 'google' },
+            });
+            if (error) throw error;
+            if (data.authUrl) {
+                window.location.href = data.authUrl;
+            } else {
+                throw new Error("Could not get authorization URL.");
+            }
+        } catch (err: any) {
+            console.error("Error starting Google Calendar auth:", err);
+            setErrorGoogle(err.message || "An unknown error occurred.");
+            setLoadingGoogle(false);
+        }
+    };
+
+    const handleDisconnectGoogle = async () => {
+        setIsDisconnectConfirmOpen(false);
+        setLoadingGoogle(true);
+        setErrorGoogle(null);
+        try {
+            const { error } = await supabase.from('calendar_connections').delete().eq('provider', 'google');
+            if (error) throw error;
+            setGoogleConnected(false);
+        } catch (err: any) {
+            console.error("Error disconnecting Google Calendar:", err);
+            setErrorGoogle(err.message || "Could not disconnect.");
+        } finally {
+            setLoadingGoogle(false);
+        }
+    };
+
+    const handleCalendarSync = async () => {
+        setIsCalendarSyncing(true);
+        setSyncMessage(null);
+        setErrorGoogle(null);
+    
+        try {
+            const { error } = await supabase.functions.invoke('calendar-sync', {
+                body: { provider: 'google' },
+            });
+    
+            if (error) throw error;
+            
+            setSyncMessage("Sync completed successfully!");
+            syncData(); // Re-fetch all data to get latest changes from sync
+        } catch (err: any) {
+            console.error("Error syncing calendar:", err);
+            setErrorGoogle(err.message || "An unknown error occurred during sync.");
+        } finally {
+            setIsCalendarSyncing(false);
+            setTimeout(() => setSyncMessage(null), 3000);
         }
     };
 
@@ -293,6 +384,39 @@ const SettingsScreen: React.FC = () => {
                             </SettingsItem>
                         </div>
                         
+                        <SectionHeader title="Integrations" />
+                        {errorGoogle && <p className="text-[var(--color-functional-red)] text-sm px-4 -mt-2 mb-2">{errorGoogle}</p>}
+                        {syncMessage && <p className="text-green-600 dark:text-green-400 text-sm px-4 -mt-2 mb-2">{syncMessage}</p>}
+                        <div className="bg-[var(--color-surface-container)] rounded-xl card-shadow overflow-hidden divide-y divide-[var(--color-border)]">
+                            <SettingsItem isLink icon={<GoogleCalendarIcon />} onClick={googleConnected ? () => setIsDisconnectConfirmOpen(true) : handleConnectGoogle} disabled={loadingGoogle}>
+                                <span>Google Calendar</span>
+                                <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
+                                    {loadingGoogle ? (
+                                        <RefreshSpinnerIcon />
+                                    ) : (
+                                        <span className={googleConnected ? 'text-green-600 dark:text-green-400' : ''}>
+                                            {googleConnected ? 'Connected' : 'Not Connected'}
+                                        </span>
+                                    )}
+                                    <ChevronRightIcon />
+                                </div>
+                            </SettingsItem>
+                            <SettingsItem isLink icon={<OutlookCalendarIcon />} onClick={() => alert('Outlook Calendar sync coming soon!')}>
+                                <span>Outlook Calendar</span>
+                                 <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
+                                    <span>Not Connected</span>
+                                    <ChevronRightIcon />
+                                </div>
+                            </SettingsItem>
+                        </div>
+                        {googleConnected && (
+                            <div className="mt-4">
+                                <Button variant="secondary" onClick={handleCalendarSync} disabled={isCalendarSyncing}>
+                                    {isCalendarSyncing ? 'Syncing...' : 'Sync with Google Calendar'}
+                                </Button>
+                            </div>
+                        )}
+
                         {syncError && (
                             <>
                                 <SectionHeader title="Sync Error" />
@@ -352,6 +476,14 @@ const SettingsScreen: React.FC = () => {
                 message="This will overwrite all your current local data. This action cannot be undone. Are you sure you want to proceed?"
                 confirmText="Overwrite & Import"
                 confirmVariant="primary"
+            />
+            <ConfirmationModal
+                isOpen={isDisconnectConfirmOpen}
+                onClose={() => setIsDisconnectConfirmOpen(false)}
+                onConfirm={handleDisconnectGoogle}
+                title="Disconnect Google Calendar?"
+                message="Are you sure you want to disconnect? Your tasks will no longer be synced with Google Calendar."
+                confirmText="Disconnect"
             />
             <DefaultListSheet
                 isOpen={isListPickerOpen}
