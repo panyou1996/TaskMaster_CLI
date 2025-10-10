@@ -407,7 +407,7 @@ const PlanScreen: React.FC = () => {
                 >
                     <header
                         className="px-6 pt-6 pb-4 grid grid-cols-[auto_1fr_auto] items-center gap-4 flex-shrink-0 bg-[var(--color-surface-container)] border-b border-[var(--color-border)]"
-                        style={{ paddingTop: `calc(1.5rem + var(--status-bar-height, env(safe-area-inset-top)))` }}
+                        style={{ paddingTop: `calc(1.5rem + var(--safe-area-inset-top, 0px))` }}
                     >
                         <div className="flex justify-start">
                             <button className="text-gray-600 dark:text-gray-400 p-1" onClick={() => setIsSearchVisible(true)}>
@@ -503,7 +503,7 @@ const PlanScreen: React.FC = () => {
 
             {/* Search Overlay */}
             <div className={`fixed inset-0 z-40 bg-gray-50 dark:bg-gray-900 flex flex-col transition-transform duration-300 ease-in-out ${isSearchVisible ? 'translate-y-0' : 'translate-y-full'}`}
-                 style={{ paddingTop: `var(--status-bar-height, env(safe-area-inset-top))` }}>
+                 style={{ paddingTop: `var(--safe-area-inset-top, 0px)` }}>
                 <div className="flex-shrink-0 px-4 pt-4 pb-3 flex items-center gap-2">
                     <div className="relative flex-grow">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

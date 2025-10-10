@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "A minimalist and elegant task management application, now with Capacitor.",
   "dependencies": {
+    "@capacitor-community/safe-area": "^4.0.1",
     "@capacitor-community/speech-recognition": "^6.0.0",
     "@capacitor/android": "^6.1.0",
     "@capacitor/app": "^6.0.0",

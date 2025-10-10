@@ -8,6 +8,9 @@
     "iosScheme": "capacitor"
   },
   "plugins": {
+    "SafeArea": {
+      "enabled": true
+    },
     "WebView": {
       "backgroundColor": "#F9F9FC"
     },

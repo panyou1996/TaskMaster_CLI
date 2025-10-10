@@ -59,7 +59,7 @@ const DefaultListSheet: React.FC<{
           <div className="w-8 h-1 bg-[var(--color-border)] rounded-full mx-auto mb-3" />
           <h2 id="list-picker-title" className="text-base font-bold text-[var(--color-text-primary)] text-center">Select Default List</h2>
         </header>
-        <div className="p-4 space-y-2 overflow-y-auto max-h-[50vh]" style={{ paddingBottom: `calc(6rem + env(safe-area-inset-bottom))` }}>
+        <div className="p-4 space-y-2 overflow-y-auto max-h-[50vh]" style={{ paddingBottom: `calc(6rem + var(--safe-area-inset-bottom, 0px))` }}>
           {lists.map(list => (
             <button key={list.id} onClick={() => onSelect(list.name)} className={`w-full text-left p-3 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${current === list.name ? 'bg-primary-100 text-[var(--color-primary-500)]' : 'hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]'}`}>
               <div className="flex items-center gap-3">
@@ -337,13 +337,13 @@ const SettingsScreen: React.FC = () => {
             />
             <div className="flex flex-col h-full">
                 <header
-                    className="px-6 pt-6 pb-4 flex justify-center items-center flex-shrink-0"
-                    style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
+                    className="px-6 pt-6 pb-4 flex justify-center items-center flex-shrink-0 bg-[var(--color-surface-container)] border-b border-[var(--color-border)]"
+                    style={{ paddingTop: `calc(1.5rem + var(--safe-area-inset-top, 0px))` }}
                 >
                     <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Settings</h1>
                 </header>
                 <main className="overflow-y-auto">
-                    <div className="p-4" style={{ paddingBottom: `calc(6rem + env(safe-area-inset-bottom))` }}>
+                    <div className="p-4" style={{ paddingBottom: `calc(6rem + var(--safe-area-inset-bottom, 0px))` }}>
                         <SectionHeader title="Account" />
                         <Link to="/profile" className="block">
                             <div className="bg-[var(--color-surface-container)] rounded-xl p-4 flex items-center gap-4 card-shadow hover:bg-[var(--color-surface-container-low)] transition-colors">

@@ -27,7 +27,7 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
     <div className="h-full w-full flex flex-col bg-[var(--color-background-primary)] text-[var(--color-text-primary)]">
       <div
         className="flex-shrink-0 px-6 pb-6 flex justify-between items-center"
-        style={{ paddingTop: `calc(1.5rem + var(--status-bar-height, env(safe-area-inset-top)))` }}
+        style={{ paddingTop: `calc(1.5rem + var(--safe-area-inset-top, 0px))` }}
       >
         <div className="text-[var(--color-primary-500)]">
           <Logo className="h-8 w-8" />

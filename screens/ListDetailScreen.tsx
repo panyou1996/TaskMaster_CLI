@@ -78,7 +78,7 @@ const CustomDateRangeSheet: React.FC<CustomDateRangeSheetProps> = ({
                 </header>
                 <div
                     className="p-4 space-y-4 pb-8"
-                    style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom))` }}
+                    style={{ paddingBottom: `calc(2rem + var(--safe-area-inset-bottom, 0px))` }}
                 >
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -137,7 +137,7 @@ const FilterSheet: React.FC<{
                 </header>
                 <div
                     className="p-4 space-y-2 pb-8"
-                    style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom))` }}
+                    style={{ paddingBottom: `calc(2rem + var(--safe-area-inset-bottom, 0px))` }}
                 >
                     {filters.map(filter => (
                         <button key={filter.label} onClick={() => handleSelect(filter.value)} className={`w-full text-left p-3 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${currentFilter === filter.value ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
@@ -185,7 +185,7 @@ const SortSheet: React.FC<{
                 </header>
                 <div
                     className="p-4 space-y-2 pb-8"
-                    style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom))` }}
+                    style={{ paddingBottom: `calc(2rem + var(--safe-area-inset-bottom, 0px))` }}
                 >
                     {sortOptions.map(option => (
                         <button key={option.value} onClick={() => handleSelect(option.value)} className={`w-full text-left p-3 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${currentSort === option.value ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
@@ -451,7 +451,7 @@ const ListDetailScreen: React.FC = () => {
             <div className="absolute inset-0 flex flex-col">
                 <header
                     className="px-4 pt-6 pb-4 flex items-center gap-2 flex-shrink-0 bg-[var(--color-surface-container)] border-b border-[var(--color-border)]"
-                    style={{ paddingTop: `calc(1.5rem + var(--status-bar-height, env(safe-area-inset-top)))` }}
+                    style={{ paddingTop: `calc(1.5rem + var(--safe-area-inset-top, 0px))` }}
                 >
                     <button onClick={() => navigate('/plan')} className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                         <ChevronLeftIcon />
