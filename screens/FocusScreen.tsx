@@ -79,7 +79,7 @@ const FocusScreen: React.FC = () => {
     <MainLayout>
         <div className="absolute inset-0 flex flex-col">
             <header
-                className="px-6 pt-6 pb-4 grid grid-cols-[auto_1fr_auto] items-center gap-4 flex-shrink-0"
+                className="px-6 pt-6 pb-4 grid grid-cols-[auto_1fr_auto] items-center gap-4 flex-shrink-0 bg-[var(--color-surface-container)] border-b border-[var(--color-border)]"
                 style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
             >
                 <div className="flex justify-start">

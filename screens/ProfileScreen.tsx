@@ -191,7 +191,7 @@ const ProfileScreen: React.FC = () => {
             <div className="absolute inset-0 flex flex-col bg-gray-50 dark:bg-gray-900">
                 {/* Header */}
                 <header
-                    className="px-4 pt-6 pb-4 grid grid-cols-3 items-center flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10"
+                    className="px-4 pt-6 pb-4 grid grid-cols-3 items-center flex-shrink-0 bg-[var(--color-surface-container)] border-b border-[var(--color-border)] sticky top-0 z-10"
                     style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                 >
                     <div className="flex justify-start">

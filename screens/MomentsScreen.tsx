@@ -179,7 +179,7 @@ const MomentsScreen: React.FC = () => {
                     onTouchEnd={handleTouchEnd}
                 >
                     <header
-                        className="px-6 pt-6 pb-4 flex-shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-4"
+                        className="px-6 pt-6 pb-4 flex-shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-4 bg-[var(--color-surface-container)] border-b border-[var(--color-border)]"
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top))` }}
                     >
                          <div className="flex justify-start">

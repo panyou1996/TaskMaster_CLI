@@ -1,6 +1,6 @@
 // supabase/functions/calendar-sync/index.ts
-// FIX: Switched to jsdelivr CDN for the type reference to resolve issues with esm.sh and ensure Deno global types are loaded correctly.
-/// <reference types="https://cdn.jsdelivr.net/npm/@supabase/functions-js@2.4.1/src/edge-runtime.d.ts" />
+// FIX: The jsdelivr CDN for Supabase types was not being resolved. Switched to the esm.sh CDN which is more commonly used and should correctly load the Deno global types.
+/// <reference types="https://esm.sh/@supabase/functions-js@2.4.1/src/edge-runtime.d.ts" />
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
