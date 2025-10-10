@@ -78,7 +78,7 @@ const CustomDateRangeSheet: React.FC<CustomDateRangeSheetProps> = ({
                 </header>
                 <div
                     className="p-4 space-y-4 pb-8"
-                    style={{ paddingBottom: `calc(2rem + var(--safe-area-inset-bottom, 0px))` }}
+                    style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom, 0px))` }}
                 >
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -390,7 +390,7 @@ const ListDetailScreen: React.FC = () => {
     };
 
     const handleAddTask = async (newTaskData: NewTaskData) => {
-        const newTask: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed'> = {
+        const newTask: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'> = {
             title: newTaskData.title,
             category: currentList?.name || 'Work',
             important: newTaskData.isImportant,
@@ -451,7 +451,7 @@ const ListDetailScreen: React.FC = () => {
             <div className="absolute inset-0 flex flex-col">
                 <header
                     className="px-4 pt-6 pb-4 flex items-center gap-2 flex-shrink-0 bg-[var(--color-surface-container)] border-b border-[var(--color-border)]"
-                    style={{ paddingTop: `calc(1.5rem + var(--safe-area-inset-top, 0px))` }}
+                    style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top, 0px))` }}
                 >
                     <button onClick={() => navigate('/plan')} className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                         <ChevronLeftIcon />

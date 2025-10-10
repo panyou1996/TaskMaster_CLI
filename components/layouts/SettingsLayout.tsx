@@ -20,7 +20,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ title, children }) => {
     <div className="h-full w-full flex flex-col bg-[var(--color-background-primary)]">
       <header
         className="flex-shrink-0 p-4 flex items-center border-b border-[var(--color-border)] bg-[var(--color-surface-container)] sticky top-0"
-        style={{ paddingTop: `calc(1rem + var(--safe-area-inset-top, 0px))` }}
+        style={{ paddingTop: `calc(1rem + env(safe-area-inset-top, 0px))` }}
       >
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)]">
           <BackIcon />

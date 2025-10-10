@@ -138,7 +138,7 @@ const MomentDetailScreen: React.FC = () => {
             >
                 <header
                     className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-4 pt-5 bg-gradient-to-b from-black/30 to-transparent"
-                    style={{ paddingTop: `calc(1.25rem + var(--safe-area-inset-top, 0px))` }}
+                    style={{ paddingTop: `calc(1.25rem + env(safe-area-inset-top, 0px))` }}
                 >
                     <button onClick={handleBack} className="p-2 text-white bg-black/20 rounded-full hover:bg-black/40 transition-colors">
                         <ChevronLeftIcon />
@@ -155,7 +155,7 @@ const MomentDetailScreen: React.FC = () => {
                     onMouseUp={handleScrollEnd}
                     onTouchEnd={handleScrollEnd}
                     className="flex-grow overflow-y-auto pb-24"
-                    style={{ paddingBottom: 'var(--safe-area-inset-bottom, 0px)' }}
+                    style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
                 >
                     <div 
                         className="relative overflow-hidden transition-all duration-300 ease-out"

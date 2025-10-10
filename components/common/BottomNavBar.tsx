@@ -121,11 +121,15 @@ const BottomNavBar: React.FC = () => {
 
         if (Capacitor.isNativePlatform()) {
             try {
-                let permissionStatus = await SpeechRecognition.checkPermission();
-                if (permissionStatus.permission !== 'granted') {
-                    permissionStatus = await SpeechRecognition.requestPermission();
+                // FIX: Changed 'checkPermission' to 'checkPermissions' to match the plugin API.
+                let permissionStatus = await SpeechRecognition.checkPermissions();
+                // FIX: The permission status property is 'speechRecognition', not 'permission'.
+                if (permissionStatus.speechRecognition !== 'granted') {
+                    // FIX: Changed 'requestPermission' to 'requestPermissions' to match the plugin API.
+                    permissionStatus = await SpeechRecognition.requestPermissions();
                 }
-                if (permissionStatus.permission !== 'granted') {
+                // FIX: The permission status property is 'speechRecognition', not 'permission'.
+                if (permissionStatus.speechRecognition !== 'granted') {
                     alert('Could not start recording. Please grant microphone permissions in settings.');
                     return;
                 }
@@ -326,11 +330,11 @@ const BottomNavBar: React.FC = () => {
                     <div className="fixed inset-0 bg-black/50 z-40 animate-page-fade-in backdrop-blur-sm" onClick={stopRecording} />
                     <div 
                         className="fixed left-1/2 -translate-x-1/2 w-40 h-40 bg-[var(--color-primary-500)]/40 rounded-full flex items-center justify-center animate-pulse-recording z-40 pointer-events-none"
-                        style={{ bottom: `calc(1rem + var(--safe-area-inset-bottom, 0px) - 2.5rem)` }}
+                        style={{ bottom: `calc(1rem + env(safe-area-inset-bottom, 0px) - 2.5rem)` }}
                     />
                      <div
                         className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-50 transition-all duration-300 ease-out"
-                        style={{ bottom: `calc(7rem + var(--safe-area-inset-bottom, 0px))` }}
+                        style={{ bottom: `calc(7rem + env(safe-area-inset-bottom, 0px))` }}
                     >
                         <div className="bg-black/70 backdrop-blur-md rounded-xl p-4 text-white text-center text-base animate-page-fade-in min-h-[3.5rem] flex items-center justify-center">
                             <p>{liveTranscription || 'Listening...'}<span className="inline-block w-1 h-4 bg-white ml-1 animate-pulse"></span></p>
@@ -353,7 +357,7 @@ const BottomNavBar: React.FC = () => {
                 {/* Menu Items */}
                 <div
                     className="absolute bottom-[7rem] left-1/2 -translate-x-1/2 w-full flex flex-col items-center gap-4"
-                    style={{ bottom: `calc(7rem + var(--safe-area-inset-bottom, 0px))` }}
+                    style={{ bottom: `calc(7rem + env(safe-area-inset-bottom, 0px))` }}
                 >
                     {menuItems.map((item, index) => (
                         <div
@@ -376,11 +380,11 @@ const BottomNavBar: React.FC = () => {
             {/* Main Navigation Bar */}
             <div
                 className="fixed bottom-0 left-0 right-0 h-20 bg-[var(--color-surface-container)]/80 backdrop-blur-sm border-t border-[var(--color-border)] z-30"
-                style={{ height: `calc(5rem + var(--safe-area-inset-bottom, 0px))` }}
+                style={{ height: `calc(5rem + env(safe-area-inset-bottom, 0px))` }}
             >
                 <div
                     className="grid grid-cols-5 items-center h-full max-w-sm mx-auto"
-                    style={{ paddingBottom: 'var(--safe-area-inset-bottom, 0px)' }}
+                    style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
                 >
                     <NavItem to="/today" icon={<TodayIcon />} label="Today" />
                     <NavItem to="/plan" icon={<ListsIcon />} label="Plan" />
@@ -395,7 +399,7 @@ const BottomNavBar: React.FC = () => {
             {/* FAB Button - positioned independently */}
              <div
                 className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
-                style={{ bottom: `calc(1rem + var(--safe-area-inset-bottom, 0px))` }}
+                style={{ bottom: `calc(1rem + env(safe-area-inset-bottom, 0px))` }}
              >
                 <button
                     onPointerDown={handlePointerDown}

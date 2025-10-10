@@ -207,7 +207,7 @@ const AppRoutes: React.FC = () => {
               className={`fixed left-1/2 -translate-x-1/2 text-white text-sm py-2 px-4 rounded-full animate-page-fade-in z-[100] ${
                 toast.isError ? 'bg-red-600 bg-opacity-90' : 'bg-gray-900 bg-opacity-80'
               }`}
-              style={{ bottom: `calc(6rem + var(--safe-area-inset-bottom, 0px))` }}
+              style={{ bottom: `calc(6rem + env(safe-area-inset-bottom, 0px))` }}
             >
               {toast.message}
             </div>

@@ -28,7 +28,7 @@ const OnboardingPermissionsScreen: React.FC = () => {
         <div className="h-full w-full flex flex-col bg-[var(--color-background-primary)] text-[var(--color-text-primary)]">
             <header
                 className="flex-shrink-0 p-6 flex justify-between items-center"
-                style={{ paddingTop: `calc(1.5rem + var(--safe-area-inset-top, 0px))` }}
+                style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top, 0px))` }}
             >
                 <h1 className="text-xl font-bold text-[var(--color-text-primary)]">TaskMaster</h1>
                 <button aria-label="Help">
@@ -48,7 +48,7 @@ const OnboardingPermissionsScreen: React.FC = () => {
             
             <footer
                 className="flex-shrink-0 p-8 space-y-4"
-                style={{ paddingBottom: `calc(2rem + var(--safe-area-inset-bottom, 0px))` }}
+                style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom, 0px))` }}
             >
                 <Button variant="primary" onClick={handleAllow}>Allow</Button>
                 <Button variant="secondary" onClick={handleNotNow}>Not Now</Button>

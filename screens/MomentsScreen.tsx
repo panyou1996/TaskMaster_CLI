@@ -181,7 +181,7 @@ const MomentsScreen: React.FC = () => {
                 >
                     <header
                         className="px-6 pt-6 pb-4 flex-shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-4 bg-[var(--color-surface-container)] border-b border-[var(--color-border)]"
-                        style={{ paddingTop: `calc(1.5rem + var(--safe-area-inset-top, 0px))` }}
+                        style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top, 0px))` }}
                     >
                          <div className="flex justify-start">
                             <button className="text-gray-600 dark:text-gray-400 p-1" onClick={() => setIsSearchVisible(true)}>
