@@ -1,6 +1,6 @@
 // supabase/functions/calendar-sync/index.ts
-// FIX: Replaced esm.sh with unpkg for the type reference to ensure Deno can resolve the Supabase function types.
-/// <reference types="https://unpkg.com/@supabase/functions-js@2/src/edge-runtime.d.ts" />
+// FIX: Using the official esm.sh path for Supabase functions types to resolve Deno and other runtime types.
+/// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
