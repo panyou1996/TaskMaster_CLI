@@ -19,7 +19,6 @@ import AddTaskScreen, { NewTaskData } from './AddTaskScreen';
 import TaskCard from '../components/common/TaskCard';
 import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
-// FIX: Switched from a namespace import to named imports for react-window to resolve module resolution errors.
 import { FixedSizeList, ListChildComponentProps } from 'react-window';
 
 const colorVariants = {
@@ -183,7 +182,6 @@ const PlanScreen: React.FC = () => {
     };
 
     // -- ROW RENDERER FOR VIRTUALIZED LIST --
-    // FIX: Removed `ReactWindow.` prefix to match named import.
     const ListRow = ({ data, index, style }: ListChildComponentProps<TaskList[]>) => {
         const list = data[index];
         const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
@@ -442,7 +440,6 @@ const PlanScreen: React.FC = () => {
                                     <EmptyListsIllustration onAddList={() => setIsAddListOpen(true)} />
                                 ) : (
                                     mainListSize.height > 0 && (
-                                        // FIX: Removed `ReactWindow.` prefix to match named import.
                                         <FixedSizeList
                                             height={mainListSize.height}
                                             width={mainListSize.width}
@@ -537,7 +534,6 @@ const PlanScreen: React.FC = () => {
                         </div>
                     ) : (
                         searchListSize.height > 0 && (
-                            // FIX: Removed `ReactWindow.` prefix to match named import.
                             <FixedSizeList
                                 height={searchListSize.height}
                                 width={searchListSize.width}
