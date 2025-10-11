@@ -48,6 +48,13 @@ const BottomNavBar: React.FC = () => {
     // Add List state
     const [isAddListOpen, setIsAddListOpen] = useState(false);
 
+    // --- Debugging State ---
+    const [debugMessages, setDebugMessages] = useState<string[]>([]);
+    const addDebug = useCallback((msg: string) => {
+        console.log(`DEBUG: ${msg}`);
+        setDebugMessages(prev => [...prev.slice(-10), `${new Date().toLocaleTimeString()}: ${msg}`]);
+    }, []);
+
 
 
     // --- Voice Input State & Refs ---
@@ -139,28 +146,35 @@ const BottomNavBar: React.FC = () => {
     }, [isRecording, stopRecording]);
     
     const handlePointerDown = () => {
+        addDebug('handlePointerDown');
         isLongPressRef.current = false;
-        longPressTimerRef.current = setTimeout(() => {
+        const timerId = setTimeout(() => {
+            addDebug(`Timer ${timerId} fired`);
             isLongPressRef.current = true;
             if (isMenuOpen) setIsMenuOpen(false);
             
-            // Non-blocking haptic feedback
             setTimeout(() => {
                 triggerHapticImpact(ImpactStyle.Medium);
             }, 0);
 
             startRecording();
         }, 250);
+        longPressTimerRef.current = timerId;
+        addDebug(`Timer ${timerId} set`);
     };
 
     const handlePointerUp = () => {
-        addDebug('handlePointerUp');
-        if(longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+        addDebug(`handlePointerUp. Timer ID is: ${longPressTimerRef.current}`);
+        if(longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            addDebug(`Timer ${longPressTimerRef.current} cleared`);
+        }
+        
         if (isLongPressRef.current) {
-            addDebug('Long press was active, stopping recording.');
+            addDebug('isLongPressRef is true, stopping recording.');
             stopRecording();
         } else {
-            addDebug('Short press, toggling menu.');
+            addDebug('isLongPressRef is false, toggling menu.');
             triggerHapticImpact();
             setIsMenuOpen(prev => !prev);
         }
@@ -227,6 +241,28 @@ const BottomNavBar: React.FC = () => {
 
     return (
         <>
+            {/* Debug UI */}
+            {debugMessages.length > 0 && (
+                <div style={{
+                    position: 'fixed',
+                    top: '80px',
+                    left: '10px',
+                    right: '10px',
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    color: 'white',
+                    padding: '10px',
+                    zIndex: 9999,
+                    fontSize: '10px',
+                    fontFamily: 'monospace',
+                    borderRadius: '5px',
+                    maxHeight: '150px',
+                    overflowY: 'auto',
+                }}>
+                    <h4 style={{margin: 0, paddingBottom: '5px', borderBottom: '1px solid #555'}}>Gesture Debug Log:</h4>
+                    {debugMessages.map((msg, i) => <div key={i}>{msg}</div>)}
+                </div>
+            )}
+
             {/* Recording UI */}
             {showRecordingUI && (
                 <>
