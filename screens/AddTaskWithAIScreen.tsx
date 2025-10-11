@@ -3,7 +3,6 @@ import { supabase } from '../utils/supabase';
 import { useData } from '../contexts/DataContext';
 import { Task } from '../data/mockData';
 import { RefreshSpinnerIcon, SparklesIcon, SendIcon, CloseIcon } from '../components/icons/Icons';
-import { useKeyboardHeight } from '../utils/permissions';
 
 interface AddTaskWithAIScreenProps {
     isOpen: boolean;
@@ -17,7 +16,6 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const keyboardHeight = useKeyboardHeight();
 
     const listNames = useMemo(() => lists.map(l => l.name), [lists]);
     const listColorMap = useMemo(() => new Map(lists.map(l => [l.name, l.color])), [lists]);
@@ -94,7 +92,6 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
 
     return (
         <div className={`fixed inset-0 z-50 flex items-end transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}
-             style={{ paddingBottom: `${keyboardHeight}px` }}
              role="dialog" aria-modal="true" aria-labelledby="ai-task-title">
             <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity duration-300"
                  onClick={onClose} aria-hidden="true"/>
