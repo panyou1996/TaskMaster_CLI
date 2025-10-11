@@ -102,11 +102,6 @@ This section describes how to upload the generated APK to a GitHub Release using
      gh release create test5-$(date +%Y-%m-%d) app/build/outputs/apk/debug/app-debug.apk --title "Test5 Build $(date +%Y-%m-%d)" --notes "Automated Test build."
 
 
-     npm i
-     npm run build
-     npx cap sync android
-     export JAVA_HOME="/nix/store/pjk560fgk8z96nvcy4v95iprj1psnp18-openjdk-17.0.16+8/lib/openjdk" && cd android && ./gradlew assembleDebug
-     cd ..
-     gh release create debug3-$(date +%Y-%m-%d) android/app/build/outputs/apk/debug/app-debug.apk --title "debug3 Build $(date +%Y-%m-%d)" --notes "Automated Test build."
+     npm i &&  npm run build && npx cap sync android &&  export JAVA_HOME="/nix/store/pjk560fgk8z96nvcy4v95iprj1psnp18-openjdk-17.0.16+8/lib/openjdk" && cd android && ./gradlew assembleDebug && cd .. && gh release create debug3-$(date +%Y-%m-%d) android/app/build/outputs/apk/debug/app-debug.apk --title "debug3 Build $(date +%Y-%m-%d)" --notes "Automated Test build."
 
      

@@ -262,6 +262,9 @@ const SettingsScreen: React.FC = () => {
         try {
             const { data, error } = await supabase.functions.invoke('calendar-auth-start', {
                 body: { provider: 'google' },
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                }
             });
             if (error) throw error;
             if (data.authUrl) {

@@ -21449,7 +21449,6 @@ ${suffix}`;
     const [isLoading, setIsLoading] = (0, import_react8.useState)(false);
     const [error, setError] = (0, import_react8.useState)(null);
     const textareaRef = (0, import_react8.useRef)(null);
-    const keyboardHeight = useKeyboardHeight();
     const listNames = (0, import_react8.useMemo)(() => lists.map((l) => l.name), [lists]);
     const listColorMap = (0, import_react8.useMemo)(() => new Map(lists.map((l) => [l.name, l.color])), [lists]);
     (0, import_react8.useEffect)(() => {
@@ -21513,7 +21512,6 @@ ${suffix}`;
       "div",
       {
         className: `fixed inset-0 z-50 flex items-end transition-all duration-300 ${isOpen ? "visible" : "invisible"}`,
-        style: { paddingBottom: `${keyboardHeight}px` },
         role: "dialog",
         "aria-modal": "true",
         "aria-labelledby": "ai-task-title",
@@ -21759,11 +21757,6 @@ ${suffix}`;
     const [isAddTaskWithAIOpen, setIsAddTaskWithAIOpen] = (0, import_react10.useState)(false);
     const [initialAIPrompt, setInitialAIPrompt] = (0, import_react10.useState)("");
     const [isAddListOpen, setIsAddListOpen] = (0, import_react10.useState)(false);
-    const [debugMessages, setDebugMessages] = (0, import_react10.useState)([]);
-    const addDebug = (0, import_react10.useCallback)((msg) => {
-      console.log(`DEBUG: ${msg}`);
-      setDebugMessages((prev) => [...prev.slice(-10), `${(/* @__PURE__ */ new Date()).toLocaleTimeString()}: ${msg}`]);
-    }, []);
     const [isRecording, setIsRecording] = (0, import_react10.useState)(false);
     const [showRecordingUI, setShowRecordingUI] = (0, import_react10.useState)(false);
     const [liveTranscription, setLiveTranscription] = (0, import_react10.useState)("");
@@ -21776,6 +21769,10 @@ ${suffix}`;
       SpeechRecognition2.removeAllListeners();
     }, []);
     const startRecording = (0, import_react10.useCallback)(async () => {
+      if (!Capacitor.isNativePlatform()) {
+        alert("Speech recognition is only available on the native mobile app.");
+        return;
+      }
       if (isRecording) return;
       try {
         const available = await SpeechRecognition2.available();
@@ -21833,10 +21830,8 @@ ${suffix}`;
       };
     }, [isRecording, stopRecording]);
     const handlePointerDown = () => {
-      addDebug("handlePointerDown");
       isLongPressRef.current = false;
       const timerId = setTimeout(() => {
-        addDebug(`Timer ${timerId} fired`);
         isLongPressRef.current = true;
         if (isMenuOpen) setIsMenuOpen(false);
         setTimeout(() => {
@@ -21845,19 +21840,14 @@ ${suffix}`;
         startRecording();
       }, 250);
       longPressTimerRef.current = timerId;
-      addDebug(`Timer ${timerId} set`);
     };
     const handlePointerUp = () => {
-      addDebug(`handlePointerUp. Timer ID is: ${longPressTimerRef.current}`);
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
-        addDebug(`Timer ${longPressTimerRef.current} cleared`);
       }
       if (isLongPressRef.current) {
-        addDebug("isLongPressRef is true, stopping recording.");
         stopRecording();
       } else {
-        addDebug("isLongPressRef is false, toggling menu.");
         triggerHapticImpact();
         setIsMenuOpen((prev) => !prev);
       }
@@ -21911,24 +21901,6 @@ ${suffix}`;
       { label: "Task", icon: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(AddTaskMenuIcon, {}), action: handleAddTaskWithAI }
     ];
     return /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)(import_jsx_runtime19.Fragment, { children: [
-      debugMessages.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { style: {
-        position: "fixed",
-        top: "80px",
-        left: "10px",
-        right: "10px",
-        backgroundColor: "rgba(0,0,0,0.7)",
-        color: "white",
-        padding: "10px",
-        zIndex: 9999,
-        fontSize: "10px",
-        fontFamily: "monospace",
-        borderRadius: "5px",
-        maxHeight: "150px",
-        overflowY: "auto"
-      }, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("h4", { style: { margin: 0, paddingBottom: "5px", borderBottom: "1px solid #555" }, children: "Gesture Debug Log:" }),
-        debugMessages.map((msg, i) => /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("div", { children: msg }, i))
-      ] }),
       showRecordingUI && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)(import_jsx_runtime19.Fragment, { children: [
         /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("div", { className: "fixed inset-0 bg-black/50 z-40 animate-page-fade-in backdrop-blur-sm", onClick: stopRecording }),
         /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(
