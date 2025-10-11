@@ -63,35 +63,32 @@ const AppRoutes: React.FC = () => {
       if (!Capacitor.isNativePlatform()) {
         return;
       }
-      
-      const isDarkMode = document.documentElement.classList.contains('dark');
-      
-      // Set status bar icon style
+
+      const isDarkMode =
+        theme === 'Dark' ||
+        (theme === 'System' &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches);
+
       StatusBar.setStyle({
-        style: isDarkMode ? Style.Light : Style.Dark,
+        style: isDarkMode ? Style.Dark : Style.Light,
       });
-      
-      // Allow webview to overlap status bar
-      StatusBar.setOverlaysWebView({ overlay: true });
-      
-      // Make status bar background transparent
-      StatusBar.setBackgroundColor({ color: '#00000000' });
     };
 
-    // Apply on initial load
     applyStatusBarStyling();
 
-    // Re-apply when theme changes (observing class change on <html>)
-    const observer = new MutationObserver(applyStatusBarStyling);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
+    // Set these once
+    if (Capacitor.isNativePlatform()) {
+        StatusBar.setOverlaysWebView({ overlay: true });
+        StatusBar.setBackgroundColor({ color: '#00000000' });
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', applyStatusBarStyling);
 
     return () => {
-      observer.disconnect();
+      mediaQuery.removeEventListener('change', applyStatusBarStyling);
     };
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
     if (!loading) {

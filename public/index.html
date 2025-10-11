@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>TaskMaster</title>
+    <link rel="icon" href="data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+      }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        /* --- Primary Brand Colors --- */
+        --color-primary-500: #6D55A6; /* A deep, sophisticated violet for primary actions */
+        --color-primary-200: #DCD6EA; /* A light lavender for backgrounds and tags */
+        --color-primary-100: #F3F1F8; /* A very light tint for hover states or subtle backgrounds */
+
+        /* --- Neutral Colors for UI --- */
+        --color-background-primary: #F9F9FC; /* Off-white for the main app background */
+        --color-surface-container: #FFFFFF; /* Pure white for cards, pop-ups, and surfaces */
+        --color-surface-container-high: #FFFFFF; /* For elements that need to appear elevated, like modals */
+        --color-surface-container-low: #F0F0F5; /* For secondary elements like disabled inputs */
+
+        /* --- Text & Icon Colors --- */
+        --color-text-primary: #1A1A1A;    /* For main titles and body text */
+        --color-text-secondary: #6B6B6B; /* For subtitles, descriptions, and placeholder text */
+        --color-text-tertiary: #A0A0A0;  /* For disabled text and less important info */
+        --color-on-primary: #FFFFFF;     /* Text/icons on a --color-primary-500 background */
+
+        /* --- Functional Colors --- */
+        --color-functional-red: #D9534F;   /* For high-priority flags or destructive actions */
+        --color-functional-gray: #B0B0B0;  /* For low-priority flags */
+
+        /* --- Borders & Dividers --- */
+        --color-border: #EAEAEF;
+
+        /* --- Font Families --- */
+        --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+        --font-family-chinese: 'PingFang SC', 'Source Han Sans', 'Noto Sans CJK', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+
+        /* --- Font Sizes --- */
+        --font-size-h1: 28px;
+        --font-size-h2: 22px;
+        --font-size-title: 17px;
+        --font-size-body: 15px;
+        --font-size-caption: 13px;
+        --font-size-small: 11px;
+
+        /* --- Font Weights --- */
+        --font-weight-regular: 400;
+        --font-weight-medium: 500;
+        --font-weight-semibold: 600;
+        --font-weight-bold: 700;
+        
+        /* --- Spacing Units --- */
+        --space-xs: 4px;
+        --space-sm: 8px;
+        --space-md: 16px;
+        --space-lg: 24px;
+        --space-xl: 32px;
+
+        /* --- Border Radius --- */
+        --border-radius-sm: 6px;
+        --border-radius-md: 12px;
+        --border-radius-lg: 18px;
+        --border-radius-full: 999px;
+
+        /* --- Shadows --- */
+        --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
+        --shadow-pop: 0 6px 20px rgba(0, 0, 0, 0.1);
+      }
+      
+      html.dark {
+        /* --- Primary Brand Colors --- */
+        --color-primary-500: #8B75C9; /* Lighter violet for better pop */
+        --color-primary-200: #4a3e6e;
+        --color-primary-100: #2c253d;
+
+        /* --- Neutral Colors for UI --- */
+        --color-background-primary: #18191a;
+        --color-surface-container: #242526;
+        --color-surface-container-high: #3a3b3c;
+        --color-surface-container-low: #1f2021;
+
+        /* --- Text & Icon Colors --- */
+        --color-text-primary: #e4e6eb;
+        --color-text-secondary: #b0b3b8;
+        --color-text-tertiary: #65676b;
+        --color-on-primary: #FFFFFF;
+
+        /* --- Functional Colors --- */
+        --color-functional-red: #f07f7f;
+        --color-functional-gray: #65676b;
+
+        /* --- Borders & Dividers --- */
+        --color-border: #3e4042;
+        
+        /* --- Shadows --- */
+        --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.5);
+        --shadow-pop: 0 4px 10px rgba(0, 0, 0, 0.6);
+      }
+
+      html {
+        font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11'; /* For better readability of numbers and characters */
+      }
+
+      body {
+        font-family: var(--font-family-sans), var(--font-family-chinese);
+        color: var(--color-text-primary);
+        background-color: var(--color-background-primary);
+      }
+
+      @keyframes page-fade-in-animation {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-page-fade-in {
+        animation: page-fade-in-animation 0.3s ease-out forwards;
+      }
+      @keyframes card-fade-in-animation {
+        from {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+      }
+      .animate-card-fade-in {
+        animation: card-fade-in-animation 0.5s ease-out forwards;
+        opacity: 0;
+      }
+       @keyframes card-fade-out {
+          from {
+              opacity: 1;
+              transform: scale(1) translateX(0);
+          }
+          to {
+              opacity: 0;
+              transform: scale(0.95) translateX(-16px);
+          }
+      }
+      .animate-card-fade-out {
+          animation: card-fade-out 0.3s ease-out forwards;
+          animation-delay: 0.3s;
+      }
+      @keyframes checkmark-animation {
+        0% {
+          transform: scale(1);
+          background-color: transparent;
+          border-color: #9ca3af; /* gray-400 */
+        }
+        20% {
+          transform: scale(1.2);
+          background-color: transparent;
+          border-color: var(--color-primary-500);
+        }
+        50% {
+          transform: scale(1.1);
+          background-color: var(--color-primary-500);
+          border-color: var(--color-primary-500);
+        }
+        100% {
+          transform: scale(1);
+          background-color: var(--color-primary-500);
+          border-color: var(--color-primary-500);
+        }
+      }
+      .animate-checkmark {
+        animation: checkmark-animation 0.3s ease-out forwards;
+      }
+      @keyframes checkmark-icon-fade-in {
+        from { opacity: 0; transform: scale(0.5); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-checkmark-icon {
+          animation: checkmark-icon-fade-in 0.2s 0.1s ease-out forwards;
+          opacity: 0;
+      }
+      @keyframes uncheck-animation {
+        0% {
+          transform: scale(1);
+          background-color: var(--color-primary-500);
+          border-color: var(--color-primary-500);
+        }
+        50% {
+          transform: scale(0.8);
+          background-color: transparent;
+        }
+        100% {
+          transform: scale(1);
+          background-color: transparent;
+          border-color: #9ca3af;
+        }
+      }
+      .animate-uncheck {
+        animation: uncheck-animation 0.3s ease-out forwards;
+      }
+      @keyframes firework-fly-out {
+        0% {
+          transform: translateX(5px) scale(0.5);
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(25px) scale(2);
+          opacity: 0;
+        }
+      }
+      .fireworks-container {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .fireworks-container > .rotator {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .fireworks-container .particle {
+        width: 5px;
+        height: 2px;
+        border-radius: 2px;
+        opacity: 0; /* Start hidden until animation begins */
+        transform: translateX(5px) scale(0.5);
+        animation: firework-fly-out 0.6s ease-out forwards;
+      }
+      .particle-blue { background-color: var(--color-primary-500); }
+      .particle-pink { background-color: #ec4899; }
+      .particle-yellow { background-color: #f59e0b; }
+      .particle-green { background-color: #10b981; }
+       @keyframes ios-spinner-rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes ios-spinner-stroke {
+        0% {
+          stroke-dasharray: 1, 125;
+          stroke-dashoffset: 0;
+        }
+        50% {
+          stroke-dasharray: 100, 125;
+          stroke-dashoffset: -25px;
+        }
+        100% {
+          stroke-dasharray: 100, 125;
+          stroke-dashoffset: -125px;
+        }
+      }
+      .animate-ios-spinner {
+        animation: ios-spinner-rotate 1.5s linear infinite;
+      }
+      .animate-ios-spinner-path {
+        stroke-linecap: round;
+        animation: ios-spinner-stroke 1.5s ease-in-out infinite;
+      }
+      @keyframes pulse-quick-animation {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+      }
+      .animate-pulse-quick {
+        animation: pulse-quick-animation 0.3s ease-out;
+      }
+      @keyframes slow-gradient-animation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      html:not(.dark) .animate-slow-gradient {
+        background: linear-gradient(270deg, var(--color-primary-100), #EAE6F5, var(--color-primary-100));
+        background-size: 200% 200%;
+        animation: slow-gradient-animation 15s ease infinite;
+      }
+      html.dark .animate-slow-gradient {
+        background: linear-gradient(270deg, #1A1820, #2A213D, #1A1820);
+        background-size: 200% 200%;
+        animation: slow-gradient-animation 20s ease infinite;
+      }
+      @keyframes quote-fade-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .animate-quote-fade {
+        animation: quote-fade-in 1s ease-out forwards;
+      }
+      @keyframes plant-grow-animation {
+        from {
+          opacity: 0.5;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .animate-plant-grow {
+        animation: plant-grow-animation 0.5s ease-out forwards;
+      }
+      @keyframes fab-pulse-recording {
+        0% { transform: scale(1); box-shadow: 0 8px 24px hsla(259, 36%, 50%, 0.25); }
+        50% { transform: scale(1.1); box-shadow: 0 12px 32px hsla(259, 36%, 50%, 0.4); }
+        100% { transform: scale(1); box-shadow: 0 8px 24px hsla(259, 36%, 50%, 0.25); }
+      }
+      .animate-fab-pulse {
+        animation: fab-pulse-recording 1.5s ease-in-out infinite;
+      }
+      @keyframes pulse-recording-bg {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.7;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+      }
+      .animate-pulse-recording {
+          animation: pulse-recording-bg 1.5s ease-in-out infinite;
+      }
+      @keyframes task-collapse-animation {
+        from {
+            opacity: 1;
+            max-height: 200px;
+        }
+        to {
+            opacity: 0;
+            max-height: 0px;
+        }
+      }
+      .animate-task-collapse {
+          animation: task-collapse-animation 0.3s ease-in forwards;
+          overflow: hidden;
+      }
+      .card-shadow {
+        box-shadow: var(--shadow-subtle);
+      }
+      .modal-shadow {
+        box-shadow: var(--shadow-pop);
+      }
+      .fab-shadow {
+        box-shadow: 0 8px 24px hsla(259, 36%, 50%, 0.25);
+      }
+      html.dark .fab-shadow {
+        box-shadow: 0 8px 24px hsla(259, 36%, 70%, 0.15);
+      }
+
+
+      /* Font Size Control */
+      /* This fallback is useful before JS loads */
+      html { font-size: 14px; } 
+      html.font-size-sm { font-size: 11px; }
+      html.font-size-md { font-size: 12px; }
+      html.font-size-lg { font-size: 14px; } /* Default */
+      html.font-size-xl { font-size: 16px; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.22.0",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.3",
+    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.74.0",
+    "@capacitor/core": "https://aistudiocdn.com/@capacitor/core@^6.1.0",
+    "@capacitor/app": "https://aistudiocdn.com/@capacitor/app@^6.0.0",
+    "@capacitor/status-bar": "https://aistudiocdn.com/@capacitor/status-bar@^6.0.0",
+    "@capacitor/camera": "https://aistudiocdn.com/@capacitor/camera@^6.0.0",
+    "@capacitor/local-notifications": "https://aistudiocdn.com/@capacitor/local-notifications@^6.0.0",
+    "@capacitor/haptics": "https://aistudiocdn.com/@capacitor/haptics@^6.0.0",
+    "@capacitor/keyboard": "https://aistudiocdn.com/@capacitor/keyboard@^6.0.0",
+    "@capacitor-community/speech-recognition": "https://aistudiocdn.com/@capacitor-community/speech-recognition@^6.0.0",
+    "@capacitor/filesystem": "https://aistudiocdn.com/@capacitor/filesystem@^6.0.0",
+    "@capacitor/share": "https://aistudiocdn.com/@capacitor/share@^6.0.0",
+    "react-window": "https://aistudiocdn.com/react-window@^1.8.10"
+  }
+}
+</script>
+</head>
+  <body class="h-full">
+    <div id="root" class="h-full"></div>
+    <script src="https://unpkg.com/@capacitor/pwa-elements@latest/dist/pwa-elements.js"></script>
+    <script src="capacitor.js"></script>
+    <script type="module" src="/index.js"></script>
+    
+    <!-- SVG Spritesheet for Plants -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+      <!-- Bonsai -->
+      <symbol id="plant-bonsai-grown" viewBox="0 0 24 24">
+        <path d="M19 20h-14" stroke="#607D8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M16 10.5c0-2.2-1.8-4-4-4s-4 1.8-4 4c0 .8.2 1.5.6 2.1" stroke="#795548" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 20v-9" stroke="#795548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15.8 13.9c.7-.6 1.2-1.4 1.2-2.4 0-1.7-1.3-3-3-3s-3 1.3-3 3c0 .3 0 .6.1.9" stroke="#795548" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M10 13a3 3 0 0 0 3-3" stroke="#795548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12.5 7.5a2.5 2.5 0 0 0-2.5-2.5" stroke="#795548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M11 5a2 2 0 0 1 2-2" stroke="#795548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 11c-2.2 0-4 1.8-4 4" stroke="#795548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="15.5" cy="11.5" r="2.5" fill="#556B2F"/>
+        <circle cx="8.5" cy="14.5" r="2.5" fill="#556B2F"/>
+        <circle cx="12" cy="7" r="3" fill="#556B2F"/>
+      </symbol>
+      <symbol id="plant-bonsai-seed" viewBox="0 0 24 24">
+        <path d="M12 14v4" stroke="#795548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 14c0-1.1.9-2 2-2s2 .9 2 2" stroke="#795548" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="15" cy="12" r="1.5" fill="#556B2F"/>
+        <circle cx="9" cy="12" r="1.5" fill="#556B2F"/>
+      </symbol>
+      <!-- Cactus -->
+      <symbol id="plant-cactus-grown" viewBox="0 0 24 24">
+        <path d="M12 4v16M8 8v12M16 8v12" stroke="#2E7D32" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 20h-8v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2z" fill="#FF7043"/>
+        <path d="M12 20h8v-2a4 4 0 0 0-4-4h0a4 4 0 0 0-4 4v2z" fill="#FF7043"/>
+        <path d="M12,4 a4,4 0 0,1 4,4 v4 h-8 v-4 a4,4 0 0,1 4,-4 z" fill="#4CAF50"/>
+        <path d="M8,8 a4,4 0 0,0 -4,4 v4 h8 v-8 z" fill="#4CAF50"/>
+        <path d="M16,8 a4,4 0 0,1 4,4 v4 h-8 v-8 z" fill="#4CAF50"/>
+      </symbol>
+      <symbol id="plant-cactus-seed" viewBox="0 0 24 24">
+        <circle cx="12" cy="15" r="3" fill="#4CAF50" stroke="#2E7D32" stroke-width="1.5"/>
+        <path d="M12 18v1" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round"/>
+      </symbol>
+      <!-- Fern -->
+      <symbol id="plant-fern-grown" viewBox="0 0 24 24">
+        <path d="M12 20V4" stroke="#33691E" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M12 7h5M12 10h4M12 13h5M12 16h3" stroke="#8BC34A" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M12 7h-5M12 10h-4M12 13h-5M12 16h-3" stroke="#8BC34A" stroke-width="1.5" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="plant-fern-seed" viewBox="0 0 24 24">
+        <path d="M12 12v6" stroke="#33691E" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M12 12a2 2 0 0 0-2-2 2 2 0 0 0-2 2" stroke="#8BC34A" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      </symbol>
+      <!-- Orchid -->
+      <symbol id="plant-orchid-grown" viewBox="0 0 24 24">
+        <path d="M12 20v-10" stroke="#7CB342" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M10 20s-4-2-4-6h8s0 4-4 6z" fill="#7CB342"/>
+        <circle cx="12" cy="7" r="3" fill="#B39DDB"/>
+        <circle cx="12" cy="7" r="1" fill="#7E57C2"/>
+        <circle cx="15" cy="10" r="2" fill="#B39DDB"/>
+        <circle cx="15" cy="10" r="0.5" fill="#7E57C2"/>
+        <circle cx="9" cy="10" r="2" fill="#B39DDB"/>
+        <circle cx="9" cy="10" r="0.5" fill="#7E57C2"/>
+      </symbol>
+      <symbol id="plant-orchid-seed" viewBox="0 0 24 24">
+        <path d="M10 18s-4-2-4-6h8s0 4-4 6z" fill="#7CB342"/>
+      </symbol>
+      <!-- Sunflower -->
+      <symbol id="plant-sunflower-grown" viewBox="0 0 24 24">
+        <path d="M12 22V10" stroke="#689F38" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="12" cy="7" r="3" fill="#5D4037"/>
+        <path d="M12 4l1 1M12 4l-1 1M12 10l1-1M12 10l-1-1M15 7l-1 1M15 7l-1-1M9 7l1 1M9 7l1-1" stroke="#FFCA28" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M14 14s2 1 2 4h-8s0-3 2-4" fill="#689F38"/>
+      </symbol>
+      <symbol id="plant-sunflower-seed" viewBox="0 0 24 24">
+        <path d="M12 18V14" stroke="#689F38" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M12 14s2-2 4-2s2 2 2 2H8s0-2 2-2 2 2 2 2z" fill="#689F38"/>
+      </symbol>
+    </svg>
+
+  </body>
+</html>

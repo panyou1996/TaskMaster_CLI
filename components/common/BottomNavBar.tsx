@@ -8,36 +8,8 @@ import { useData } from '../../contexts/DataContext';
 import { Moment } from '../../data/mockData';
 import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
 import AddListScreen, { NewListData } from '../../screens/AddListScreen';
-import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
-import { ImpactStyle } from '@capacitor/haptics';
-import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
-
-// --- Gemini Live API Audio Helpers ---
-
-// Encodes raw audio bytes into a Base64 string.
-function encode(bytes: Uint8Array) {
-  let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-// Creates a Gemini-compatible Blob from raw audio data.
-function createBlob(data: Float32Array): Blob {
-  const l = data.length;
-  const int16 = new Int16Array(l);
-  for (let i = 0; i < l; i++) {
-    int16[i] = data[i] * 32768;
-  }
-  return {
-    data: encode(new Uint8Array(int16.buffer)),
-    mimeType: 'audio/pcm;rate=16000',
-  };
-}
 
 const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
     const commonClasses = "flex flex-col items-center justify-center gap-1 transition-colors duration-200";
@@ -66,7 +38,6 @@ const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label
 const BottomNavBar: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { addMoment, addList } = useData();
-    const ai = useMemo(() => new GoogleGenAI({ apiKey: process.env.API_KEY }), []);
 
     // State for the Add Moment flow
     const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
@@ -77,6 +48,8 @@ const BottomNavBar: React.FC = () => {
     // Add List state
     const [isAddListOpen, setIsAddListOpen] = useState(false);
 
+
+
     // --- Voice Input State & Refs ---
     const [isRecording, setIsRecording] = useState(false);
     const [showRecordingUI, setShowRecordingUI] = useState(false);
@@ -84,151 +57,68 @@ const BottomNavBar: React.FC = () => {
     
     const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isLongPressRef = useRef(false);
-    
-    // Refs for Gemini Live
-    const sessionPromise = useRef<Promise<any> | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
-    const inputAudioContext = useRef<AudioContext | null>(null);
-    const scriptProcessor = useRef<ScriptProcessorNode | null>(null);
-    const microphoneSource = useRef<MediaStreamAudioSourceNode | null>(null);
-    const transcriptionAccumulator = useRef('');
 
     const cleanupRecording = useCallback(() => {
         setIsRecording(false);
         setShowRecordingUI(false);
         setLiveTranscription('');
-        transcriptionAccumulator.current = '';
-        
-        scriptProcessor.current?.disconnect();
-        scriptProcessor.current = null;
-
-        microphoneSource.current?.disconnect();
-        microphoneSource.current = null;
-        
-        streamRef.current?.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-
-        if (inputAudioContext.current && inputAudioContext.current.state !== 'closed') {
-            inputAudioContext.current.close().catch(e => console.warn('AudioContext close error:', e));
-        }
-        inputAudioContext.current = null;
-        
-        sessionPromise.current = null;
+        SpeechRecognition.removeAllListeners();
     }, []);
 
     const startRecording = useCallback(async () => {
         if (isRecording) return;
 
-        if (Capacitor.isNativePlatform()) {
-            try {
-                // FIX: Changed 'checkPermission' to 'checkPermissions' to match the plugin API.
-                let permissionStatus = await SpeechRecognition.checkPermissions();
-                // FIX: The permission status property is 'speechRecognition', not 'permission'.
-                if (permissionStatus.speechRecognition !== 'granted') {
-                    // FIX: Changed 'requestPermission' to 'requestPermissions' to match the plugin API.
-                    permissionStatus = await SpeechRecognition.requestPermissions();
-                }
-                // FIX: The permission status property is 'speechRecognition', not 'permission'.
-                if (permissionStatus.speechRecognition !== 'granted') {
-                    alert('Could not start recording. Please grant microphone permissions in settings.');
-                    return;
-                }
-            } catch (e) {
-                console.error("Permission check/request failed", e);
-                alert('Could not start recording. Please check microphone permissions.');
+        try {
+            const available = await SpeechRecognition.available();
+            if (!available) {
+                alert('Speech recognition is not available on this device.');
                 return;
             }
-        }
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            streamRef.current = stream;
-            // @ts-ignore
-            inputAudioContext.current = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-            
+            const permissionStatus = await SpeechRecognition.requestPermissions();
+            if (permissionStatus.speechRecognition !== 'granted') {
+                alert('Microphone permission is required for speech recognition.');
+                return;
+            }
+
             setShowRecordingUI(true);
             setIsRecording(true);
-            transcriptionAccumulator.current = '';
+            setLiveTranscription('');
 
-            sessionPromise.current = ai.live.connect({
-                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-                callbacks: {
-                    onopen: () => {
-                        console.debug('Gemini Live session opened.');
-                        if (!inputAudioContext.current || !streamRef.current) return;
-                        
-                        microphoneSource.current = inputAudioContext.current.createMediaStreamSource(streamRef.current);
-                        scriptProcessor.current = inputAudioContext.current.createScriptProcessor(4096, 1, 1);
-                        
-                        scriptProcessor.current.onaudioprocess = (audioProcessingEvent) => {
-                            const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
-                            const pcmBlob = createBlob(inputData);
-                            sessionPromise.current?.then((session) => {
-                                session.sendRealtimeInput({ media: pcmBlob });
-                            }).catch(err => {
-                                console.error("Session promise error on send:", err);
-                                cleanupRecording();
-                            });
-                        };
-                        
-                        microphoneSource.current.connect(scriptProcessor.current);
-                        scriptProcessor.current.connect(inputAudioContext.current.destination);
-                    },
-                    onmessage: (message: LiveServerMessage) => {
-                        let text = '';
-                        if (message.serverContent?.inputTranscription) {
-                            text = message.serverContent.inputTranscription.text;
-                            setLiveTranscription(text);
-                            transcriptionAccumulator.current = text;
-                        }
-
-                        if (message.serverContent?.turnComplete) {
-                            const finalTranscript = transcriptionAccumulator.current.trim();
-                            transcriptionAccumulator.current = '';
-
-                            if (finalTranscript) {
-                                setInitialAIPrompt(finalTranscript);
-                                setIsAddTaskWithAIOpen(true);
-                                // The session will close automatically after this, triggering onclose and cleanup.
-                            }
-                        }
-                        
-                        // Handle required audio output even though we don't play it.
-                        if (message.serverContent?.modelTurn?.parts[0]?.inlineData.data) {
-                            // This section fulfills the API requirement to handle audio output.
-                            // We are not playing it, thus no AudioContext or decoding is needed.
-                        }
-                    },
-                    onerror: (e: ErrorEvent) => {
-                        console.error('Gemini Live error:', e);
-                        cleanupRecording();
-                    },
-                    onclose: (e: CloseEvent) => {
-                        console.debug('Gemini Live session closed.');
-                        cleanupRecording();
-                    },
-                },
-                config: {
-                    responseModalities: [Modality.AUDIO],
-                    inputAudioTranscription: {},
-                },
+            SpeechRecognition.addListener('partialResults', (data: any) => {
+                if (data.matches && data.matches.length > 0) {
+                    setLiveTranscription(data.matches[0]);
+                }
             });
-            await sessionPromise.current;
 
-        } catch (error) {
-            console.error('Failed to start recording:', error);
-            alert('Could not start recording. Please check microphone permissions.');
+            const result = await SpeechRecognition.start({
+                language: 'en-US',
+                maxResults: 1,
+                prompt: 'Say something...',
+                partialResults: true,
+            });
+
+            if (result && result.matches && result.matches.length > 0) {
+                const finalTranscript = result.matches[0].trim();
+                if (finalTranscript) {
+                    setInitialAIPrompt(finalTranscript);
+                    setIsAddTaskWithAIOpen(true);
+                }
+            }
+        } catch (error: any) {
+            console.error('Speech recognition error:', error);
+            // Optionally, inform the user that something went wrong.
+            // alert('An error occurred during speech recognition.');
+        } finally {
             cleanupRecording();
         }
-    }, [ai, isRecording, cleanupRecording]);
+    }, [isRecording, cleanupRecording]);
 
     const stopRecording = useCallback(() => {
-        if (sessionPromise.current) {
-            sessionPromise.current.then(session => session?.close());
-        } else {
-            cleanupRecording();
+        if (isRecording) {
+            SpeechRecognition.stop();
         }
-    }, [cleanupRecording]);
+    }, [isRecording]);
 
     // Effect to handle app going to the background
     useEffect(() => {
@@ -253,16 +143,24 @@ const BottomNavBar: React.FC = () => {
         longPressTimerRef.current = setTimeout(() => {
             isLongPressRef.current = true;
             if (isMenuOpen) setIsMenuOpen(false);
-            triggerHapticImpact(ImpactStyle.Medium);
+            
+            // Non-blocking haptic feedback
+            setTimeout(() => {
+                triggerHapticImpact(ImpactStyle.Medium);
+            }, 0);
+
             startRecording();
         }, 250);
     };
 
     const handlePointerUp = () => {
+        addDebug('handlePointerUp');
         if(longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
         if (isLongPressRef.current) {
+            addDebug('Long press was active, stopping recording.');
             stopRecording();
         } else {
+            addDebug('Short press, toggling menu.');
             triggerHapticImpact();
             setIsMenuOpen(prev => !prev);
         }
@@ -270,8 +168,13 @@ const BottomNavBar: React.FC = () => {
     };
 
     const handlePointerLeave = () => {
+        // Always clear the long press timer if the pointer leaves.
+        if(longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+        }
+
+        // If we were already recording, stop it.
         if (isRecording) {
-            if(longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
             stopRecording();
             isLongPressRef.current = false;
         }
