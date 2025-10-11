@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { GoogleGenAI, Type } from "@google/genai";
+import { supabase } from '../utils/supabase';
 import { useData } from '../contexts/DataContext';
 import { Task } from '../data/mockData';
 import { RefreshSpinnerIcon, SparklesIcon, SendIcon, CloseIcon } from '../components/icons/Icons';
@@ -38,50 +38,31 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
         }
     }, [isOpen, initialPrompt]);
 
-    const handleGenerateTask = async (e: React.FormEvent) => {
-        e.preventDefault();
+    useEffect(() => {
+        // If the screen is open and there was an initial prompt from voice, run the generation automatically
+        if (isOpen && initialPrompt && prompt === initialPrompt) {
+            handleGenerateTask();
+        }
+    }, [isOpen, initialPrompt, prompt]);
+
+    const handleGenerateTask = async (e?: React.FormEvent) => {
+        e?.preventDefault();
         if (!prompt.trim() || isLoading) return;
 
         setIsLoading(true);
         setError(null);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const today = new Date().toISOString().split('T')[0];
-
-            const schema = {
-                type: Type.OBJECT,
-                properties: {
-                    title: { type: Type.STRING, description: "The main title of the task." },
-                    list: { type: Type.STRING, description: `The category for the task. Must be one of: ${listNames.join(', ')}.` },
-                    isImportant: { type: Type.BOOLEAN, description: "Whether the task is important." },
-                    isToday: { type: Type.BOOLEAN, description: "Whether the task is for today." },
-                    type: { type: Type.STRING, description: "The type of task, either 'Fixed' (has a specific time) or 'Flexible'.", enum: ['Fixed', 'Flexible'] },
-                    dueDate: { type: Type.STRING, description: "The due date in YYYY-MM-DD format." },
-                    startTime: { type: Type.STRING, description: "The start time in HH:MM (24-hour) format." },
-                    duration: { type: Type.INTEGER, description: "The estimated duration of the task in minutes." },
-                    notes: { type: Type.STRING, description: "Any additional notes or details." },
-                },
-                required: ["title", "list"]
-            };
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                config: {
-                    systemInstruction: `You are an intelligent task parser. Analyze the user's text and extract task details. Your response MUST be in JSON format and strictly adhere to the provided schema. The user's available task lists are: ${listNames.join(', ')}. If the user specifies a list that isn't in the available lists, or doesn't specify one, use '${listNames[0] || 'Personal'}' as the default. If the user mentions a time without a date, assume it's for today (${today}). Infer if the task is important or for today based on keywords. A task with a specific startTime is 'Fixed', otherwise it is 'Flexible'.`,
-                    responseMimeType: "application/json",
-                    responseSchema: schema,
-                },
+            const { data: parsed, error } = await supabase.functions.invoke('generate-task', {
+                body: { prompt, listNames },
             });
 
-            const parsed = JSON.parse(response.text);
+            if (error) throw error;
+            if (parsed.error) throw new Error(parsed.error);
 
+            const today = new Date().toISOString().split('T')[0];
             const chosenList = listNames.includes(parsed.list) ? parsed.list : (listNames[0] || 'Personal');
-            
             const isDueToday = parsed.dueDate === today;
-            // A task starts today if it has a start time and either no due date was specified (implying today)
-            // or the specified due date is today.
             const isStartingToday = parsed.startTime && (!parsed.dueDate || parsed.dueDate === today);
 
             const taskForContext: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'> = {
@@ -103,9 +84,9 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
             await addTask(taskForContext);
             onClose();
 
-        } catch (err) {
-            console.error("Gemini task creation failed:", err);
-            setError("Sorry, I couldn't understand that. Please try rephrasing your task.");
+        } catch (err: any) {
+            console.error("Supabase function invocation failed:", err);
+            setError(`Sorry, I couldn't understand that. Please try rephrasing your task. (Error: ${err.message})`);
         } finally {
             setIsLoading(false);
         }
