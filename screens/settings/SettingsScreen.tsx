@@ -9,7 +9,8 @@ import useLocalStorage from '../../hooks/useLocalStorage';
 import { TaskList } from '../../data/mockData';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { supabase } from '../../utils/supabase';
+import { supabase, supabaseUrl, supabaseAnonKey } from '../../utils/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
     <h2 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 pb-2 pt-6">
@@ -256,17 +257,22 @@ const SettingsScreen: React.FC = () => {
             alert("You must be logged in to connect your calendar.");
             return;
         }
-        alert(`Access Token: ${session.access_token}`); // for debugging  
         setLoadingGoogle(true);
         setErrorGoogle(null);
 
         try {
-            const { data, error } = await supabase.functions.invoke('calendar-auth-start', {
-                body: { provider: 'google' },
-                headers: {
-                    'authorization': `Bearer ${session.access_token}`,
+            const supabaseWithAuth = createClient(supabaseUrl, supabaseAnonKey, {
+                global: {
+                    headers: {
+                        Authorization: `Bearer ${session.access_token}`
+                    }
                 }
             });
+
+            const { data, error } = await supabaseWithAuth.functions.invoke('calendar-auth-start', {
+                body: { provider: 'google' }
+            });
+
             if (error) throw error;
             if (data.authUrl) {
                 window.location.href = data.authUrl;
