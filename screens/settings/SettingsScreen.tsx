@@ -256,6 +256,7 @@ const SettingsScreen: React.FC = () => {
             alert("You must be logged in to connect your calendar.");
             return;
         }
+        alert(`Access Token: ${session.access_token}`); // for debugging  
         setLoadingGoogle(true);
         setErrorGoogle(null);
 
@@ -263,7 +264,7 @@ const SettingsScreen: React.FC = () => {
             const { data, error } = await supabase.functions.invoke('calendar-auth-start', {
                 body: { provider: 'google' },
                 headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
+                    'authorization': `Bearer ${session.access_token}`,
                 }
             });
             if (error) throw error;
