@@ -64,6 +64,10 @@ const BottomNavBar: React.FC = () => {
     }, []);
 
     const startRecording = useCallback(async () => {
+        if (!Capacitor.isNativePlatform()) {
+            alert("Speech recognition is only available on the native mobile app.");
+            return;
+        }
         if (isRecording) return;
 
         try {
