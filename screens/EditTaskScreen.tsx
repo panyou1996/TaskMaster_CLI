@@ -249,9 +249,27 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                         
                         <div className="flex items-start gap-3">
                             <div className="pt-1"><EmptySquareCheckIcon /></div>
-                            <div className="flex-grow">
-                                <input type="text" value={title} onChange={e => setTitle(e.target.value)} onFocus={() => setActiveInput('title')} placeholder="New To-Do" className="w-full text-base font-semibold text-[var(--color-text-primary)] placeholder-[var(--color-text-primary)] focus:outline-none bg-transparent" />
-                                <textarea value={notes} onChange={e => setNotes(e.target.value)} onFocus={() => setActiveInput('notes')} placeholder="Notes" rows={1} className="w-full text-sm mt-1 text-[var(--color-text-secondary)] placeholder-[var(--color-text-secondary)] focus:outline-none resize-none bg-transparent" />
+                            <div className="flex-grow min-w-0">
+                                <div className="flex justify-between items-start gap-2">
+                                    <div className="flex-grow">
+                                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} onFocus={() => setActiveInput('title')} placeholder="New To-Do" className="w-full text-base font-semibold text-[var(--color-text-primary)] placeholder-[var(--color-text-primary)] focus:outline-none bg-transparent" />
+                                        <textarea value={notes} onChange={e => setNotes(e.target.value)} onFocus={() => setActiveInput('notes')} placeholder="Notes" rows={1} className="w-full text-sm mt-1 text-[var(--color-text-secondary)] placeholder-[var(--color-text-secondary)] focus:outline-none resize-none bg-transparent" />
+                                    </div>
+                                    <div className="flex items-start gap-1 pt-1 shrink-0">
+                                        <div className="flex flex-col items-center w-14">
+                                            <button type="button" title="Mark as Important" onClick={() => setIsImportant(p => !p)} className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${isImportant ? 'text-red-600 bg-red-100 dark:bg-red-900/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
+                                                <FlagIcon className="w-5 h-5" />
+                                            </button>
+                                            <span className="text-[10px] text-center text-[var(--color-text-tertiary)] mt-1 leading-tight">Important</span>
+                                        </div>
+                                        <div className="flex flex-col items-center w-14">
+                                            <button type="button" title={isTodayLocked ? "Due today" : "Toggle Today"} onClick={handleToggleToday} className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${isToday ? 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'} ${isTodayLocked ? 'opacity-70 cursor-default' : ''}`}>
+                                                <StarIcon className="w-5 h-5" />
+                                            </button>
+                                            <span className="text-[10px] text-center text-[var(--color-text-tertiary)] mt-1 leading-tight">Today</span>
+                                        </div>
+                                    </div>
+                                </div>
                                 {isSubtaskSectionVisible && (
                                     <div className="mt-2 space-y-1 pt-2 border-t border-[var(--color-border)]">
                                         {subtasks.map((sub) => (
@@ -277,17 +295,36 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                                 {dueDate && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)] text-xs font-semibold animate-page-fade-in"><span>Due {formatChipDate(dueDate)}</span></div>)}
                                 {category && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-semibold animate-page-fade-in"><span>{category}</span></div>)}
                              </div>
-                            <div className="flex items-center justify-end">
-                                <div className="flex items-center gap-1">
+                            <div className="flex items-start justify-around">
+                                <div className="flex flex-col items-center flex-1 min-w-[0] text-center">
                                     <button type="button" title={taskType === 'Fixed' ? "Set as Flexible" : "Set as Fixed"} onClick={() => setTaskType(p => p === 'Fixed' ? 'Flexible' : 'Fixed')} className={`p-2 rounded-full transition-colors ${taskType === 'Fixed' ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><LockIcon className="w-5 h-5" /></button>
-                                    <div ref={durationIconRef}><button type="button" title="Set Duration" onClick={() => handlePopoverToggle('duration', durationIconRef)} className={`p-2 rounded-full transition-colors ${duration ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><DurationIcon className="w-5 h-5" /></button></div>
-                                    {taskType === 'Fixed' && (<div ref={startTimeIconRef}><button type="button" title="Set Start Date" onClick={() => handlePopoverToggle('startTime', startTimeIconRef)} className={`p-2 rounded-full transition-colors ${startTime ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><ClockIcon className="w-5 h-5" /></button></div>)}
-                                    <div ref={calendarIconRef}><button type="button" title="Set Due Date" onClick={() => handlePopoverToggle('dueDate', calendarIconRef)} className={`p-2 rounded-full transition-colors ${dueDate ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><CalendarIcon className="w-5 h-5" /></button></div>
-                                    <div ref={listIconRef}><button type="button" title="Select List" onClick={() => handlePopoverToggle('list', listIconRef)} className={`p-2 rounded-full transition-colors ${category ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><TagIcon className="w-5 h-5" /></button></div>
+                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Lock</span>
+                                </div>
+                                <div className="flex flex-col items-center flex-1 min-w-[0] text-center" ref={durationIconRef}>
+                                    <button type="button" title="Set Duration" onClick={() => handlePopoverToggle('duration', durationIconRef)} className={`p-2 rounded-full transition-colors ${duration ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><DurationIcon className="w-5 h-5" /></button>
+                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Duration</span>
+                                </div>
+                                {taskType === 'Fixed' && (
+                                    <div className="flex flex-col items-center flex-1 min-w-[0] text-center" ref={startTimeIconRef}>
+                                        <button type="button" title="Set Start Date" onClick={() => handlePopoverToggle('startTime', startTimeIconRef)} className={`p-2 rounded-full transition-colors ${startTime ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><ClockIcon className="w-5 h-5" /></button>
+                                        <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Start</span>
+                                    </div>
+                                )}
+                                <div className="flex flex-col items-center flex-1 min-w-[0] text-center" ref={calendarIconRef}>
+                                    <button type="button" title="Set Due Date" onClick={() => handlePopoverToggle('dueDate', calendarIconRef)} className={`p-2 rounded-full transition-colors ${dueDate ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><CalendarIcon className="w-5 h-5" /></button>
+                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Due</span>
+                                </div>
+                                <div className="flex flex-col items-center flex-1 min-w-[0] text-center" ref={listIconRef}>
+                                    <button type="button" title="Select List" onClick={() => handlePopoverToggle('list', listIconRef)} className={`p-2 rounded-full transition-colors ${category ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><TagIcon className="w-5 h-5" /></button>
+                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">List</span>
+                                </div>
+                                <div className="flex flex-col items-center flex-1 min-w-[0] text-center">
                                     <button type="button" title="Add Subtasks" onClick={() => setIsSubtaskSectionVisible(p => !p)} className={`p-2 rounded-full transition-colors ${isSubtaskSectionVisible ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><ListCheckIcon className="w-5 h-5" /></button>
-                                    <div ref={reminderIconRef}><button type="button" title="Set Reminder" onClick={() => handlePopoverToggle('reminder', reminderIconRef)} className={`p-2 rounded-full transition-colors ${reminder !== null ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><BellIcon className="w-5 h-5" /></button></div>
-                                    <button type="button" title={isTodayLocked ? "Due today" : "Toggle Today"} onClick={handleToggleToday} className={`p-2 rounded-full transition-colors ${isToday ? 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'} ${isTodayLocked ? 'opacity-70 cursor-default' : ''}`}><StarIcon className="w-5 h-5" /></button>
-                                    <button type="button" title="Mark as Important" onClick={() => setIsImportant(p => !p)} className={`p-2 rounded-full transition-colors ${isImportant ? 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><FlagIcon className="w-4 h-4" /></button>
+                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Subs</span>
+                                </div>
+                                <div className="flex flex-col items-center flex-1 min-w-[0] text-center" ref={reminderIconRef}>
+                                    <button type="button" title="Set Reminder" onClick={() => handlePopoverToggle('reminder', reminderIconRef)} className={`p-2 rounded-full transition-colors ${reminder !== null ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><BellIcon className="w-5 h-5" /></button>
+                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Alert</span>
                                 </div>
                             </div>
                         </div>

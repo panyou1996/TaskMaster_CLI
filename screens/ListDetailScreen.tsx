@@ -477,7 +477,7 @@ const ListDetailScreen: React.FC = () => {
                     </button>
                 </header>
 
-                <main className="px-6 pb-6 overflow-y-auto flex-grow">
+                <main className="px-6 pt-4 pb-6 overflow-y-auto flex-grow">
                     {(tasks.length === 0 && finishedTasks.length === 0 && activeFilter) ? (
                         <div className="text-center py-16">
                              <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">No tasks match your filter</p>
