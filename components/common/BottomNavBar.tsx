@@ -10,6 +10,8 @@ import AddTaskWithAIScreen from '../../screens/AddTaskWithAIScreen';
 import AddListScreen, { NewListData } from '../../screens/AddListScreen';
 import { App as CapacitorApp } from '@capacitor/app';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { useWebSpeech } from '../../hooks/useWebSpeech';
+import { Capacitor } from '@capacitor/core';
 
 const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
     const commonClasses = "flex flex-col items-center justify-center gap-1 transition-colors duration-200";
@@ -56,71 +58,97 @@ const BottomNavBar: React.FC = () => {
     const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isLongPressRef = useRef(false);
 
+    const { isRecording: isWebRecording, transcript: webTranscript, start: startWebSpeech, stop: stopWebSpeech } = useWebSpeech();
+
     const cleanupRecording = useCallback(() => {
         setIsRecording(false);
         setShowRecordingUI(false);
         setLiveTranscription('');
-        SpeechRecognition.removeAllListeners();
+        if (Capacitor.isNativePlatform()) {
+            SpeechRecognition.removeAllListeners();
+        }
     }, []);
 
     const startRecording = useCallback(async () => {
-        if (!Capacitor.isNativePlatform()) {
-            alert("Speech recognition is only available on the native mobile app.");
-            return;
-        }
         if (isRecording) return;
 
-        try {
-            const available = await SpeechRecognition.available();
-            if (!available) {
-                alert('Speech recognition is not available on this device.');
-                return;
-            }
-
-            const permissionStatus = await SpeechRecognition.requestPermissions();
-            if (permissionStatus.speechRecognition !== 'granted') {
-                alert('Microphone permission is required for speech recognition.');
-                return;
-            }
-
-            setShowRecordingUI(true);
-            setIsRecording(true);
-            setLiveTranscription('');
-
-            SpeechRecognition.addListener('partialResults', (data: any) => {
-                if (data.matches && data.matches.length > 0) {
-                    setLiveTranscription(data.matches[0]);
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const available = await SpeechRecognition.available();
+                if (!available) {
+                    alert('Speech recognition is not available on this device.');
+                    return;
                 }
-            });
 
-            const result = await SpeechRecognition.start({
-                language: 'en-US',
-                maxResults: 1,
-                prompt: 'Say something...',
-                partialResults: true,
-            });
+                const permissionStatus = await SpeechRecognition.requestPermissions();
+                if (permissionStatus.speechRecognition !== 'granted') {
+                    alert('Microphone permission is required for speech recognition.');
+                    return;
+                }
 
-            if (result && result.matches && result.matches.length > 0) {
-                const finalTranscript = result.matches[0].trim();
+                setShowRecordingUI(true);
+                setIsRecording(true);
+                setLiveTranscription('');
+
+                SpeechRecognition.addListener('partialResults', (data: any) => {
+                    if (data.matches && data.matches.length > 0) {
+                        setLiveTranscription(data.matches[0]);
+                    }
+                });
+
+                const result = await SpeechRecognition.start({
+                    language: 'en-US',
+                    maxResults: 1,
+                    prompt: 'Say something...',
+                    partialResults: true,
+                });
+
+                if (result && result.matches && result.matches.length > 0) {
+                    const finalTranscript = result.matches[0].trim();
+                    if (finalTranscript) {
+                        setInitialAIPrompt(finalTranscript);
+                        setIsAddTaskWithAIOpen(true);
+                    }
+                }
+            } catch (error: any) {
+                console.error('Speech recognition error:', error);
+            } finally {
+                cleanupRecording();
+            }
+        } else {
+            // Web-based speech recognition
+            setShowRecordingUI(true);
+            startWebSpeech((finalTranscript) => {
                 if (finalTranscript) {
                     setInitialAIPrompt(finalTranscript);
                     setIsAddTaskWithAIOpen(true);
                 }
-            }
-        } catch (error: any) {
-            console.error('Speech recognition error:', error);
-            // Optionally, inform the user that something went wrong.
-            // alert('An error occurred during speech recognition.');
-        } finally {
-            cleanupRecording();
+                cleanupRecording();
+            });
         }
-    }, [isRecording, cleanupRecording]);
+    }, [isRecording, cleanupRecording, startWebSpeech]);
 
     const stopRecording = useCallback(() => {
-        if (isRecording) {
-            SpeechRecognition.stop();
+        if (Capacitor.isNativePlatform()) {
+            if (isRecording) {
+                SpeechRecognition.stop();
+            }
+        } else {
+            stopWebSpeech();
         }
-    }, [isRecording]);
+    }, [isRecording, stopWebSpeech]);
+
+    useEffect(() => {
+        if (isWebRecording) {
+            setIsRecording(true);
+        } else {
+            setIsRecording(false);
+        }
+    }, [isWebRecording]);
+
+    useEffect(() => {
+        setLiveTranscription(webTranscript);
+    }, [webTranscript]);
 
     // Effect to handle app going to the background
     useEffect(() => {
