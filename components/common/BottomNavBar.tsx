@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { TodayIcon, ListsIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon, SettingsIcon } from '../icons/Icons';
-// FIX: Changed import to use named export for AddMomentScreen.
 import { AddMomentScreen, NewMomentData } from '../../screens/AddMomentScreen';
 import { takePhotoWithCapacitor, triggerHapticImpact, triggerHapticSelection } from '../../utils/permissions';
 import { useData } from '../../contexts/DataContext';
@@ -97,28 +96,41 @@ const BottomNavBar: React.FC = () => {
                   }
               });
 
-              await SpeechRecognition.start({
-                  language: 'en-US',
+              const result = await SpeechRecognition.start({
+                  language: 'zh-CN',
                   maxResults: 1,
                   prompt: 'Say something...',
                   partialResults: true,
               });
+              
+              if (result && result.matches && result.matches.length > 0) {
+                const finalTranscript = result.matches[0].trim();
+                if (finalTranscript) {
+                    setInitialAIPrompt(finalTranscript);
+                    setIsAddTaskWithAIOpen(true);
+                }
+              }
 
           } catch (error: any) {
               console.error('Speech recognition error:', error);
           } finally {
-              // This finally block ensures cleanup happens even if start() rejects (e.g. user cancels)
               cleanupRecording();
           }
       } else {
           // Web-based speech recognition
           setShowRecordingUI(true);
-          startWebSpeech((finalTranscript) => {
+          startWebSpeech(
+            (finalTranscript) => {
+              // This single callback is executed when recognition ends.
+              cleanupRecording(); // Hide the "Listening..." UI first.
+              
+              // If we got a result, open the AI modal.
               if (finalTranscript) {
-                  setInitialAIPrompt(finalTranscript);
-                  setIsAddTaskWithAIOpen(true);
+                setInitialAIPrompt(finalTranscript);
+                setIsAddTaskWithAIOpen(true);
               }
-          }, cleanupRecording);
+            }
+          );
       }
     }, [isRecording, cleanupRecording, startWebSpeech]);
 
@@ -163,8 +175,8 @@ const BottomNavBar: React.FC = () => {
     }, [isRecording, stopRecording]);
 
     useEffect(() => {
-      const handleGlobalPointerUpOrCancel = () => {
-          // If a long press was in progress or has finished, stop it.
+      const handleGlobalPointerUp = () => {
+          // If a long press was in progress, stop it.
           if (isLongPressRef.current) {
               stopRecording();
           }
@@ -175,16 +187,16 @@ const BottomNavBar: React.FC = () => {
               longPressTimerRef.current = null;
           }
 
-          // Always reset the long press flag on pointer up/cancel.
+          // Always reset the long press flag on pointer up.
           isLongPressRef.current = false;
       };
 
-      window.addEventListener('pointerup', handleGlobalPointerUpOrCancel);
-      window.addEventListener('pointercancel', handleGlobalPointerUpOrCancel);
+      // Only listen for the 'up' event globally. This is robust against animations
+      // and the user dragging their finger off the button while still holding.
+      window.addEventListener('pointerup', handleGlobalPointerUp);
 
       return () => {
-          window.removeEventListener('pointerup', handleGlobalPointerUpOrCancel);
-          window.removeEventListener('pointercancel', handleGlobalPointerUpOrCancel);
+          window.removeEventListener('pointerup', handleGlobalPointerUp);
       };
     }, [stopRecording]);
     

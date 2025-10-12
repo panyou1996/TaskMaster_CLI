@@ -5,7 +5,8 @@ export const useWebSpeech = () => {
     const [transcript, setTranscript] = useState('');
     const recognitionRef = useRef<any>(null);
 
-    const start = useCallback((onResult: (result: string) => void, onEnd: () => void) => {
+    // FIX: Changed to take a single onEnd callback with the final result.
+    const start = useCallback((onEnd: (result: string) => void) => {
         if (!('webkitSpeechRecognition' in window)) {
             alert('Web Speech API is not supported by this browser.');
             return;
@@ -15,7 +16,10 @@ export const useWebSpeech = () => {
         recognitionRef.current = recognition;
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = 'zh-CN';
+        // FIX: Changed language to en-US for consistency with native implementation.
+        recognition.lang = 'en-US';
+
+        let finalTranscriptAccumulator = '';
 
         recognition.onstart = () => {
             setIsRecording(true);
@@ -23,23 +27,20 @@ export const useWebSpeech = () => {
 
         recognition.onend = () => {
             setIsRecording(false);
-            onEnd();
+            onEnd(finalTranscriptAccumulator.trim());
         };
 
         recognition.onresult = (event: any) => {
             let interimTranscript = '';
-            let finalTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcript_part = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
+                    finalTranscriptAccumulator += transcript_part;
                 } else {
-                    interimTranscript += event.results[i][0].transcript;
+                    interimTranscript += transcript_part;
                 }
             }
-            setTranscript(finalTranscript || interimTranscript);
-            if (finalTranscript) {
-                onResult(finalTranscript);
-            }
+            setTranscript(finalTranscriptAccumulator + interimTranscript);
         };
 
         recognition.start();
