@@ -20,6 +20,9 @@ import TaskCard from '../components/common/TaskCard';
 import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
 // FIX: Switched to a namespace import for react-window to resolve module resolution errors where named exports were not being found.
+// Reverting to named imports as namespace properties are not being found.
+// FIX: Replaced namespace import with named imports for react-window to resolve type and component errors.
+// FIX: Use namespace import for react-window to fix module resolution issues.
 import * as ReactWindow from 'react-window';
 
 const colorVariants = {
@@ -183,9 +186,9 @@ const PlanScreen: React.FC = () => {
     };
 
     // -- ROW RENDERER FOR VIRTUALIZED LIST --
-    const ListRow = ({ data, index, style }: ReactWindow.ListChildComponentProps<TaskList[]>) => {
-        const list = data[index];
-        const colors = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
+    const ListRow = ({ data, index: index2, style }: ReactWindow.ListChildComponentProps<TaskList[]>) => {
+        const list = data[index2];
+        const colors3 = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
         const count = taskCounts[list.name] || 0;
         
         return (
@@ -199,7 +202,7 @@ const PlanScreen: React.FC = () => {
                         className="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors select-none h-[80px]"
                         onContextMenu={(e) => e.preventDefault()}
                     >
-                        <div className={`p-2 rounded-lg flex items-center justify-center w-12 h-12 ${colors.bg}`}>
+                        <div className={`p-2 rounded-lg flex items-center justify-center w-12 h-12 ${colors3.bg}`}>
                             <span className="text-2xl">{list.icon}</span>
                         </div>
                         <div>
@@ -237,7 +240,7 @@ const PlanScreen: React.FC = () => {
 
     const displayedDays = useMemo(() => {
         const generateDays = (startDate: Date, dayCount: number, offset: number = 0) => {
-             const days = [];
+             const days: {day: number | null, date: Date | null, hasTask: boolean}[] = [];
              for(let i = 0; i < offset; i++) days.push({ day: null, date: null, hasTask: false });
              for (let i = 0; i < dayCount; i++) {
                 const date = new Date(startDate);
@@ -468,14 +471,14 @@ const PlanScreen: React.FC = () => {
                                         <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCalendarCollapsed ? 'max-h-20' : 'max-h-96'}`}>
                                             <div className="grid grid-cols-7 gap-y-2 text-center">
                                                 {dayHeaders.map(day => <div key={day} className="text-sm font-medium text-gray-500 dark:text-gray-400">{day}</div>)}
-                                                {displayedDays.map((dayObj, index) => {
+                                                {displayedDays.map((dayObj, index2) => {
                                                     const isSelected = dayObj.date && isSameDay(dayObj.date, selectedDate);
                                                     const isToday = dayObj.date && isSameDay(dayObj.date, today);
                                                     let buttonClass = 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700';
                                                     if (isSelected) buttonClass = 'bg-blue-600 text-white';
                                                     else if (isToday) buttonClass = 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
                                                     return (
-                                                        <div key={index} className="py-1.5 flex justify-center items-center">
+                                                        <div key={index2} className="py-1.5 flex justify-center items-center">
                                                             {dayObj.day && (<button onClick={() => dayObj.date && handleSelectDate(dayObj.date)} className={`w-8 h-8 rounded-full text-sm font-medium flex flex-col items-center justify-center transition-colors relative ${buttonClass}`}>
                                                                 {dayObj.day}
                                                                 {dayObj.hasTask && !isSelected && <div className="absolute bottom-1 w-1 h-1 bg-blue-500 rounded-full" />}

@@ -1,4 +1,4 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
@@ -48,10 +48,37 @@ export const checkAndRequestCameraPermission = async (): Promise<boolean> => {
 // Check and request notification permission
 export const checkAndRequestNotificationPermission = async (): Promise<boolean> => {
     if (!Capacitor.isNativePlatform()) {
-        const status = await Notification.requestPermission();
-        return status === 'granted';
-    }
+        if (!('Notification' in window)) {
+            console.warn('Notifications API not supported in this browser.');
+            alert('Notifications are not supported in this browser.');
+            return false;
+        }
 
+        if (Notification.permission === 'granted') {
+            return true;
+        }
+
+        if (Notification.permission === 'denied') {
+            showSettingsAlert('Notification permission has been denied. Please enable it in your browser settings.');
+            return false;
+        }
+
+        try {
+            const status = await Notification.requestPermission();
+
+            if (status === 'denied') {
+                showSettingsAlert('Notification permission has been denied. Please enable it in your browser settings.');
+            }
+            
+            return status === 'granted';
+        } catch (e) {
+            console.error("Web notification permission request failed:", e);
+            alert("Could not request notification permissions.");
+            return false;
+        }
+    }
+    
+    // Native Platform Logic
     try {
         let permissions = await LocalNotifications.checkPermissions();
 
@@ -73,7 +100,7 @@ export const checkAndRequestNotificationPermission = async (): Promise<boolean> 
         return permissions.display === 'granted';
 
     } catch (e) {
-        console.error("Notification permission check failed:", e);
+        console.error("Native notification permission check failed:", e);
         alert("Could not check notification permissions.");
         return false;
     }
@@ -168,8 +195,9 @@ export const useKeyboardHeight = () => {
       });
 
       return () => {
-        showListener.remove();
-        hideListener.remove();
+        // FIX: `addListener` returns a Promise. The `remove` method is on the resolved handle.
+        showListener.then(l => l.remove());
+        hideListener.then(l => l.remove());
       };
     }
   }, []);

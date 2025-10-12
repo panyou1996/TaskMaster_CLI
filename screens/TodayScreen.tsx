@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
 import TaskCard from '../components/common/TaskCard';
-import { RecommendIcon, OverdueIcon, ChevronDownIcon, RefreshSpinnerIcon, SparklesIcon, TimelineIcon, ListsIcon, PlusIconHeader, LockIcon, FocusHeaderIcon, SettingsHeaderIcon } from '../components/icons/Icons';
+import { RecommendIcon, OverdueIcon, ChevronDownIcon, RefreshSpinnerIcon, SparklesIcon, TimelineIcon, ListsIcon, PlusIconHeader, LockIcon, FocusHeaderIcon, SettingsHeaderIcon, BugIcon } from '../components/icons/Icons';
 import RecommendTasksScreen from './RecommendTasksScreen';
 import OverdueTasksScreen from './OverdueTasksScreen';
 import AddTaskScreen, { NewTaskData } from './AddTaskScreen';
@@ -18,8 +18,10 @@ import DurationPickerModal from './DurationPickerModal';
 import usePlanningSettings, { PlanningSettings } from '../hooks/usePlanningSettings';
 import PlanningSettingsDrawer from './PlanningSettingsDrawer';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { triggerHapticImpact, triggerHapticNotification, triggerHapticSelection } from '../utils/permissions';
+import { triggerHapticImpact, triggerHapticNotification, triggerHapticSelection, checkAndRequestNotificationPermission } from '../utils/permissions';
 import { ImpactStyle, NotificationType } from '@capacitor/haptics';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import Button from '../components/common/Button';
 
 const parseDateAsLocal = (dateString?: string): Date | null => {
     if (!dateString) return null;
@@ -227,6 +229,7 @@ const TodayScreen: React.FC = () => {
     const [justCompletedId, setJustCompletedId] = useState<number | string | null>(null);
     const [justAddedId, setJustAddedId] = useState<string | number | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
+    const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
     
     // Modal states
     const [isRecommendOpen, setIsRecommendOpen] = useState(false);
@@ -776,6 +779,37 @@ const TodayScreen: React.FC = () => {
         gestureType.current = 'none';
     };
 
+    const handleTestNotification = async () => {
+        const permissionGranted = await checkAndRequestNotificationPermission();
+        if (!permissionGranted) {
+            alert('Notification permission is required to run this test.');
+            return;
+        }
+
+        try {
+            await LocalNotifications.schedule({
+                notifications: [
+                    {
+                        title: "Debug Notification (Now)",
+                        body: "This notification should appear immediately.",
+                        id: 99999, // A unique ID for testing
+                        schedule: { at: new Date() },
+                    },
+                    {
+                        title: "Debug Notification (10s)",
+                        body: "This notification should appear after 10 seconds.",
+                        id: 99998, // Another unique ID
+                        schedule: { at: new Date(Date.now() + 10000) },
+                    },
+                ],
+            });
+            alert('Test notifications scheduled. You should see one now and another in 10 seconds.');
+        } catch (e) {
+            console.error("Failed to schedule test notifications:", e);
+            alert(`Error scheduling notifications: ${e}`);
+        }
+    };
+
 
     if (!profile) {
         return (
@@ -871,12 +905,25 @@ const TodayScreen: React.FC = () => {
                                     </div>
                                 )}
 
+                                {isDebugPanelOpen && (
+                                    <div className="p-4 mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl flex flex-col items-center gap-2 animate-page-fade-in">
+                                        <h3 className="font-bold text-yellow-800 dark:text-yellow-300">Debug Panel</h3>
+                                        <p className="text-xs text-center text-yellow-700 dark:text-yellow-400">Click the button to test if notifications are working on your device.</p>
+                                        <Button variant="secondary" onClick={handleTestNotification} className="!w-auto !px-4 !py-1.5">
+                                            Test Notification (Now & 10s)
+                                        </Button>
+                                    </div>
+                                )}
+
                                 {totalTodayTasks > 0 ? (
                                     <>
                                         <div className="mb-4 flex-shrink-0">
                                             <div className="flex justify-between items-center mb-2">
                                                 <div className="flex items-baseline gap-2">
                                                     <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Today's Tasks</h2>
+                                                     <button onClick={() => setIsDebugPanelOpen(p => !p)} className="p-1 -m-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)]">
+                                                        <BugIcon className="w-4 h-4" />
+                                                    </button>
                                                     <span className="text-sm font-medium text-[var(--color-text-secondary)]">{finishedTasks.length}/{totalTodayTasks}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">

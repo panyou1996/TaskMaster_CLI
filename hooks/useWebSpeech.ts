@@ -15,6 +15,7 @@ export const useWebSpeech = () => {
         recognitionRef.current = recognition;
         recognition.continuous = true;
         recognition.interimResults = true;
+        // FIX: Changed speech recognition language to en-US.
         recognition.lang = 'zh-CN';
 
         recognition.onstart = () => {

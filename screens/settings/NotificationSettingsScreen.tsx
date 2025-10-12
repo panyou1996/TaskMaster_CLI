@@ -66,7 +66,7 @@ const NotificationSettingsScreen: React.FC = () => {
             // Cancel all pending notifications
             const pending = await LocalNotifications.getPending();
             if (pending.notifications.length > 0) {
-                await LocalNotifications.cancel(pending);
+                await LocalNotifications.cancel({ notifications: pending.notifications });
             }
         }
     };
