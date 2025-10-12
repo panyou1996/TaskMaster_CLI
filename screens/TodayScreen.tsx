@@ -20,6 +20,7 @@ import PlanningSettingsDrawer from './PlanningSettingsDrawer';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { triggerHapticImpact, triggerHapticNotification, triggerHapticSelection, checkAndRequestNotificationPermission } from '../utils/permissions';
 import { ImpactStyle, NotificationType } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import Button from '../components/common/Button';
 
@@ -787,22 +788,51 @@ const TodayScreen: React.FC = () => {
         }
 
         try {
-            await LocalNotifications.schedule({
-                notifications: [
-                    {
-                        title: "Debug Notification (Now)",
-                        body: "This notification should appear immediately.",
-                        id: 99999, // A unique ID for testing
-                        schedule: { at: new Date() },
-                    },
-                    {
-                        title: "Debug Notification (10s)",
-                        body: "This notification should appear after 10 seconds.",
-                        id: 99998, // Another unique ID
-                        schedule: { at: new Date(Date.now() + 10000) },
-                    },
-                ],
-            });
+            if (Capacitor.isNativePlatform()) {
+                await LocalNotifications.schedule({
+                    notifications: [
+                        {
+                            title: "Debug Notification (Now)",
+                            body: "This notification should appear immediately.",
+                            id: 99999,
+                            schedule: { at: new Date() },
+                        },
+                        {
+                            title: "Debug Notification (10s)",
+                            body: "This notification should appear after 10 seconds.",
+                            id: 99998,
+                            schedule: { at: new Date(Date.now() + 10000) },
+                        },
+                    ],
+                });
+            } else {
+                // Web implementation using Service Worker for better reliability
+                if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification("Debug Notification (Now)", {
+                            body: "This notification should appear immediately.",
+                        });
+
+                        setTimeout(() => {
+                            registration.showNotification("Debug Notification (10s)", {
+                                body: "This notification should appear after 10 seconds.",
+                            });
+                        }, 10000);
+                    });
+                } else {
+                    // Fallback for browsers without SW support
+                    new Notification("Debug Notification (Now)", {
+                        body: "This notification should appear immediately."
+                    });
+
+                    setTimeout(() => {
+                        new Notification("Debug Notification (10s)", {
+                            body: "This notification should appear after 10 seconds."
+                        });
+                    }, 10000);
+                }
+            }
+
             alert('Test notifications scheduled. You should see one now and another in 10 seconds.');
         } catch (e) {
             console.error("Failed to schedule test notifications:", e);

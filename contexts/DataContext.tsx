@@ -252,7 +252,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const delay = notifyAt.getTime() - Date.now();
                 if (delay > 0) {
                     const timeoutId = setTimeout(() => {
-                        if (Notification.permission === 'granted') {
+                        if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
+                            navigator.serviceWorker.ready.then(registration => {
+                                registration.showNotification('Task Reminder', {
+                                    body: task.title,
+                                    icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>",
+                                    tag: String(task.id) // Use tag to prevent duplicate notifications and for identification
+                                });
+                            });
+                        } else if (Notification.permission === 'granted') {
+                            // Fallback for browsers without SW support
                             new Notification("Task Reminder", {
                                 body: task.title,
                                 icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>"
