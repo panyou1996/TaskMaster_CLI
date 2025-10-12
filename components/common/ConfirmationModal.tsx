@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -39,16 +39,16 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center transition-all duration-300"
+      className="fixed inset-0 z-[60] flex items-center justify-center transition-all duration-300"
       aria-labelledby="confirmation-title"
       role="dialog"
       aria-modal="true"
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 transition-opacity duration-300 animate-page-fade-in"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 animate-page-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -74,7 +74,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

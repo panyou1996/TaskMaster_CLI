@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { EditButtonIcon, DeleteButtonIcon, FlagIcon, ListCheckIcon, TagIcon, CalendarIcon, StarIcon, ClockIcon, LockIcon, BellIcon, DurationIcon } from '../components/icons/Icons';
 import type { Task } from '../data/mockData';
 import ConfirmationModal from '../components/common/ConfirmationModal';
@@ -78,10 +79,10 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
 
     const todayStr = new Date().toISOString().substring(0, 10);
 
-    return (
+    return createPortal(
         <>
             <div className={`fixed inset-0 z-50 grid place-items-center p-4 transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
-                <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
+                <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
                 
                 <div className={`w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} style={{ paddingBottom: `env(safe-area-inset-bottom)` }}>
                     <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 overflow-y-auto max-h-[75vh]">
@@ -90,21 +91,21 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                             <div className="flex-grow min-w-0">
                                 <div className="flex justify-between items-start gap-2">
                                     <p className="flex-grow w-full text-base font-semibold text-gray-900 dark:text-gray-100">{task?.title || 'No Title'}</p>
-                                    <div className="flex items-start gap-1 pt-1 shrink-0">
+                                    <div className="flex items-start pt-1 shrink-0">
                                         {task?.important && (
-                                            <div className="flex flex-col items-center w-14">
+                                            <div className="flex flex-col items-center w-[50px]">
                                                 <div className="w-9 h-9 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
                                                     <FlagIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
                                                 </div>
-                                                <span className="text-[10px] text-center text-[var(--color-text-tertiary)] mt-1 leading-tight">Important</span>
+                                                <span className="text-[10px] font-medium text-center text-[var(--color-text-tertiary)] mt-1 leading-tight">Important</span>
                                             </div>
                                         )}
                                         {task?.today && (
-                                            <div className="flex flex-col items-center w-14">
+                                            <div className="flex flex-col items-center w-[50px]">
                                                 <div className="w-9 h-9 flex items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30">
                                                     <StarIcon className="w-5 h-5 text-yellow-500 dark:text-yellow-300" />
                                                 </div>
-                                                <span className="text-[10px] text-center text-[var(--color-text-tertiary)] mt-1 leading-tight">Today</span>
+                                                <span className="text-[10px] font-medium text-center text-[var(--color-text-tertiary)] mt-1 leading-tight">Today</span>
                                             </div>
                                         )}
                                     </div>
@@ -150,7 +151,7 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                              <div className="flex items-start justify-around">
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
                                     <div title={task?.type} className={`p-2 rounded-full ${task?.type === 'Fixed' ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'}`}><LockIcon className="w-5 h-5" /></div>
-                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Lock</span>
+                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Type</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
                                     <div title="Duration" className={`p-2 rounded-full ${(task?.duration) ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'}`}><DurationIcon className="w-5 h-5" /></div>
@@ -201,7 +202,8 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                 message="Are you sure you want to permanently delete this task? This action cannot be undone."
                 confirmText="Delete"
             />
-        </>
+        </>,
+        document.body
     );
 };
 
