@@ -36,12 +36,7 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
         }
     }, [isOpen, initialPrompt]);
 
-    useEffect(() => {
-        // If the screen is open and there was an initial prompt from voice, run the generation automatically
-        if (isOpen && initialPrompt && prompt === initialPrompt) {
-            handleGenerateTask();
-        }
-    }, [isOpen, initialPrompt, prompt]);
+
 
     const handleGenerateTask = async (e?: React.FormEvent) => {
         e?.preventDefault();
