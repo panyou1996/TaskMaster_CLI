@@ -26,15 +26,17 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.1.0",
-    "esbuild": "^0.21.5"
+    "esbuild": "^0.21.5",
+    "workbox-cli": "^7.1.0"
   },
   "scripts": {
-    "dev": "mkdir -p public && cp index.html public/ && ([ -f capacitor.js ] && cp capacitor.js public/ || true) && esbuild index.tsx --bundle --outfile=public/index.js --loader:.tsx=tsx --define:process.env.NODE_ENV='\"development\"' --servedir=public",
+    "dev": "mkdir -p public && cp index.html public/ && ([ -f capacitor.js ] && cp capacitor.js public/ || true) && esbuild index.tsx --bundle --outfile=public/index.js --loader:.tsx=tsx --define:process.env.NODE_ENV='"development"' --servedir=public",
     "assets:generate": "capacitor-assets generate --icon-path icon.svg --icon-background-color '#F3F1F8'",
     "sync:ios": "npx cap sync ios",
     "sync:android": "npx cap sync android",
     "open:ios": "npx cap open ios",
     "open:android": "npx cap open android",
-    "build": "mkdir -p public && cp index.html public/ && ([ -f capacitor.js ] && cp capacitor.js public/ || true) && esbuild index.tsx --bundle --outfile=public/index.js --loader:.tsx=tsx --define:process.env.NODE_ENV='\"production\"'"
+    "build": "mkdir -p public && cp index.html public/ && ([ -f capacitor.js ] && cp capacitor.js public/ || true) && esbuild index.tsx --bundle --outfile=public/index.js --loader:.tsx=tsx --define:process.env.NODE_ENV='"production"' && npm run build:sw",
+    "build:sw": "workbox generateSW workbox-config.js"
   }
 }
