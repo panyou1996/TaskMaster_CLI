@@ -9,8 +9,7 @@ import useLocalStorage from '../../hooks/useLocalStorage';
 import { TaskList } from '../../data/mockData';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { supabase, supabaseUrl, supabaseAnonKey } from '../../utils/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../../utils/supabase';
 
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
     <h2 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 pb-2 pt-6">
@@ -261,18 +260,9 @@ const SettingsScreen: React.FC = () => {
         setErrorGoogle(null);
 
         try {
-            const supabaseWithAuth = createClient(supabaseUrl, supabaseAnonKey, {
-                global: {
-                    headers: {
-                        Authorization: `Bearer ${session.access_token}`
-                    }
-                }
+            const { data, error } = await supabase.functions.invoke('calendar-auth-start', {
+                body: { provider: 'google' },
             });
-
-            const { data, error } = await supabaseWithAuth.functions.invoke('calendar-auth-start', {
-                body: { provider: 'google' }
-            });
-
             if (error) throw error;
             if (data.authUrl) {
                 window.location.href = data.authUrl;
@@ -303,24 +293,12 @@ const SettingsScreen: React.FC = () => {
     };
 
     const handleCalendarSync = async () => {
-        if (!session) {
-            alert("You must be logged in to sync your calendar.");
-            return;
-        }
         setIsCalendarSyncing(true);
         setSyncMessage(null);
         setErrorGoogle(null);
     
         try {
-            const supabaseWithAuth = createClient(supabaseUrl, supabaseAnonKey, {
-                global: {
-                    headers: {
-                        Authorization: `Bearer ${session.access_token}`
-                    }
-                }
-            });
-
-            const { error } = await supabaseWithAuth.functions.invoke('calendar-sync', {
+            const { error } = await supabase.functions.invoke('calendar-sync', {
                 body: { provider: 'google' },
             });
     

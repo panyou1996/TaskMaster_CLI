@@ -10,7 +10,6 @@ export interface NewTaskData {
     isImportant: boolean;
     isToday: boolean;
     type: 'Fixed' | 'Flexible';
-    // FIX: Add missing dueDate property
     dueDate: string;
     startDate: string;
     startTime: string;
