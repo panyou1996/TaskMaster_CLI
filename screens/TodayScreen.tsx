@@ -18,10 +18,8 @@ import DurationPickerModal from './DurationPickerModal';
 import usePlanningSettings, { PlanningSettings } from '../hooks/usePlanningSettings';
 import PlanningSettingsDrawer from './PlanningSettingsDrawer';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { triggerHapticImpact, triggerHapticNotification, triggerHapticSelection, checkAndRequestNotificationPermission } from '../utils/permissions';
+import { triggerHapticImpact, triggerHapticNotification, triggerHapticSelection } from '../utils/permissions';
 import { ImpactStyle, NotificationType } from '@capacitor/haptics';
-import { Capacitor } from '@capacitor/core';
-import { LocalNotifications } from '@capacitor/local-notifications';
 import Button from '../components/common/Button';
 
 const parseDateAsLocal = (dateString?: string): Date | null => {
@@ -230,7 +228,6 @@ const TodayScreen: React.FC = () => {
     const [justCompletedId, setJustCompletedId] = useState<number | string | null>(null);
     const [justAddedId, setJustAddedId] = useState<string | number | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
-    const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
     
     // Modal states
     const [isRecommendOpen, setIsRecommendOpen] = useState(false);
@@ -445,7 +442,6 @@ const TodayScreen: React.FC = () => {
         }, 300); // Match collapse animation duration
     };
     
-    // FIX: Changed taskId to allow string for temporary items
     const handleAddTaskToToday = (taskId: number | string) => {
         updateTask(taskId, { today: true });
         const task = allTasks.find(t => t.id === taskId);
@@ -455,7 +451,6 @@ const TodayScreen: React.FC = () => {
         }
     };
 
-    // FIX: Changed taskId to allow string for temporary items
     const handleToggleSubtask = (taskId: number | string, subtaskId: number) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task && task.subtasks) {
@@ -469,19 +464,16 @@ const TodayScreen: React.FC = () => {
         }
     };
 
-    // FIX: Changed taskId to allow string for temporary items
     const handleToggleImportant = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { important: !task.important });
     };
 
-    // FIX: Changed taskId to allow string for temporary items
     const handleToggleToday = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (task) updateTask(taskId, { today: !task.today });
     };
     
-    // FIX: Changed taskId to allow string for temporary items
     const handleToggleTaskType = (taskId: number | string) => {
         const task = allTasks.find(t => t.id === taskId);
         if (!task) return;
@@ -490,7 +482,6 @@ const TodayScreen: React.FC = () => {
         updateTask(taskId, { type: newType });
     };
 
-    // FIX: Changed taskId to allow string for temporary items
     const handleToggleExpansion = (taskId: number | string) => {
         setExpandedTaskIds(prev => {
             const newSet = new Set(prev);
@@ -781,70 +772,55 @@ const TodayScreen: React.FC = () => {
     };
 
     const handleTestNotification = async () => {
-        const permissionGranted = await checkAndRequestNotificationPermission();
-        if (!permissionGranted) {
-            alert('Notification permission is required to run this test.');
+        // Check for browser support first.
+        if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+            alert("Notifications are not supported in this browser.");
             return;
         }
-    
-        try {
-            if (Capacitor.isNativePlatform()) {
-                await LocalNotifications.schedule({
-                    notifications: [
-                        {
-                            title: "Test Notification (Now)",
-                            body: "This notification should appear immediately.",
-                            id: 99999,
-                            schedule: { at: new Date() },
-                            actionTypeId: 'TEST_ACTIONS'
-                        },
-                        {
-                            title: "Test Notification (10s)",
-                            body: "This notification should appear after 10 seconds.",
-                            id: 99998,
-                            schedule: { at: new Date(Date.now() + 10000) },
-                             actionTypeId: 'TEST_ACTIONS'
-                        },
-                    ],
-                });
-            } else {
-                if ('serviceWorker' in navigator) {
-                    try {
-                        const registration = await navigator.serviceWorker.ready;
-                        const notificationOptions = {
-                            body: "This notification should appear immediately.",
-                            icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>",
-                            actions: [
-                                { action: 'snooze', title: 'Snooze 5 min' },
-                                { action: 'close', title: 'Close' }
-                            ],
-                        };
-        
-                        registration.showNotification("Test Notification (Now)", { ...notificationOptions, tag: 'test-notification-now' });
-                        
-                        // Use postMessage for the delayed notification
-                        registration.active?.postMessage({
-                            type: 'SCHEDULE_NOTIFICATION',
-                            title: 'Test Notification (10s)',
-                            options: {
-                                ...notificationOptions,
-                                body: "This notification should appear after 10 seconds.",
-                                tag: 'test-notification-10s'
-                            },
-                            delay: 10000
-                        });
 
-                    } catch (swError) {
-                        console.error("Service Worker is not ready or failed:", swError);
-                        alert("The service worker isn't ready. Please refresh the page and try again.");
-                    }
-                } else {
-                     alert("Notifications require a service worker, which is not supported in your browser.");
-                }
+        try {
+            // It's best practice to request permission right before you need it.
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                alert('Notification permission is required to run this test.');
+                return;
             }
-        } catch (e) {
-            console.error("Failed to schedule test notifications:", e);
-            alert(`Error scheduling notifications: ${e}`);
+
+            // Get the service worker registration. `ready` ensures it's active.
+            const registration = await navigator.serviceWorker.ready;
+
+            const notificationOptions = {
+                body: "This is a test notification from TaskMaster.",
+                // Use a relative path to a real asset for better compatibility.
+                icon: "/icon.svg", 
+                actions: [
+                    { action: 'snooze', title: 'Snooze 5 min' },
+                    { action: 'close', title: 'Close' }
+                ],
+            };
+
+            // Post message for IMMEDIATE notification
+            registration.active?.postMessage({
+                type: 'SCHEDULE_NOTIFICATION',
+                title: 'Test Notification (Now)',
+                options: { ...notificationOptions, tag: 'test-notification-now' },
+                delay: 0
+            });
+            
+            // Post message for DELAYED notification
+            registration.active?.postMessage({
+                type: 'SCHEDULE_NOTIFICATION',
+                title: 'Test Notification (10s)',
+                options: {
+                    ...notificationOptions,
+                    body: "This should appear 10 seconds after the button is clicked.",
+                    tag: 'test-notification-10s'
+                },
+                delay: 10000
+            });
+        } catch (err) {
+            console.error("Error scheduling test notifications:", err);
+            alert(`An error occurred with notifications: ${err instanceof Error ? err.message : String(err)}`);
         }
     };
 
