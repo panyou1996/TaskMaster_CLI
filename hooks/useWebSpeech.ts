@@ -27,6 +27,7 @@ export const useWebSpeech = () => {
         };
 
         recognition.onresult = (event: any) => {
+            console.log('onresult event:', event);
             let interimTranscript = '';
             let finalTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -36,6 +37,7 @@ export const useWebSpeech = () => {
                     interimTranscript += event.results[i][0].transcript;
                 }
             }
+            console.log('Updating transcript:', finalTranscript || interimTranscript);
             setTranscript(finalTranscript || interimTranscript);
             if (finalTranscript) {
                 onResult(finalTranscript);
