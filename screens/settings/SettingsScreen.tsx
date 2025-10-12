@@ -100,7 +100,8 @@ const SettingsScreen: React.FC = () => {
     const [loadingGoogle, setLoadingGoogle] = useState(false);
     const [errorGoogle, setErrorGoogle] = useState<string | null>(null);
     const [isDisconnectConfirmOpen, setIsDisconnectConfirmOpen] = useState(false);
-    const [isCalendarSyncing, setIsCalendarSyncing] = useState(false);
+    const [isCalendarPushing, setIsCalendarPushing] = useState(false);
+    const [isCalendarPulling, setIsCalendarPulling] = useState(false);
     const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
     // Check for calendar connection status on mount
@@ -292,8 +293,8 @@ const SettingsScreen: React.FC = () => {
         }
     };
 
-    const handleCalendarSync = async () => {
-        setIsCalendarSyncing(true);
+    const handleCalendarPush = async () => {
+        setIsCalendarPushing(true);
         setSyncMessage(null);
         setErrorGoogle(null);
     
@@ -304,13 +305,34 @@ const SettingsScreen: React.FC = () => {
     
             if (error) throw error;
             
-            setSyncMessage("Sync completed successfully!");
+            setSyncMessage("Push completed successfully!");
             syncData(); // Re-fetch all data to get latest changes from sync
         } catch (err: any) {
-            console.error("Error syncing calendar:", err);
-            setErrorGoogle(err.message || "An unknown error occurred during sync.");
+            console.error("Error pushing to calendar:", err);
+            setErrorGoogle(err.message || "An unknown error occurred during push.");
         } finally {
-            setIsCalendarSyncing(false);
+            setIsCalendarPushing(false);
+            setTimeout(() => setSyncMessage(null), 3000);
+        }
+    };
+
+    const handleCalendarPull = async () => {
+        setIsCalendarPulling(true);
+        setSyncMessage(null);
+        setErrorGoogle(null);
+    
+        try {
+            const { data, error } = await supabase.functions.invoke('calendar-pull');
+    
+            if (error) throw error;
+            
+            setSyncMessage(data.message || "Pull completed successfully! Refreshing data...");
+            await syncData(); // Re-fetch all data to get latest tasks
+        } catch (err: any) {
+            console.error("Error pulling from calendar:", err);
+            setErrorGoogle(err.message || "An unknown error occurred during pull.");
+        } finally {
+            setIsCalendarPulling(false);
             setTimeout(() => setSyncMessage(null), 3000);
         }
     };
@@ -410,9 +432,12 @@ const SettingsScreen: React.FC = () => {
                             </SettingsItem>
                         </div>
                         {googleConnected && (
-                            <div className="mt-4">
-                                <Button variant="secondary" onClick={handleCalendarSync} disabled={isCalendarSyncing}>
-                                    {isCalendarSyncing ? 'Syncing...' : 'Sync with Google Calendar'}
+                            <div className="mt-4 grid grid-cols-2 gap-3">
+                                <Button variant="secondary" onClick={handleCalendarPull} disabled={isCalendarPulling || isCalendarPushing}>
+                                    {isCalendarPulling ? 'Pulling...' : 'Pull from Calendar'}
+                                </Button>
+                                <Button variant="secondary" onClick={handleCalendarPush} disabled={isCalendarPushing || isCalendarPulling}>
+                                    {isCalendarPushing ? 'Pushing...' : 'Push to Calendar'}
                                 </Button>
                             </div>
                         )}

@@ -584,6 +584,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setOfflineQueue([]);
         setSyncError(null);
     }, [setOfflineQueue]);
+    
+    const addList = useCallback(async (listData: Omit<TaskList, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>) => {
+        if (!user) throw new Error("User not logged in");
+        const tempId = `temp_${Date.now()}`;
+        const newList: TaskList = { ...listData, id: tempId, user_id: user.id, status: 'pending' };
+        setLists(current => [...current, newList]);
+        addToQueue({ type: 'ADD_LIST', payload: { listData }, tempId });
+    }, [user, setLists, addToQueue]);
+
+    useEffect(() => {
+        if (user && lists.length > 0 && !loading) {
+            const hasGoogleCalendarList = lists.some(list => list.name === 'Google Calendar');
+            if (!hasGoogleCalendarList) {
+                const isPendingCreation = offlineQueue.some(op => 
+                    op.type === 'ADD_LIST' && op.payload.listData.name === 'Google Calendar'
+                );
+                if (!isPendingCreation) {
+                    addList({ name: 'Google Calendar', icon: '🗓️', color: 'blue' });
+                }
+            }
+        }
+    }, [user, lists, loading, offlineQueue, addList]);
 
     const addTask = useCallback(async (taskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'>): Promise<string | undefined> => {
         if (!user) {
@@ -661,14 +683,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addToQueue({ type: 'DELETE_TASK', payload: { taskId } });
         }
     }, [setTasks, setOfflineQueue, addToQueue, cancelNotification]);
-
-    const addList = useCallback(async (listData: Omit<TaskList, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>) => {
-        if (!user) throw new Error("User not logged in");
-        const tempId = `temp_${Date.now()}`;
-        const newList: TaskList = { ...listData, id: tempId, user_id: user.id, status: 'pending' };
-        setLists(current => [...current, newList]);
-        addToQueue({ type: 'ADD_LIST', payload: { listData }, tempId });
-    }, [user, setLists, addToQueue]);
     
     const updateList = useCallback(async (listId: string | number, updates: Partial<TaskList>) => {
         const cleanUpdates = { ...updates };
