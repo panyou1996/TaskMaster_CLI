@@ -210,7 +210,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const scheduleNotification = useCallback(async (task: Task) => {
         await cancelNotification(task.id);
     
-        // Corrected logic: A task MUST have a start time to trigger a notification.
         if (!areNotificationsGloballyEnabled() || task.reminder === null || task.reminder === undefined || !task.dueDate || !task.startTime || task.completed) {
             return;
         }
