@@ -86,19 +86,42 @@ self.addEventListener('fetch', (event) => {
 
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            if (clientList.length > 0) {
-                let client = clientList[0];
-                for (let i = 0; i < clientList.length; i++) {
-                    if (clientList[i].focused) {
-                        client = clientList[i];
+    const notification = event.notification;
+    const action = event.action;
+
+    // Always close the notification that was clicked
+    notification.close();
+
+    if (action === 'snooze') {
+        const title = notification.title.includes('(Snoozed)') ? notification.title : `${notification.title} (Snoozed)`;
+        // Schedule a new notification in 5 minutes
+        setTimeout(() => {
+            self.registration.showNotification(title, {
+                body: notification.body,
+                icon: notification.icon,
+                tag: notification.tag, // Re-use tag to replace if snoozed again
+                actions: notification.actions,
+                data: notification.data
+            });
+        }, 5 * 60 * 1000); // 5 minutes in milliseconds
+    } else if (action === 'close') {
+        // The notification is already closed, so we do nothing.
+    } else {
+        // Default action (no action button clicked, just the notification body)
+        // Focus the existing window or open a new one
+        event.waitUntil(
+            clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+                if (clientList.length > 0) {
+                    let client = clientList[0];
+                    for (let i = 0; i < clientList.length; i++) {
+                        if (clientList[i].focused) {
+                            client = clientList[i];
+                        }
                     }
+                    return client.focus();
                 }
-                return client.focus();
-            }
-            return clients.openWindow('/');
-        })
-    );
+                return clients.openWindow('/');
+            })
+        );
+    }
 });

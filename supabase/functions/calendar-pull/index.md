@@ -1,6 +1,6 @@
 // supabase/functions/calendar-pull/index.ts
-// FIX: Corrected the Supabase Edge Function type reference URL. The previous URL was invalid, causing `Deno` types to be unresolved.
-/// <reference types="https://esm.sh/@supabase/functions-js@2.4.1/src/edge-runtime.d.ts" />
+// FIX: Corrected the Supabase Edge Function type reference URL to resolve Deno types. The previous URL was invalid.
+/// <reference types="https://esm.sh/@supabase/functions-js@2/src/edge-runtime.d.ts" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
