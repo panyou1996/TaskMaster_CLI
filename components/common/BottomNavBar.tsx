@@ -123,8 +123,7 @@ const BottomNavBar: React.FC = () => {
                     setInitialAIPrompt(finalTranscript);
                     setIsAddTaskWithAIOpen(true);
                 }
-                cleanupRecording();
-            });
+            }, cleanupRecording);
         }
     }, [isRecording, cleanupRecording, startWebSpeech]);
 

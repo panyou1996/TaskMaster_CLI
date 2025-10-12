@@ -5,7 +5,7 @@ export const useWebSpeech = () => {
     const [transcript, setTranscript] = useState('');
     const recognitionRef = useRef<any>(null);
 
-    const start = useCallback((onResult: (result: string) => void) => {
+    const start = useCallback((onResult: (result: string) => void, onEnd: () => void) => {
         if (!('webkitSpeechRecognition' in window)) {
             alert('Web Speech API is not supported by this browser.');
             return;
@@ -23,6 +23,7 @@ export const useWebSpeech = () => {
 
         recognition.onend = () => {
             setIsRecording(false);
+            onEnd();
         };
 
         recognition.onresult = (event: any) => {
