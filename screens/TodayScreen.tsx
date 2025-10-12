@@ -772,56 +772,49 @@ const TodayScreen: React.FC = () => {
     };
 
     const handleTestNotification = async () => {
-        // Check for browser support first.
-        if (!('serviceWorker' in navigator) || !('Notification' in window)) {
-            alert("Notifications are not supported in this browser.");
+        if (!('Notification' in window) || !navigator.serviceWorker) {
+            alert("This browser does not support notifications.");
             return;
         }
 
-        try {
-            // It's best practice to request permission right before you need it.
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                alert('Notification permission is required to run this test.');
-                return;
-            }
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            alert('Notification permission is required to run this test.');
+            return;
+        }
 
-            // Get the service worker registration. `ready` ensures it's active.
-            const registration = await navigator.serviceWorker.ready;
-
-            const notificationOptions = {
+        navigator.serviceWorker.ready.then(registration => {
+            const commonOptions = {
                 body: "This is a test notification from TaskMaster.",
-                // Use a relative path to a real asset for better compatibility.
-                icon: "/icon.svg", 
+                icon: "/icon.svg",
                 actions: [
                     { action: 'snooze', title: 'Snooze 5 min' },
                     { action: 'close', title: 'Close' }
-                ],
+                ]
             };
 
             // Post message for IMMEDIATE notification
             registration.active?.postMessage({
-                type: 'SCHEDULE_NOTIFICATION',
+                type: 'SHOW_NOTIFICATION',
                 title: 'Test Notification (Now)',
-                options: { ...notificationOptions, tag: 'test-notification-now' },
-                delay: 0
+                options: { ...commonOptions, tag: 'test-now' }
             });
-            
+
             // Post message for DELAYED notification
             registration.active?.postMessage({
-                type: 'SCHEDULE_NOTIFICATION',
+                type: 'SHOW_NOTIFICATION',
                 title: 'Test Notification (10s)',
+                delay: 10000,
                 options: {
-                    ...notificationOptions,
+                    ...commonOptions,
                     body: "This should appear 10 seconds after the button is clicked.",
-                    tag: 'test-notification-10s'
-                },
-                delay: 10000
+                    tag: 'test-10s'
+                }
             });
-        } catch (err) {
-            console.error("Error scheduling test notifications:", err);
-            alert(`An error occurred with notifications: ${err instanceof Error ? err.message : String(err)}`);
-        }
+        }).catch(err => {
+            console.error('Service Worker not ready:', err);
+            alert('Service Worker is not ready. Please try again or reload the page.');
+        });
     };
 
 

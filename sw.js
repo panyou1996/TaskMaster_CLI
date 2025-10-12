@@ -128,10 +128,21 @@ self.addEventListener('notificationclick', (event) => {
 
 // Handle messages from the client to schedule notifications
 self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
-        const { title, options, delay } = event.data;
-        setTimeout(() => {
-            self.registration.showNotification(title, options);
-        }, delay);
+    if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+        const { title, delay, options } = event.data;
+        
+        const showNotification = () => {
+            return self.registration.showNotification(title, options).catch(err => {
+                console.error(`Error showing notification: ${err}`);
+            });
+        };
+
+        const promise = new Promise(resolve => {
+            setTimeout(() => {
+                showNotification().then(resolve);
+            }, delay || 0);
+        });
+
+        event.waitUntil(promise);
     }
 });
