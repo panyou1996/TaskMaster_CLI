@@ -9,6 +9,8 @@ import { Moment } from '../data/mockData';
 import { AddMomentScreen, NewMomentData } from './AddMomentScreen';
 import TagsView from '../components/views/TagsView';
 import CalendarView from '../components/views/CalendarView';
+import EditTagScreen from './EditTagScreen';
+import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const MomentCard: React.FC<{ id: number | string; title: string; description: string; imageUrl: string; index: number; createdAt?: string; tags?: string[]; }> = ({ id, title, description, imageUrl, index, createdAt, tags }) => {
     const formattedTime = useMemo(() => {
@@ -46,13 +48,18 @@ const MomentCard: React.FC<{ id: number | string; title: string; description: st
 
 
 const MomentsScreen: React.FC = () => {
-    const { moments: momentsData, addMoment, syncData } = useData();
+    const { moments: momentsData, addMoment, syncData, updateTag, deleteTag } = useData();
     const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'moments' | 'calendar' | 'tags'>('moments');
     const [isSearchVisible, setIsSearchVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const searchInputRef = useRef<HTMLInputElement>(null);
     
+    // State for modals, lifted from TagsView
+    const [isEditTagOpen, setIsEditTagOpen] = useState(false);
+    const [tagToEdit, setTagToEdit] = useState<string | null>(null);
+    const [tagToDelete, setTagToDelete] = useState<string | null>(null);
+
     // Pull to refresh and swipe state
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [pullDelta, setPullDelta] = useState(0);
@@ -92,6 +99,35 @@ const MomentsScreen: React.FC = () => {
             tags: newMomentData.tags,
         };
         await addMoment(newMoment);
+    };
+
+    // Handlers for modals, lifted from TagsView
+    const handleOpenEditModal = (tagName: string) => {
+        setTagToEdit(tagName);
+        setIsEditTagOpen(true);
+    };
+
+    const handleCloseEditModal = () => {
+        setIsEditTagOpen(false);
+        setTagToEdit(null);
+    };
+
+    const handleSaveTag = async (oldName: string, newName: string) => {
+        await updateTag(oldName, newName);
+    };
+
+    const handleDeleteTagRequest = (tagName: string) => {
+        handleCloseEditModal();
+        setTimeout(() => {
+            setTagToDelete(tagName);
+        }, 300);
+    };
+    
+    const handleConfirmDelete = async () => {
+        if (tagToDelete) {
+            await deleteTag(tagToDelete);
+            setTagToDelete(null);
+        }
     };
     
     // Combined handlers for pull-to-refresh and swipe
@@ -225,7 +261,7 @@ const MomentsScreen: React.FC = () => {
                             </div>
                             {/* Tags View */}
                             <div ref={tagsViewRef} className="w-full flex-shrink-0 h-full overflow-y-auto pb-24">
-                                <TagsView />
+                                <TagsView onOpenEditModal={handleOpenEditModal} />
                             </div>
                         </div>
                     </main>
@@ -277,6 +313,21 @@ const MomentsScreen: React.FC = () => {
                 isOpen={isAddMomentOpen}
                 onClose={() => setIsAddMomentOpen(false)}
                 onAddMoment={handleAddMoment}
+            />
+            <EditTagScreen
+                isOpen={isEditTagOpen}
+                onClose={handleCloseEditModal}
+                tagName={tagToEdit}
+                onSaveTag={handleSaveTag}
+                onDeleteTag={handleDeleteTagRequest}
+            />
+            <ConfirmationModal
+                isOpen={!!tagToDelete}
+                onClose={() => setTagToDelete(null)}
+                onConfirm={handleConfirmDelete}
+                title={`Delete "${tagToDelete}"?`}
+                message="This will remove the tag from all associated moments. This action cannot be undone."
+                confirmText="Delete Tag"
             />
         </MainLayout>
     );

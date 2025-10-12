@@ -76,6 +76,7 @@ interface DataContextType {
     
     tags: string[];
     addTag: (tag: string) => void;
+    updateTag: (oldName: string, newName: string) => Promise<void>;
     deleteTag: (tag: string) => Promise<void>;
 
     theme: Theme;
@@ -794,6 +795,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [tags, setTags]);
     
+    const updateTag = useCallback(async (oldName: string, newName: string) => {
+        if (tags.some(t => t.toLowerCase() === newName.trim().toLowerCase() && t.toLowerCase() !== oldName.toLowerCase())) {
+            throw new Error(`Tag "${newName.trim()}" already exists.`);
+        }
+        
+        const trimmedNewName = newName.trim();
+
+        setTags(current => {
+            const newTags = current.map(t => t === oldName ? trimmedNewName : t);
+            return [...new Set(newTags)].sort();
+        });
+
+        const momentsToUpdate = moments.filter(m => m.tags?.includes(oldName));
+        const updatePromises = momentsToUpdate.map(moment => {
+            const newTags = moment.tags?.map(t => t === oldName ? trimmedNewName : t);
+            return updateMoment(moment.id, { tags: newTags });
+        });
+        
+        await Promise.all(updatePromises);
+    }, [tags, moments, setTags, updateMoment]);
+
     const deleteTag = useCallback(async (tagToDelete: string) => {
         const momentsToUpdate = moments.filter(m => m.tags?.includes(tagToDelete));
         const updatePromises = momentsToUpdate.map(moment => {
@@ -824,10 +846,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addList, updateList, deleteList,
         addMoment, updateMoment, deleteMoment,
         addFocusSession,
-        tags, addTag, deleteTag,
+        tags, addTag, updateTag, deleteTag,
         theme, setTheme,
         fontSize, setFontSize
-    }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, deleteTag, theme, setTheme, fontSize, setFontSize]);
+    }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, updateTag, deleteTag, theme, setTheme, fontSize, setFontSize]);
 
     return (
         <DataContext.Provider value={value}>
