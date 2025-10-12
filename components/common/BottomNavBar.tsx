@@ -12,6 +12,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { useWebSpeech } from '../../hooks/useWebSpeech';
 import { Capacitor } from '@capacitor/core';
+import { ImpactStyle } from '@capacitor/haptics';
 
 const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
     const commonClasses = "flex flex-col items-center justify-center gap-1 transition-colors duration-200";
