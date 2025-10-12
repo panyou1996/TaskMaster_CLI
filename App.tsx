@@ -41,9 +41,17 @@ const AppRoutes: React.FC = () => {
   useEffect(() => {
     const root = window.document.documentElement;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
     const applyTheme = () => {
         const isDark = theme === 'Dark' || (theme === 'System' && mediaQuery.matches);
         root.classList.toggle('dark', isDark);
+
+        if (themeColorMeta) {
+          // Match the header background color for a seamless immersive experience
+          // --color-surface-container: #FFFFFF (light), #242526 (dark)
+          themeColorMeta.setAttribute('content', isDark ? '#242526' : '#FFFFFF');
+        }
     };
     applyTheme();
     mediaQuery.addEventListener('change', applyTheme);
