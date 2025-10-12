@@ -6,7 +6,9 @@
     <title>TaskMaster</title>
     <link rel="icon" href="data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>">
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#6D55A6" />
+    <meta name="theme-color" content="#F9F9FC" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#18191a" media="(prefers-color-scheme: dark)">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -120,6 +122,7 @@
         padding-right: env(safe-area-inset-right);
         padding-bottom: env(safe-area-inset-bottom);
         padding-left: env(safe-area-inset-left);
+        overscroll-behavior-y: contain;
       }
 
       @keyframes page-fade-in-animation {
