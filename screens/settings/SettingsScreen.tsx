@@ -303,12 +303,24 @@ const SettingsScreen: React.FC = () => {
     };
 
     const handleCalendarSync = async () => {
+        if (!session) {
+            alert("You must be logged in to sync your calendar.");
+            return;
+        }
         setIsCalendarSyncing(true);
         setSyncMessage(null);
         setErrorGoogle(null);
     
         try {
-            const { error } = await supabase.functions.invoke('calendar-sync', {
+            const supabaseWithAuth = createClient(supabaseUrl, supabaseAnonKey, {
+                global: {
+                    headers: {
+                        Authorization: `Bearer ${session.access_token}`
+                    }
+                }
+            });
+
+            const { error } = await supabaseWithAuth.functions.invoke('calendar-sync', {
                 body: { provider: 'google' },
             });
     
