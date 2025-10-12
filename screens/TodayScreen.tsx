@@ -792,50 +792,49 @@ const TodayScreen: React.FC = () => {
                 await LocalNotifications.schedule({
                     notifications: [
                         {
-                            title: "Debug Notification (Now)",
+                            title: "Test Notification (Now)",
                             body: "This notification should appear immediately.",
                             id: 99999,
                             schedule: { at: new Date() },
+                            actionTypeId: 'TEST_ACTIONS'
                         },
                         {
-                            title: "Debug Notification (10s)",
+                            title: "Test Notification (10s)",
                             body: "This notification should appear after 10 seconds.",
                             id: 99998,
                             schedule: { at: new Date(Date.now() + 10000) },
+                             actionTypeId: 'TEST_ACTIONS'
                         },
                     ],
                 });
             } else {
-                // Web implementation using Service Worker for better reliability
-                if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
-                    navigator.serviceWorker.ready.then(registration => {
-                        const notificationOptions = {
-                            body: "This notification should appear immediately.",
-                            icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>",
-                            actions: [
-                                { action: 'snooze', title: 'Snooze 5 min' },
-                                { action: 'close', title: 'Close' }
-                            ],
-                            tag: 'test-notification-now'
-                        };
-
-                        registration.showNotification("Test Notification (Now)", notificationOptions);
-
-                        setTimeout(() => {
-                            registration.showNotification("Test Notification (10s)", {
-                                ...notificationOptions,
-                                body: "This notification should appear after 10 seconds.",
-                                tag: 'test-notification-10s'
-                            });
-                        }, 10000);
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    const registration = await navigator.serviceWorker.ready;
+                    const notificationOptions = {
+                        body: "This notification should appear immediately.",
+                        icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>",
+                        actions: [
+                            { action: 'snooze', title: 'Snooze 5 min' },
+                            { action: 'close', title: 'Close' }
+                        ],
+                    };
+    
+                    registration.showNotification("Test Notification (Now)", { ...notificationOptions, tag: 'test-notification-now' });
+                    
+                    registration.active?.postMessage({
+                        type: 'SCHEDULE_NOTIFICATION',
+                        title: 'Test Notification (10s)',
+                        options: {
+                            ...notificationOptions,
+                            body: "This notification should appear after 10 seconds.",
+                            tag: 'test-notification-10s'
+                        },
+                        delay: 10000
                     });
                 } else {
-                     // Fallback for browsers without SW support
                      alert("Notifications require a service worker, which is not supported or ready in your browser.");
                 }
             }
-
-            alert('Test notifications scheduled. You should see one now and another in 10 seconds (if the tab remains active).');
         } catch (e) {
             console.error("Failed to schedule test notifications:", e);
             alert(`Error scheduling notifications: ${e}`);

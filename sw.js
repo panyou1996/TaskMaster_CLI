@@ -125,3 +125,13 @@ self.addEventListener('notificationclick', (event) => {
         );
     }
 });
+
+// Handle messages from the client to schedule notifications
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
+        const { title, options, delay } = event.data;
+        setTimeout(() => {
+            self.registration.showNotification(title, options);
+        }, delay);
+    }
+});
