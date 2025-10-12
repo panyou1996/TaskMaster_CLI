@@ -146,7 +146,6 @@ const BottomNavBar: React.FC = () => {
     }, [isWebRecording]);
 
     useEffect(() => {
-        console.log('webTranscript changed:', webTranscript);
         setLiveTranscription(webTranscript);
     }, [webTranscript]);
 
