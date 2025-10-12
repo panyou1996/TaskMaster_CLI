@@ -71,61 +71,55 @@ const BottomNavBar: React.FC = () => {
     }, []);
 
     const startRecording = useCallback(async () => {
-        if (isRecording) return;
+      if (isRecording) return;
 
-        if (Capacitor.isNativePlatform()) {
-            try {
-                const available = await SpeechRecognition.available();
-                if (!available) {
-                    alert('Speech recognition is not available on this device.');
-                    return;
-                }
+      if (Capacitor.isNativePlatform()) {
+          try {
+              const available = await SpeechRecognition.available();
+              if (!available) {
+                  alert('Speech recognition is not available on this device.');
+                  return;
+              }
 
-                const permissionStatus = await SpeechRecognition.requestPermissions();
-                if (permissionStatus.speechRecognition !== 'granted') {
-                    alert('Microphone permission is required for speech recognition.');
-                    return;
-                }
+              const permissionStatus = await SpeechRecognition.requestPermissions();
+              if (permissionStatus.speechRecognition !== 'granted') {
+                  alert('Microphone permission is required for speech recognition.');
+                  return;
+              }
 
-                setShowRecordingUI(true);
-                setIsRecording(true);
-                setLiveTranscription('');
+              setShowRecordingUI(true);
+              setIsRecording(true);
+              setLiveTranscription('');
 
-                SpeechRecognition.addListener('partialResults', (data: any) => {
-                    if (data.matches && data.matches.length > 0) {
-                        setLiveTranscription(data.matches[0]);
-                    }
-                });
+              SpeechRecognition.addListener('partialResults', (data: any) => {
+                  if (data.matches && data.matches.length > 0) {
+                      setLiveTranscription(data.matches[0]);
+                  }
+              });
 
-                const result = await SpeechRecognition.start({
-                    language: 'en-US',
-                    maxResults: 1,
-                    prompt: 'Say something...',
-                    partialResults: true,
-                });
+              await SpeechRecognition.start({
+                  language: 'en-US',
+                  maxResults: 1,
+                  prompt: 'Say something...',
+                  partialResults: true,
+              });
 
-                if (result && result.matches && result.matches.length > 0) {
-                    const finalTranscript = result.matches[0].trim();
-                    if (finalTranscript) {
-                        setInitialAIPrompt(finalTranscript);
-                        setIsAddTaskWithAIOpen(true);
-                    }
-                }
-            } catch (error: any) {
-                console.error('Speech recognition error:', error);
-            } finally {
-                cleanupRecording();
-            }
-        } else {
-            // Web-based speech recognition
-            setShowRecordingUI(true);
-            startWebSpeech((finalTranscript) => {
-                if (finalTranscript) {
-                    setInitialAIPrompt(finalTranscript);
-                    setIsAddTaskWithAIOpen(true);
-                }
-            }, cleanupRecording);
-        }
+          } catch (error: any) {
+              console.error('Speech recognition error:', error);
+          } finally {
+              // This finally block ensures cleanup happens even if start() rejects (e.g. user cancels)
+              cleanupRecording();
+          }
+      } else {
+          // Web-based speech recognition
+          setShowRecordingUI(true);
+          startWebSpeech((finalTranscript) => {
+              if (finalTranscript) {
+                  setInitialAIPrompt(finalTranscript);
+                  setIsAddTaskWithAIOpen(true);
+              }
+          }, cleanupRecording);
+      }
     }, [isRecording, cleanupRecording, startWebSpeech]);
 
     const stopRecording = useCallback(() => {
@@ -167,47 +161,65 @@ const BottomNavBar: React.FC = () => {
             listenerPromise.then(listener => listener.remove());
         };
     }, [isRecording, stopRecording]);
+
+    useEffect(() => {
+      const handleGlobalPointerUpOrCancel = () => {
+          // If a long press was in progress or has finished, stop it.
+          if (isLongPressRef.current) {
+              stopRecording();
+          }
+          
+          // If a long press was about to start (timer running), cancel it.
+          if (longPressTimerRef.current) {
+              clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+          }
+
+          // Always reset the long press flag on pointer up/cancel.
+          isLongPressRef.current = false;
+      };
+
+      window.addEventListener('pointerup', handleGlobalPointerUpOrCancel);
+      window.addEventListener('pointercancel', handleGlobalPointerUpOrCancel);
+
+      return () => {
+          window.removeEventListener('pointerup', handleGlobalPointerUpOrCancel);
+          window.removeEventListener('pointercancel', handleGlobalPointerUpOrCancel);
+      };
+    }, [stopRecording]);
     
     const handlePointerDown = () => {
         isLongPressRef.current = false;
-        const timerId = setTimeout(() => {
+        // Clear any lingering timer, just in case.
+        if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+        }
+        longPressTimerRef.current = setTimeout(() => {
             isLongPressRef.current = true;
+            longPressTimerRef.current = null; // Timer has fired, no need to clear it on pointer up
             if (isMenuOpen) setIsMenuOpen(false);
             
-            setTimeout(() => {
-                triggerHapticImpact(ImpactStyle.Medium);
-            }, 0);
+            triggerHapticImpact(ImpactStyle.Medium);
 
             startRecording();
         }, 250);
-        longPressTimerRef.current = timerId;
     };
 
     const handlePointerUp = () => {
-        if(longPressTimerRef.current) {
+        // If the timer is still running, it means it was a short press (a "click").
+        if (longPressTimerRef.current) {
             clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+            
+            // We can be sure it's not a long press, so toggle the menu.
+            if (!isLongPressRef.current) {
+                triggerHapticImpact();
+                setIsMenuOpen(prev => !prev);
+            }
         }
-        
-        if (isLongPressRef.current) {
-            stopRecording();
-        } else {
-            triggerHapticImpact();
-            setIsMenuOpen(prev => !prev);
-        }
-        isLongPressRef.current = false;
-    };
-
-    const handlePointerLeave = () => {
-        // Always clear the long press timer if the pointer leaves.
-        if(longPressTimerRef.current) {
-            clearTimeout(longPressTimerRef.current);
-        }
-
-        // If we were already recording, stop it.
-        if (isRecording) {
-            stopRecording();
-            isLongPressRef.current = false;
-        }
+        // If it was a long press (timer is null, isLongPressRef is true), 
+        // the global `pointerup` listener handles `stopRecording`.
+        // We do nothing here for that case.
     };
 
     const handleMomentButtonClick = async () => {
@@ -339,7 +351,8 @@ const BottomNavBar: React.FC = () => {
                 <button
                     onPointerDown={handlePointerDown}
                     onPointerUp={handlePointerUp}
-                    onPointerLeave={handlePointerLeave}
+                    onContextMenu={(e) => e.preventDefault()}
+                    style={{ touchAction: 'none' }}
                     className={`w-16 h-16 bg-[var(--color-primary-500)] text-[var(--color-on-primary)] rounded-full flex items-center justify-center fab-shadow transform transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-200)] ${isMenuOpen ? 'rotate-[-225deg]' : ''} ${isRecording ? 'animate-fab-pulse' : ''}`}
                     aria-haspopup="true"
                     aria-expanded={isMenuOpen}

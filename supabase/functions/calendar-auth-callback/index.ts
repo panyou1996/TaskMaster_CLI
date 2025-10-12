@@ -1,8 +1,6 @@
 // supabase/functions/calendar-auth-callback/index.ts
-// FIX: The type reference for Supabase functions was failing to resolve. Using `https://esm.sh/` which is a reliable CDN for ES modules.
-// FIX: Updated the type reference to a specific version to resolve TypeScript errors for `Deno`.
-// FIX: The type reference URL for Supabase Edge Functions was incorrect. This is updated to a working URL which provides the Deno runtime types, resolving the 'Cannot find name Deno' errors.
-/// <reference types="https://esm.sh/v135/@supabase/functions-js@2.4.1/src/edge-runtime.d.ts" />
+// FIX: Corrected the Supabase Edge Function type reference URL. The previous URL was invalid, causing `Deno` types to be unresolved.
+/// <reference types="https://esm.sh/@supabase/functions-js@2.4.1/src/edge-runtime.d.ts" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
