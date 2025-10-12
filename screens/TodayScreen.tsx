@@ -786,7 +786,7 @@ const TodayScreen: React.FC = () => {
             alert('Notification permission is required to run this test.');
             return;
         }
-
+    
         try {
             if (Capacitor.isNativePlatform()) {
                 await LocalNotifications.schedule({
@@ -808,31 +808,38 @@ const TodayScreen: React.FC = () => {
                     ],
                 });
             } else {
-                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                    const registration = await navigator.serviceWorker.ready;
-                    const notificationOptions = {
-                        body: "This notification should appear immediately.",
-                        icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>",
-                        actions: [
-                            { action: 'snooze', title: 'Snooze 5 min' },
-                            { action: 'close', title: 'Close' }
-                        ],
-                    };
-    
-                    registration.showNotification("Test Notification (Now)", { ...notificationOptions, tag: 'test-notification-now' });
-                    
-                    registration.active?.postMessage({
-                        type: 'SCHEDULE_NOTIFICATION',
-                        title: 'Test Notification (10s)',
-                        options: {
-                            ...notificationOptions,
-                            body: "This notification should appear after 10 seconds.",
-                            tag: 'test-notification-10s'
-                        },
-                        delay: 10000
-                    });
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registration = await navigator.serviceWorker.ready;
+                        const notificationOptions = {
+                            body: "This notification should appear immediately.",
+                            icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>",
+                            actions: [
+                                { action: 'snooze', title: 'Snooze 5 min' },
+                                { action: 'close', title: 'Close' }
+                            ],
+                        };
+        
+                        registration.showNotification("Test Notification (Now)", { ...notificationOptions, tag: 'test-notification-now' });
+                        
+                        // Use postMessage for the delayed notification
+                        registration.active?.postMessage({
+                            type: 'SCHEDULE_NOTIFICATION',
+                            title: 'Test Notification (10s)',
+                            options: {
+                                ...notificationOptions,
+                                body: "This notification should appear after 10 seconds.",
+                                tag: 'test-notification-10s'
+                            },
+                            delay: 10000
+                        });
+
+                    } catch (swError) {
+                        console.error("Service Worker is not ready or failed:", swError);
+                        alert("The service worker isn't ready. Please refresh the page and try again.");
+                    }
                 } else {
-                     alert("Notifications require a service worker, which is not supported or ready in your browser.");
+                     alert("Notifications require a service worker, which is not supported in your browser.");
                 }
             }
         } catch (e) {
@@ -935,26 +942,19 @@ const TodayScreen: React.FC = () => {
                                         </p>
                                     </div>
                                 )}
-
-                                {isDebugPanelOpen && (
-                                    <div className="p-4 mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl flex flex-col items-center gap-2 animate-page-fade-in">
-                                        <h3 className="font-bold text-yellow-800 dark:text-yellow-300">Debug Panel</h3>
-                                        <p className="text-xs text-center text-yellow-700 dark:text-yellow-400">Click the button to test if notifications are working on your device.</p>
-                                        <Button variant="secondary" onClick={handleTestNotification} className="!w-auto !px-4 !py-1.5">
-                                            Test Notification (Now & 10s)
-                                        </Button>
-                                    </div>
-                                )}
-
+                                <div className="p-4 mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl flex flex-col items-center gap-2 animate-page-fade-in">
+                                    <h3 className="font-bold text-yellow-800 dark:text-yellow-300">Debug Panel</h3>
+                                    <p className="text-xs text-center text-yellow-700 dark:text-yellow-400">Click the button to test if notifications are working on your device.</p>
+                                    <Button variant="secondary" onClick={handleTestNotification} className="!w-auto !px-4 !py-1.5">
+                                        Test Notification (Now & 10s)
+                                    </Button>
+                                </div>
                                 {totalTodayTasks > 0 ? (
                                     <>
                                         <div className="mb-4 flex-shrink-0">
                                             <div className="flex justify-between items-center mb-2">
                                                 <div className="flex items-baseline gap-2">
                                                     <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Today's Tasks</h2>
-                                                     <button onClick={() => setIsDebugPanelOpen(p => !p)} className="p-1 -m-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)]">
-                                                        <BugIcon className="w-4 h-4" />
-                                                    </button>
                                                     <span className="text-sm font-medium text-[var(--color-text-secondary)]">{finishedTasks.length}/{totalTodayTasks}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
