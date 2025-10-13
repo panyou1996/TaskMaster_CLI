@@ -164,6 +164,7 @@ const SettingsScreen: React.FC = () => {
 
     const handleSyncNow = () => {
         if (!isSyncing) {
+            console.log('[SettingsScreen] Sync Now clicked');
             syncData();
         }
     };

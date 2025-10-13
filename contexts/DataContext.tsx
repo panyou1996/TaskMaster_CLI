@@ -191,6 +191,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [syncError, setSyncError] = useState<string | null>(null);
     const isProcessingQueue = useRef(false);
     const cleanupRun = useRef(false);
+    // Keep a ref to the offline queue to avoid stale closures during sync
+    const offlineQueueRef = useRef<OfflineOperation[]>(offlineQueue);
     
     const [debugLog, setDebugLog] = useState<string[]>([]);
     const addDebugLog = useCallback((log: string) => {
@@ -228,7 +230,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const scheduleNotification = useCallback(async (task: Task) => {
         await cancelNotification(task.id);
 
-        if (!areNotificationsGloballyEnabled() || task.reminder === null || task.reminder === undefined || !task.dueDate || !task.startTime || task.completed) {
+        if (!areNotificationsGloballyEnabled() || task.reminder === null || task.reminder === undefined || !task.startTime || task.completed) {
             return;
         }
 
@@ -237,7 +239,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
         }
 
-        const [year, month, day] = task.dueDate.split('-').map(Number);
+        // Derive the event date: prefer startDate, then dueDate, then today's date when assigned to Today
+        const eventDateStr = task.startDate || task.dueDate || (task.today ? new Date().toISOString().split('T')[0] : undefined);
+        if (!eventDateStr) {
+            // Cannot determine which date the startTime belongs to; skip scheduling
+            addDebugLog(`Skipping scheduling for task ${task.id}: no event date available`);
+            return;
+        }
+        const [year, month, day] = eventDateStr.split('-').map(Number);
         const [hour, minute] = task.startTime.split(':').map(Number);
 
         if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
@@ -249,6 +258,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const notifyAt = new Date(eventTime.getTime() - task.reminder * 60 * 1000);
 
         if (notifyAt < new Date()) {
+            addDebugLog(`Not scheduling notification for task ${task.id}: notifyAt ${notifyAt.toISOString()} is in the past`);
             return; // Don't schedule notifications for past events
         }
 
@@ -266,20 +276,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else {
                 const delay = notifyAt.getTime() - Date.now();
                 if (delay > 0) {
+                    addDebugLog(`Scheduling web notification for task ${task.id} in ${Math.round(delay/1000)}s at ${notifyAt.toISOString()}`);
                     const timeoutId = setTimeout(() => {
+                        addDebugLog(`Web notification timeout fired for task ${task.id} (showing now)`);
                         if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
                             navigator.serviceWorker.ready.then(registration => {
-                                registration.showNotification('Task Reminder', {
+                                const options: NotificationOptions = {
                                     body: task.title,
-                                    icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>",
-                                    tag: String(task.id) // Use tag to prevent duplicate notifications and for identification
-                                });
+                                    icon: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`,
+                                    tag: String(task.id), // Use tag to prevent duplicate notifications and for identification
+                                    actions: [
+                                        { action: 'snooze', title: 'Snooze 5min' },
+                                        { action: 'complete', title: 'Complete' }
+                                    ],
+                                    data: { taskId: task.id }
+                                };
+                                registration.showNotification('Task Reminder', options);
                             });
                         } else if (Notification.permission === 'granted') {
                             // Fallback for browsers without SW support
                             new Notification("Task Reminder", {
                                 body: task.title,
-                                icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>"
+                                icon: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`
                             });
                         }
                         webNotificationTimeouts.current.delete(task.id);
@@ -291,6 +309,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error("Failed to schedule notification:", e);
         }
     }, [cancelNotification]);
+
+    
 
     const rescheduleAllNotifications = useCallback(async () => {
         if (!areNotificationsGloballyEnabled()) return;
@@ -420,7 +440,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const errorMessage = getErrorMessage(error);
                 setSyncError(`Failed to process offline operation "${operation.type}": ${errorMessage}`);
                 if (processedOperationIds.size > 0) {
-                    setOfflineQueue(current => current.filter(op => !processedOperationIds.has(op.id)));
+                    setOfflineQueue(current => {
+                        const next = current.filter(op => !processedOperationIds.has(op.id));
+                        offlineQueueRef.current = next;
+                        return next;
+                    });
                 }
                 isProcessingQueue.current = false;
                 return;
@@ -428,22 +452,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     
         if (processedOperationIds.size > 0) {
-            setOfflineQueue(current => current.filter(op => !processedOperationIds.has(op.id)));
+            setOfflineQueue(current => {
+                const next = current.filter(op => !processedOperationIds.has(op.id));
+                offlineQueueRef.current = next;
+                return next;
+            });
         }
         isProcessingQueue.current = false;
     }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments, setFocusHistory, scheduleNotification, cancelNotification]);
     
     const syncData = useCallback(async (userOverride?: User | null) => {
         const targetUser = userOverride !== undefined ? userOverride : user;
-        if (!targetUser || !isOnline || isSyncing) {
+        console.log('[DataContext] syncData invoked', { targetUserId: targetUser?.id, isOnline, isSyncing, offlineQueueLength: offlineQueue.length });
+        if (!targetUser) {
+            console.log('[DataContext] syncData aborted: no target user');
+            return;
+        }
+        if (!isOnline) {
+            console.log('[DataContext] syncData aborted: offline');
+            return;
+        }
+        if (isSyncing) {
+            console.log('[DataContext] syncData aborted: already syncing');
             return;
         }
     
-        setIsSyncing(true);
+    console.log('[DataContext] syncData starting upload/process');
+    setIsSyncing(true);
         setSyncError(null);
     
         try {
             await processOfflineQueueInternal(targetUser);
+            // allow React state (offlineQueue) to settle before fetching server data to avoid races
+            await new Promise(resolve => setTimeout(resolve, 0));
 
             const [{ data: profileData, error: profileError }, { data: listsData, error: listsError }, { data: tasksData, error: tasksError }, { data: momentsData, error: momentsError }, { data: focusData, error: focusError }] = await Promise.all([
                 supabase.from('profiles').select('*').eq('id', targetUser.id).single(),
@@ -542,6 +583,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             syncDataRef.current();
         }
     }, [isOnline, isSyncing, offlineQueue.length]);
+
+    // Ensure notifications are (re)scheduled when the app loads or tasks change
+    useEffect(() => {
+        // Run asynchronously and don't block render
+        (async () => {
+            try {
+                await rescheduleAllNotifications();
+            } catch (e) {
+                console.error('Failed to reschedule notifications on tasks change', e);
+            }
+        })();
+    }, [rescheduleAllNotifications, tasks.length]);
     
     useEffect(() => {
         setLoading(true);
@@ -575,7 +628,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setLists([]);
               setMoments([]);
               setFocusHistory([]);
-              setOfflineQueue([]);
+                            setOfflineQueue([]);
+                            offlineQueueRef.current = [];
               setSyncError(null);
             }
           }
@@ -761,6 +815,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [lists, setLists, setTasks, setOfflineQueue, addToQueue]);
 
+    // Listen for notification action messages from the service worker
+    useEffect(() => {
+        const handler = (event: MessageEvent) => {
+            try {
+                const data = event.data;
+                if (data && data.type === 'NOTIFICATION_ACTION') {
+                    if (data.action === 'complete' && data.taskId) {
+                        // mark complete if the task still exists locally
+                        updateTask(data.taskId, { completed: true }).catch(err => console.error('Failed to mark task complete from SW message', err));
+                    }
+                }
+            } catch (e) {
+                console.error('Error handling SW message in DataProvider', e);
+            }
+        };
+
+        navigator.serviceWorker?.addEventListener('message', handler);
+        return () => navigator.serviceWorker?.removeEventListener('message', handler);
+    }, [updateTask]);
+
     const addMoment = useCallback(async (momentData: Omit<Moment, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>) => {
         if (!user) throw new Error("User not logged in");
         const tempId = `temp_${Date.now()}`;
@@ -889,6 +963,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         theme, setTheme,
         fontSize, setFontSize,
         debugLog, addDebugLog,
+        // Debug helper to show a notification now for a given task id (useful for testing)
+        debugNotifyNow: async (taskId?: string | number) => {
+            try {
+                const t = taskId ? tasks.find(x => x.id === taskId) : tasks.find(x => !x.completed && x.today);
+                if (!t) {
+                    console.warn('debugNotifyNow: no matching task found');
+                    return;
+                }
+                console.log(`[DataContext] debugNotifyNow for task ${t.id}`);
+                if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
+                    const registration = await navigator.serviceWorker.ready;
+                    const options: NotificationOptions = {
+                        body: t.title,
+                        icon: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`,
+                        tag: String(t.id),
+                        actions: [ { action: 'snooze', title: 'Snooze 5min' }, { action: 'complete', title: 'Complete' } ],
+                        data: { taskId: t.id }
+                    };
+                    console.log('[DataContext] calling registration.showNotification');
+                    await registration.showNotification('Task Reminder', options);
+                    console.log('[DataContext] registration.showNotification resolved');
+                } else if (Notification.permission === 'granted') {
+                    console.log('[DataContext] falling back to page Notification');
+                    new Notification('Task Reminder', { body: t.title });
+                } else {
+                    console.warn('Notifications not permitted');
+                }
+            } catch (e) {
+                console.error('debugNotifyNow failed', e);
+            }
+        }
     }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, updateTag, deleteTag, theme, setTheme, fontSize, setFontSize, debugLog, addDebugLog]);
 
     return (

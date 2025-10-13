@@ -14,35 +14,67 @@ const PRECACHE_URLS = [
 ];
 
 // On install, cache the app shell
+const IS_DEV = (self.location && (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1'));
+
 self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll(APP_SHELL_URLS.concat(PRECACHE_URLS)))
-            .then(() => self.skipWaiting())
-    );
+    // In development, avoid precaching to prevent stale local files being served.
+    if (IS_DEV) {
+        console.info('SW (dev): skipping precache during install');
+        event.waitUntil(self.skipWaiting());
+        return;
+    }
+
+    event.waitUntil((async () => {
+        try {
+            const cache = await caches.open(CACHE_NAME);
+            const urlsToCache = APP_SHELL_URLS.concat(PRECACHE_URLS);
+            // Cache each URL individually so a single failing external resource won't abort install
+            for (const url of urlsToCache) {
+                try {
+                    const response = await fetch(url, { cache: 'no-cache', mode: 'cors' });
+                    if (response && response.ok) {
+                        await cache.put(url, response.clone());
+                    } else {
+                        // Skip caching if response not ok
+                        console.warn('SW: skipping cache for', url, 'status:', response && response.status);
+                    }
+                } catch (e) {
+                    // Network or CORS error - skip that URL but continue install
+                    console.warn('SW: failed to fetch/cached url, skipping', url, e);
+                }
+            }
+        } catch (e) {
+            console.error('SW install error (non-fatal):', e);
+        }
+        await self.skipWaiting();
+    })());
 });
 
 // On activate, clean up old caches and take control
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        }).then(() => self.clients.claim())
-    );
+    event.waitUntil((async () => {
+        if (!IS_DEV) {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map((cacheName) => {
+                if (cacheName !== CACHE_NAME) return caches.delete(cacheName);
+                return Promise.resolve();
+            }));
+        }
+        await self.clients.claim();
+    })());
 });
 
 // On fetch, use a caching strategy
 self.addEventListener('fetch', (event) => {
-    // We only want to cache GET requests
-    if (event.request.method !== 'GET') {
+    // In development, prefer network for everything to avoid serving stale cached files
+    if (IS_DEV) {
+        if (event.request.method !== 'GET') return;
+        event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
         return;
     }
+
+    // Production behavior: only intercept GET requests
+    if (event.request.method !== 'GET') return;
 
     // For navigation requests, use a network-first strategy to get the latest app shell
     if (event.request.mode === 'navigate') {
@@ -106,6 +138,14 @@ self.addEventListener('notificationclick', (event) => {
         }, 5 * 60 * 1000); // 5 minutes in milliseconds
     } else if (action === 'close') {
         // The notification is already closed, so we do nothing.
+    } else if (action === 'complete') {
+        // Notify all clients that the task was completed from the notification action
+        const taskId = notification.data && notification.data.taskId ? notification.data.taskId : undefined;
+        self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+            for (const client of clients) {
+                client.postMessage({ type: 'NOTIFICATION_ACTION', action: 'complete', taskId });
+            }
+        });
     } else {
         // Default action (no action button clicked, just the notification body)
         // Focus the existing window or open a new one

@@ -37577,6 +37577,7 @@ ${suffix}`;
     const [syncError, setSyncError] = (0, import_react3.useState)(null);
     const isProcessingQueue = (0, import_react3.useRef)(false);
     const cleanupRun = (0, import_react3.useRef)(false);
+    const offlineQueueRef = (0, import_react3.useRef)(offlineQueue);
     const [debugLog, setDebugLog] = (0, import_react3.useState)([]);
     const addDebugLog = (0, import_react3.useCallback)((log) => {
       const timestamp = (/* @__PURE__ */ new Date()).toLocaleTimeString([], {
@@ -37609,14 +37610,19 @@ ${suffix}`;
     }, []);
     const scheduleNotification = (0, import_react3.useCallback)(async (task) => {
       await cancelNotification(task.id);
-      if (!areNotificationsGloballyEnabled() || task.reminder === null || task.reminder === void 0 || !task.dueDate || !task.startTime || task.completed) {
+      if (!areNotificationsGloballyEnabled() || task.reminder === null || task.reminder === void 0 || !task.startTime || task.completed) {
         return;
       }
       const permissionGranted = await checkAndRequestNotificationPermission();
       if (!permissionGranted) {
         return;
       }
-      const [year, month, day] = task.dueDate.split("-").map(Number);
+      const eventDateStr = task.startDate || task.dueDate || (task.today ? (/* @__PURE__ */ new Date()).toISOString().split("T")[0] : void 0);
+      if (!eventDateStr) {
+        addDebugLog(`Skipping scheduling for task ${task.id}: no event date available`);
+        return;
+      }
+      const [year, month, day] = eventDateStr.split("-").map(Number);
       const [hour, minute] = task.startTime.split(":").map(Number);
       if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
         console.warn("Invalid date/time for notification scheduling:", task.dueDate, task.startTime);
@@ -37625,6 +37631,7 @@ ${suffix}`;
       const eventTime = new Date(year, month - 1, day, hour, minute);
       const notifyAt = new Date(eventTime.getTime() - task.reminder * 60 * 1e3);
       if (notifyAt < /* @__PURE__ */ new Date()) {
+        addDebugLog(`Not scheduling notification for task ${task.id}: notifyAt ${notifyAt.toISOString()} is in the past`);
         return;
       }
       try {
@@ -37641,20 +37648,28 @@ ${suffix}`;
         } else {
           const delay = notifyAt.getTime() - Date.now();
           if (delay > 0) {
+            addDebugLog(`Scheduling web notification for task ${task.id} in ${Math.round(delay / 1e3)}s at ${notifyAt.toISOString()}`);
             const timeoutId = setTimeout(() => {
+              addDebugLog(`Web notification timeout fired for task ${task.id} (showing now)`);
               if ("serviceWorker" in navigator && "showNotification" in ServiceWorkerRegistration.prototype) {
                 navigator.serviceWorker.ready.then((registration) => {
-                  registration.showNotification("Task Reminder", {
+                  const options = {
                     body: task.title,
-                    icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>",
-                    tag: String(task.id)
+                    icon: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`,
+                    tag: String(task.id),
                     // Use tag to prevent duplicate notifications and for identification
-                  });
+                    actions: [
+                      { action: "snooze", title: "Snooze 5min" },
+                      { action: "complete", title: "Complete" }
+                    ],
+                    data: { taskId: task.id }
+                  };
+                  registration.showNotification("Task Reminder", options);
                 });
               } else if (Notification.permission === "granted") {
                 new Notification("Task Reminder", {
                   body: task.title,
-                  icon: "data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>"
+                  icon: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`
                 });
               }
               webNotificationTimeouts.current.delete(task.id);
@@ -37787,26 +37802,46 @@ ${suffix}`;
           const errorMessage = getErrorMessage(error);
           setSyncError(`Failed to process offline operation "${operation.type}": ${errorMessage}`);
           if (processedOperationIds.size > 0) {
-            setOfflineQueue((current) => current.filter((op) => !processedOperationIds.has(op.id)));
+            setOfflineQueue((current) => {
+              const next = current.filter((op) => !processedOperationIds.has(op.id));
+              offlineQueueRef.current = next;
+              return next;
+            });
           }
           isProcessingQueue.current = false;
           return;
         }
       }
       if (processedOperationIds.size > 0) {
-        setOfflineQueue((current) => current.filter((op) => !processedOperationIds.has(op.id)));
+        setOfflineQueue((current) => {
+          const next = current.filter((op) => !processedOperationIds.has(op.id));
+          offlineQueueRef.current = next;
+          return next;
+        });
       }
       isProcessingQueue.current = false;
     }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments, setFocusHistory, scheduleNotification, cancelNotification]);
     const syncData = (0, import_react3.useCallback)(async (userOverride) => {
       const targetUser = userOverride !== void 0 ? userOverride : user;
-      if (!targetUser || !isOnline || isSyncing) {
+      console.log("[DataContext] syncData invoked", { targetUserId: targetUser?.id, isOnline, isSyncing, offlineQueueLength: offlineQueue.length });
+      if (!targetUser) {
+        console.log("[DataContext] syncData aborted: no target user");
         return;
       }
+      if (!isOnline) {
+        console.log("[DataContext] syncData aborted: offline");
+        return;
+      }
+      if (isSyncing) {
+        console.log("[DataContext] syncData aborted: already syncing");
+        return;
+      }
+      console.log("[DataContext] syncData starting upload/process");
       setIsSyncing(true);
       setSyncError(null);
       try {
         await processOfflineQueueInternal(targetUser);
+        await new Promise((resolve2) => setTimeout(resolve2, 0));
         const [{ data: profileData, error: profileError }, { data: listsData, error: listsError }, { data: tasksData, error: tasksError }, { data: momentsData, error: momentsError }, { data: focusData, error: focusError }] = await Promise.all([
           supabase.from("profiles").select("*").eq("id", targetUser.id).single(),
           supabase.from("lists").select("*").eq("user_id", targetUser.id),
@@ -37890,6 +37925,15 @@ ${suffix}`;
       }
     }, [isOnline, isSyncing, offlineQueue.length]);
     (0, import_react3.useEffect)(() => {
+      (async () => {
+        try {
+          await rescheduleAllNotifications();
+        } catch (e) {
+          console.error("Failed to reschedule notifications on tasks change", e);
+        }
+      })();
+    }, [rescheduleAllNotifications, tasks.length]);
+    (0, import_react3.useEffect)(() => {
       setLoading(true);
       supabase.auth.getSession().then(({ data: { session: session2 } }) => {
         setSession(session2);
@@ -37919,6 +37963,7 @@ ${suffix}`;
             setMoments([]);
             setFocusHistory([]);
             setOfflineQueue([]);
+            offlineQueueRef.current = [];
             setSyncError(null);
           }
         }
@@ -38073,6 +38118,22 @@ ${suffix}`;
         addToQueue({ type: "DELETE_LIST", payload: { listId, listName, defaultListCategory: defaultList?.name, defaultListColor: defaultList?.color } });
       }
     }, [lists, setLists, setTasks, setOfflineQueue, addToQueue]);
+    (0, import_react3.useEffect)(() => {
+      const handler = (event) => {
+        try {
+          const data = event.data;
+          if (data && data.type === "NOTIFICATION_ACTION") {
+            if (data.action === "complete" && data.taskId) {
+              updateTask(data.taskId, { completed: true }).catch((err) => console.error("Failed to mark task complete from SW message", err));
+            }
+          }
+        } catch (e) {
+          console.error("Error handling SW message in DataProvider", e);
+        }
+      };
+      navigator.serviceWorker?.addEventListener("message", handler);
+      return () => navigator.serviceWorker?.removeEventListener("message", handler);
+    }, [updateTask]);
     const addMoment = (0, import_react3.useCallback)(async (momentData) => {
       if (!user) throw new Error("User not logged in");
       const tempId = `temp_${Date.now()}`;
@@ -38201,7 +38262,38 @@ ${suffix}`;
       fontSize,
       setFontSize,
       debugLog,
-      addDebugLog
+      addDebugLog,
+      // Debug helper to show a notification now for a given task id (useful for testing)
+      debugNotifyNow: async (taskId) => {
+        try {
+          const t = taskId ? tasks.find((x) => x.id === taskId) : tasks.find((x) => !x.completed && x.today);
+          if (!t) {
+            console.warn("debugNotifyNow: no matching task found");
+            return;
+          }
+          console.log(`[DataContext] debugNotifyNow for task ${t.id}`);
+          if ("serviceWorker" in navigator && "showNotification" in ServiceWorkerRegistration.prototype) {
+            const registration = await navigator.serviceWorker.ready;
+            const options = {
+              body: t.title,
+              icon: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`,
+              tag: String(t.id),
+              actions: [{ action: "snooze", title: "Snooze 5min" }, { action: "complete", title: "Complete" }],
+              data: { taskId: t.id }
+            };
+            console.log("[DataContext] calling registration.showNotification");
+            await registration.showNotification("Task Reminder", options);
+            console.log("[DataContext] registration.showNotification resolved");
+          } else if (Notification.permission === "granted") {
+            console.log("[DataContext] falling back to page Notification");
+            new Notification("Task Reminder", { body: t.title });
+          } else {
+            console.warn("Notifications not permitted");
+          }
+        } catch (e) {
+          console.error("debugNotifyNow failed", e);
+        }
+      }
     }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, updateTag, deleteTag, theme, setTheme, fontSize, setFontSize, debugLog, addDebugLog]);
     return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DataContext.Provider, { value, children });
   };
@@ -43371,6 +43463,7 @@ ${suffix}`;
     }
     const handleSyncNow = () => {
       if (!isSyncing) {
+        console.log("[settings/SettingsScreen] Sync Now clicked");
         syncData();
       }
     };
