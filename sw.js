@@ -76,6 +76,24 @@ self.addEventListener('fetch', (event) => {
     // Production behavior: only intercept GET requests
     if (event.request.method !== 'GET') return;
 
+    // Don't cache API calls or dynamic endpoints (Supabase, functions, auth, etc.)
+    const requestUrl = event.request.url;
+    const IGNORED_API_PATTERNS = [
+        'supabase.co',
+        '/rest/v1',
+        '/functions/v1',
+        '/auth/v1',
+        '/storage/v1',
+        '/api/'
+    ];
+    for (const pat of IGNORED_API_PATTERNS) {
+        if (requestUrl.includes(pat)) {
+            // Network-only for API endpoints; fallback to cache/index.html when offline
+            event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
+            return;
+        }
+    }
+
     // For navigation requests, use a network-first strategy to get the latest app shell
     if (event.request.mode === 'navigate') {
         event.respondWith(
