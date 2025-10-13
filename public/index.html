@@ -4,13 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>TaskMaster</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#FFFFFF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TaskMaster">
     <link rel="icon" href="data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>">
     <script>
-      tailwind.config = {
-        darkMode: 'class',
-      }
+      // guard against tailwind not being loaded yet
+      (function(){
+        try {
+          if (typeof tailwind !== 'undefined') {
+            tailwind.config = { darkMode: 'class' };
+          } else {
+            // if tailwind isn't defined yet, attach a temporary hook that will
+            // set the config once it arrives
+            window.__tailwindConfig = { darkMode: 'class' };
+          }
+        } catch (e) { console.warn('tailwind config guard error', e); }
+      })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // if the CDN defines tailwind after our guard, apply the stored config
+      if (typeof tailwind !== 'undefined' && window.__tailwindConfig) {
+        try { tailwind.config = window.__tailwindConfig; delete window.__tailwindConfig; } catch(e){}
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

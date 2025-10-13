@@ -1,0 +1,19 @@
+{
+  "name": "TaskMaster",
+  "short_name": "TaskMaster",
+  "description": "A minimalist and elegant task management application designed for intuitive organization, offline-first functionality, and personal journaling. It focuses on a clean user experience with features like timeline views, moments journaling, and seamless data synchronization.",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F9F9FC",
+  "theme_color": "#6D55A6",
+  "gcm_sender_id": "103953800507",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

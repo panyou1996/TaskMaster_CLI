@@ -24,17 +24,16 @@
     "react-window": "^1.8.10"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.1.0",
     "esbuild": "^0.21.5"
   },
   "scripts": {
-    "dev": "mkdir -p public && cp index.html manifest.json sw.js icon.svg public/ && ([ -f capacitor.js ] && cp capacitor.js public/ || true) && esbuild index.tsx --bundle --outfile=public/index.js --loader:.tsx=tsx --define:process.env.NODE_ENV='\"development\"' --define:process.env.API_KEY='\"$API_KEY\"' --servedir=public --port=3000",
+    "dev": "node scripts/dev.js",
     "assets:generate": "capacitor-assets generate --icon-path icon.svg --icon-background-color '#F3F1F8'",
     "sync:ios": "npx cap sync ios",
     "sync:android": "npx cap sync android",
     "open:ios": "npx cap open ios",
     "open:android": "npx cap open android",
-    "build": "mkdir -p public && cp index.html manifest.json sw.js icon.svg public/ && ([ -f capacitor.js ] && cp capacitor.js public/ || true) && esbuild index.tsx --bundle --outfile=public/index.js --loader:.tsx=tsx --define:process.env.NODE_ENV='\"production\"' --define:process.env.API_KEY='\"$API_KEY\"'"
+    "build": "node scripts/build.js"
   }
 }
