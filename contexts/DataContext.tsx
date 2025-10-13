@@ -83,6 +83,9 @@ interface DataContextType {
     setTheme: React.Dispatch<React.SetStateAction<Theme>>;
     fontSize: FontSize;
     setFontSize: React.Dispatch<React.SetStateAction<FontSize>>;
+    
+    debugLog: string[];
+    addDebugLog: (log: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -189,6 +192,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isProcessingQueue = useRef(false);
     const cleanupRun = useRef(false);
     
+    const [debugLog, setDebugLog] = useState<string[]>([]);
+    const addDebugLog = useCallback((log: string) => {
+        const timestamp = new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            fractionalSecondDigits: 3
+        } as Intl.DateTimeFormatOptions);
+        setDebugLog(prev => [`[${timestamp}] ${log}`, ...prev].slice(0, 20));
+    }, []);
+
     const webNotificationTimeouts = useRef<Map<string | number, ReturnType<typeof setTimeout>>>(new Map());
 
     const cancelNotification = useCallback(async (taskId: number | string) => {
@@ -862,8 +876,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addFocusSession,
         tags, addTag, updateTag, deleteTag,
         theme, setTheme,
-        fontSize, setFontSize
-    }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, updateTag, deleteTag, theme, setTheme, fontSize, setFontSize]);
+        fontSize, setFontSize,
+        debugLog, addDebugLog,
+    }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, updateTag, deleteTag, theme, setTheme, fontSize, setFontSize, debugLog, addDebugLog]);
 
     return (
         <DataContext.Provider value={value}>

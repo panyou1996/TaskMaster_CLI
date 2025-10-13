@@ -219,7 +219,8 @@ const TodayScreen: React.FC = () => {
         profile,
         addTask,
         updateTask,
-        syncData
+        syncData,
+        debugLog
     } = useData();
     const [completingTaskId, setCompletingTaskId] = useState<number | string | null>(null);
     const [collapsingTaskId, setCollapsingTaskId] = useState<number | string | null>(null);
@@ -771,52 +772,6 @@ const TodayScreen: React.FC = () => {
         gestureType.current = 'none';
     };
 
-    const handleTestNotification = async () => {
-        if (!('Notification' in window) || !navigator.serviceWorker) {
-            alert("This browser does not support notifications.");
-            return;
-        }
-
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            alert('Notification permission is required to run this test.');
-            return;
-        }
-
-        navigator.serviceWorker.ready.then(registration => {
-            const commonOptions = {
-                body: "This is a test notification from TaskMaster.",
-                icon: "/icon.svg",
-                actions: [
-                    { action: 'snooze', title: 'Snooze 5 min' },
-                    { action: 'close', title: 'Close' }
-                ]
-            };
-
-            // Post message for IMMEDIATE notification
-            registration.active?.postMessage({
-                type: 'SHOW_NOTIFICATION',
-                title: 'Test Notification (Now)',
-                options: { ...commonOptions, tag: 'test-now' }
-            });
-
-            // Post message for DELAYED notification
-            registration.active?.postMessage({
-                type: 'SHOW_NOTIFICATION',
-                title: 'Test Notification (10s)',
-                delay: 10000,
-                options: {
-                    ...commonOptions,
-                    body: "This should appear 10 seconds after the button is clicked.",
-                    tag: 'test-10s'
-                }
-            });
-        }).catch(err => {
-            console.error('Service Worker not ready:', err);
-            alert('Service Worker is not ready. Please try again or reload the page.');
-        });
-    };
-
 
     if (!profile) {
         return (
@@ -911,12 +866,14 @@ const TodayScreen: React.FC = () => {
                                         </p>
                                     </div>
                                 )}
-                                <div className="p-4 mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl flex flex-col items-center gap-2 animate-page-fade-in">
-                                    <h3 className="font-bold text-yellow-800 dark:text-yellow-300">Debug Panel</h3>
-                                    <p className="text-xs text-center text-yellow-700 dark:text-yellow-400">Click the button to test if notifications are working on your device.</p>
-                                    <Button variant="secondary" onClick={handleTestNotification} className="!w-auto !px-4 !py-1.5">
-                                        Test Notification (Now & 10s)
-                                    </Button>
+                                <div className="p-4 mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl flex flex-col gap-2 animate-page-fade-in">
+                                    <h3 className="font-bold text-yellow-800 dark:text-yellow-300 self-center">Debug Panel</h3>
+                                    <div className="mt-2 w-full text-left bg-yellow-100 dark:bg-yellow-900/50 p-2 rounded-md max-h-48 overflow-y-auto self-stretch">
+                                        <h4 className="font-semibold text-yellow-900 dark:text-yellow-200">Gesture Log:</h4>
+                                        {debugLog && debugLog.length === 0 ? <p className="text-xs">No logs yet. Long-press the mic button.</p> :
+                                          debugLog?.map((msg, i) => <pre key={i} className="text-xs text-yellow-800 dark:text-yellow-300 whitespace-pre-wrap">{msg}</pre>)
+                                        }
+                                    </div>
                                 </div>
                                 {totalTodayTasks > 0 ? (
                                     <>
