@@ -40306,6 +40306,7 @@ ${suffix}`;
     const reminderIconRef = (0, import_react15.useRef)(null);
     const cardRef = (0, import_react15.useRef)(null);
     const prevIsOpen = (0, import_react15.useRef)(isOpen);
+    const lastToggleRef = (0, import_react15.useRef)(0);
     const todayStr = (0, import_react15.useMemo)(() => (/* @__PURE__ */ new Date()).toISOString().substring(0, 10), []);
     const isTodayLocked = (0, import_react15.useMemo)(() => dueDate === todayStr, [dueDate, todayStr]);
     (0, import_react15.useEffect)(() => {
@@ -40346,6 +40347,9 @@ ${suffix}`;
       prevIsOpen.current = isOpen;
     }, [isOpen, initialDate, listOptions, resetState, todayStr]);
     const handlePopoverToggle = (0, import_react15.useCallback)((popoverName, ref) => {
+      if (activePopover && activePopover !== popoverName) {
+        return;
+      }
       if (activePopover === popoverName) {
         setActivePopover(null);
         return;
@@ -40370,26 +40374,31 @@ ${suffix}`;
       }
       setActivePopover(popoverName);
     }, [activePopover]);
+    const isOtherPopoverOpen = (name) => !!(activePopover && activePopover !== name);
     (0, import_react15.useEffect)(() => {
       const handleClickOutside = (event) => {
         const target = event.target;
+        const popovers = document.querySelectorAll(".popover-content");
+        for (let i = 0; i < popovers.length; i++) {
+          const p = popovers[i];
+          if (p.contains(target)) return;
+        }
         if (cardRef.current && !cardRef.current.contains(target)) {
           setActiveInput(null);
-        }
-        if (activePopover && cardRef.current && !cardRef.current.contains(target)) {
-          const popovers = document.querySelectorAll(".popover-content");
-          let clickedInsidePopover = false;
-          popovers.forEach((p) => {
-            if (p.contains(target)) clickedInsidePopover = true;
-          });
-          if (!clickedInsidePopover) {
-            setActivePopover(null);
-          }
         }
       };
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [activePopover]);
+    }, []);
+    (0, import_react15.useEffect)(() => {
+      if (!isOpen && activePopover) {
+        setActivePopover(null);
+      }
+    }, [isOpen, activePopover]);
+    const handleOverlayClick = (0, import_react15.useCallback)(() => {
+      setActivePopover(null);
+      onClose();
+    }, [onClose]);
     const handleSubmit = async (e) => {
       e.preventDefault();
       if (!title.trim()) {
@@ -40449,7 +40458,7 @@ ${suffix}`;
             className: `fixed inset-0 z-50 grid place-items-center p-4 transition-all duration-300 ${isOpen ? "visible" : "invisible"}`,
             style: { paddingBottom: `max(1rem, ${keyboardHeight}px)` },
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("div", { className: `fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"}`, onClick: onClose, "aria-hidden": "true" }),
+              /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("div", { className: `fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"}`, onClick: handleOverlayClick, "aria-hidden": "true" }),
               /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("form", { onSubmit: handleSubmit, className: `w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? "scale-100 opacity-100" : "scale-95 opacity-0"}`, style: { paddingBottom: `env(safe-area-inset-bottom)` }, children: [
                 /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { ref: cardRef, className: "bg-[var(--color-surface-container)] rounded-xl card-shadow p-4 overflow-y-auto max-h-[75vh]", children: [
                   error && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("p", { className: "text-[var(--color-functional-red)] text-sm text-center mb-2", children: error }),
@@ -40537,19 +40546,47 @@ ${suffix}`;
                         /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Fixed" })
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", ref: durationIconRef, children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("button", { type: "button", title: "Set Duration", onClick: () => handlePopoverToggle("duration", durationIconRef), className: `p-2 rounded-full transition-colors ${duration ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(DurationIcon, { className: "w-5 h-5" }) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("button", { type: "button", title: "Set Duration", onClick: () => {
+                          if (Date.now() - lastToggleRef.current < 300) return;
+                          handlePopoverToggle("duration", durationIconRef);
+                        }, onPointerUp: (e) => {
+                          lastToggleRef.current = Date.now();
+                          handlePopoverToggle("duration", durationIconRef);
+                          e.stopPropagation();
+                        }, disabled: isOtherPopoverOpen("duration"), className: `p-2 rounded-full transition-colors ${duration ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"} ${isOtherPopoverOpen("duration") ? "opacity-50 pointer-events-none" : ""}`, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(DurationIcon, { className: "w-5 h-5" }) }),
                         /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Duration" })
                       ] }),
                       taskType === "Fixed" && /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", ref: startTimeIconRef, children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("button", { type: "button", title: "Set Start Date", onClick: () => handlePopoverToggle("startTime", startTimeIconRef), className: `p-2 rounded-full transition-colors ${startTime ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(ClockIcon, { className: "w-5 h-5" }) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("button", { type: "button", title: "Set Start Date", onClick: () => {
+                          if (Date.now() - lastToggleRef.current < 300) return;
+                          handlePopoverToggle("startTime", startTimeIconRef);
+                        }, onPointerUp: (e) => {
+                          lastToggleRef.current = Date.now();
+                          handlePopoverToggle("startTime", startTimeIconRef);
+                          e.stopPropagation();
+                        }, disabled: isOtherPopoverOpen("startTime"), className: `p-2 rounded-full transition-colors ${startTime ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"} ${isOtherPopoverOpen("startTime") ? "opacity-50 pointer-events-none" : ""}`, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(ClockIcon, { className: "w-5 h-5" }) }),
                         /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Start" })
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", ref: calendarIconRef, children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("button", { type: "button", title: "Set Due Date", onClick: () => handlePopoverToggle("dueDate", calendarIconRef), className: `p-2 rounded-full transition-colors ${dueDate ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CalendarIcon, { className: "w-5 h-5" }) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("button", { type: "button", title: "Set Due Date", onClick: () => {
+                          if (Date.now() - lastToggleRef.current < 300) return;
+                          handlePopoverToggle("dueDate", calendarIconRef);
+                        }, onPointerUp: (e) => {
+                          lastToggleRef.current = Date.now();
+                          handlePopoverToggle("dueDate", calendarIconRef);
+                          e.stopPropagation();
+                        }, disabled: isOtherPopoverOpen("dueDate"), className: `p-2 rounded-full transition-colors ${dueDate ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"} ${isOtherPopoverOpen("dueDate") ? "opacity-50 pointer-events-none" : ""}`, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CalendarIcon, { className: "w-5 h-5" }) }),
                         /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Due" })
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", ref: listIconRef, children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("button", { type: "button", title: "Select List", onClick: () => handlePopoverToggle("list", listIconRef), className: `p-2 rounded-full transition-colors ${category ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(TagIcon, { className: "w-5 h-5" }) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("button", { type: "button", title: "Select List", onClick: () => {
+                          if (Date.now() - lastToggleRef.current < 300) return;
+                          handlePopoverToggle("list", listIconRef);
+                        }, onPointerUp: (e) => {
+                          lastToggleRef.current = Date.now();
+                          handlePopoverToggle("list", listIconRef);
+                          e.stopPropagation();
+                        }, disabled: isOtherPopoverOpen("list"), className: `p-2 rounded-full transition-colors ${category ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"} ${isOtherPopoverOpen("list") ? "opacity-50 pointer-events-none" : ""}`, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(TagIcon, { className: "w-5 h-5" }) }),
                         /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "List" })
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", children: [
@@ -40557,7 +40594,14 @@ ${suffix}`;
                         /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Subs" })
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", ref: reminderIconRef, children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("button", { type: "button", title: "Set Reminder", onClick: () => handlePopoverToggle("reminder", reminderIconRef), className: `p-2 rounded-full transition-colors ${reminder !== null ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(BellIcon, { className: "w-5 h-5" }) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("button", { type: "button", title: "Set Reminder", onClick: () => {
+                          if (Date.now() - lastToggleRef.current < 300) return;
+                          handlePopoverToggle("reminder", reminderIconRef);
+                        }, onPointerUp: (e) => {
+                          lastToggleRef.current = Date.now();
+                          handlePopoverToggle("reminder", reminderIconRef);
+                          e.stopPropagation();
+                        }, disabled: isOtherPopoverOpen("reminder"), className: `p-2 rounded-full transition-colors ${reminder !== null ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"} ${isOtherPopoverOpen("reminder") ? "opacity-50 pointer-events-none" : ""}`, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(BellIcon, { className: "w-5 h-5" }) }),
                         /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Alert" })
                       ] })
                     ] })
@@ -40572,40 +40616,84 @@ ${suffix}`;
           }
         ),
         /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(PopoverPortal, { children: [
-          activePopover === "duration" && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("div", { className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in", style: popoverPosition, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { children: [
+          activePopover === "duration" && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("div", { onPointerDown: (e) => e.stopPropagation(), onMouseDown: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60]", style: popoverPosition, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { children: [
             /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("label", { className: "text-xs font-medium text-[var(--color-text-secondary)]", children: "Duration (minutes)" }),
-            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("input", { type: "number", value: duration, onChange: (e) => setDuration(e.target.value), placeholder: "e.g. 30", className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
+            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("input", { type: "number", value: duration, onChange: (e) => setDuration(e.target.value), placeholder: "e.g. 30", onFocus: () => setActiveInput(null), onPointerDown: (e) => e.stopPropagation(), onPointerUp: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
           ] }) }),
-          activePopover === "startTime" && /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in space-y-3", style: popoverPosition, children: [
+          activePopover === "startTime" && /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { onPointerDown: (e) => e.stopPropagation(), onMouseDown: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] space-y-3", style: popoverPosition, children: [
             /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { children: [
               /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("label", { className: "text-xs font-medium text-[var(--color-text-secondary)]", children: "Start Date" }),
-              /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("input", { type: "date", value: startDate || todayStr, onChange: (e) => setStartDate(e.target.value), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
+              /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("input", { type: "date", value: startDate || todayStr, onChange: (e) => setStartDate(e.target.value), onFocus: () => setActiveInput(null), onPointerDown: (e) => e.stopPropagation(), onPointerUp: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { children: [
               /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("label", { className: "text-xs font-medium text-[var(--color-text-secondary)]", children: "Start Time" }),
-              /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("input", { type: "time", value: startTime, onChange: (e) => setStartTime(e.target.value), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
+              /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("input", { type: "time", value: startTime, onChange: (e) => setStartTime(e.target.value), onFocus: () => setActiveInput(null), onPointerDown: (e) => e.stopPropagation(), onPointerUp: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
             ] })
           ] }),
-          activePopover === "dueDate" && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("div", { className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in", style: popoverPosition, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { children: [
+          activePopover === "dueDate" && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("div", { onPointerDown: (e) => e.stopPropagation(), onMouseDown: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60]", style: popoverPosition, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("div", { children: [
             /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("label", { className: "text-xs font-medium text-[var(--color-text-secondary)]", children: "Due Date" }),
             /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("input", { type: "date", value: dueDate, onChange: (e) => {
               setDueDate(e.target.value);
-            }, className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
+            }, onFocus: () => setActiveInput(null), onPointerDown: (e) => e.stopPropagation(), onPointerUp: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
           ] }) }),
-          activePopover === "list" && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("div", { className: "popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] animate-page-fade-in max-h-48 overflow-y-auto", style: popoverPosition, children: listOptions.map((listName) => /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("button", { type: "button", onClick: () => {
-            setCategory(listName);
-            setActivePopover(null);
-          }, className: `w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${category === listName ? "bg-primary-100 text-[var(--color-primary-500)]" : "hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"}`, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { children: listName }),
-            category === listName && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CheckIcon, { className: "w-4 h-4" })
-          ] }, listName)) }),
-          activePopover === "reminder" && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("div", { className: "popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] animate-page-fade-in max-h-48 overflow-y-auto", style: popoverPosition, children: reminderOptions.map((option) => /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)("button", { type: "button", onClick: () => {
-            setReminder(option.value);
-            setActivePopover(null);
-          }, className: `w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${reminder === option.value ? "bg-primary-100 text-[var(--color-primary-500)]" : "hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"}`, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { children: option.label }),
-            reminder === option.value && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CheckIcon, { className: "w-4 h-4" })
-          ] }, option.label)) })
+          activePopover === "list" && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(
+            "div",
+            {
+              onPointerDown: (e) => {
+                e.stopPropagation();
+              },
+              onMouseDown: (e) => {
+                e.stopPropagation();
+              },
+              onClick: (e) => {
+                e.stopPropagation();
+              },
+              className: "popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] max-h-48 overflow-y-auto",
+              style: { ...popoverPosition, pointerEvents: "auto" },
+              children: listOptions.map((listName) => /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => {
+                    setCategory(listName);
+                    setTimeout(() => setActivePopover(null), 50);
+                  },
+                  onPointerUp: (e) => {
+                    setCategory(listName);
+                    setTimeout(() => setActivePopover(null), 50);
+                    e.stopPropagation();
+                  },
+                  className: `w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${category === listName ? "bg-primary-100 text-[var(--color-primary-500)]" : "hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"}`,
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { children: listName }),
+                    category === listName && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CheckIcon, { className: "w-4 h-4" })
+                  ]
+                },
+                listName
+              ))
+            }
+          ),
+          activePopover === "reminder" && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("div", { onPointerDown: (e) => e.stopPropagation(), onMouseDown: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] max-h-48 overflow-y-auto", style: popoverPosition, children: reminderOptions.map((option) => /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(
+            "button",
+            {
+              type: "button",
+              onClick: () => {
+                setReminder(option.value);
+                setTimeout(() => setActivePopover(null), 50);
+              },
+              onPointerUp: (e) => {
+                setReminder(option.value);
+                setTimeout(() => setActivePopover(null), 50);
+                e.stopPropagation();
+              },
+              className: `w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${reminder === option.value ? "bg-primary-100 text-[var(--color-primary-500)]" : "hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"}`,
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime24.jsx)("span", { children: option.label }),
+                reminder === option.value && /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CheckIcon, { className: "w-4 h-4" })
+              ]
+            },
+            option.label
+          )) })
         ] })
       ] }),
       document.body
@@ -40923,6 +41011,7 @@ ${suffix}`;
     const reminderIconRef = (0, import_react17.useRef)(null);
     const cardRef = (0, import_react17.useRef)(null);
     const prevIsOpen = (0, import_react17.useRef)(isOpen);
+    const lastToggleRef = (0, import_react17.useRef)(0);
     const todayStr = (0, import_react17.useMemo)(() => (/* @__PURE__ */ new Date()).toISOString().substring(0, 10), []);
     const isTodayLocked = (0, import_react17.useMemo)(() => dueDate === todayStr, [dueDate, todayStr]);
     (0, import_react17.useEffect)(() => {
@@ -40953,6 +41042,9 @@ ${suffix}`;
       prevIsOpen.current = isOpen;
     }, [isOpen, task, listOptions]);
     const handlePopoverToggle = (0, import_react17.useCallback)((popoverName, ref) => {
+      if (activePopover && activePopover !== popoverName) {
+        return;
+      }
       if (activePopover === popoverName) {
         setActivePopover(null);
         return;
@@ -40977,24 +41069,31 @@ ${suffix}`;
       }
       setActivePopover(popoverName);
     }, [activePopover]);
+    const isOtherPopoverOpen = (name) => !!(activePopover && activePopover !== name);
     (0, import_react17.useEffect)(() => {
       const handleClickOutside = (event) => {
         const target = event.target;
-        if (cardRef.current && !cardRef.current.contains(target)) setActiveInput(null);
-        if (activePopover && cardRef.current && !cardRef.current.contains(target)) {
-          const popovers = document.querySelectorAll(".popover-content");
-          let clickedInsidePopover = false;
-          popovers.forEach((p) => {
-            if (p.contains(target)) clickedInsidePopover = true;
-          });
-          if (!clickedInsidePopover) {
-            setActivePopover(null);
-          }
+        const popovers = document.querySelectorAll(".popover-content");
+        for (let i = 0; i < popovers.length; i++) {
+          const p = popovers[i];
+          if (p.contains(target)) return;
+        }
+        if (cardRef.current && !cardRef.current.contains(target)) {
+          setActiveInput(null);
         }
       };
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [activePopover]);
+    }, []);
+    (0, import_react17.useEffect)(() => {
+      if (!isOpen && activePopover) {
+        setActivePopover(null);
+      }
+    }, [isOpen, activePopover]);
+    const handleOverlayClick = (0, import_react17.useCallback)(() => {
+      setActivePopover(null);
+      onClose();
+    }, [onClose]);
     const handleSubmit = async (e) => {
       e.preventDefault();
       if (!task) {
@@ -41059,7 +41158,7 @@ ${suffix}`;
             className: `fixed inset-0 z-50 grid place-items-center p-4 transition-all duration-300 ${isOpen ? "visible" : "invisible"}`,
             style: { paddingBottom: `max(1rem, ${keyboardHeight}px)` },
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: `fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"}`, onClick: onClose, "aria-hidden": "true" }),
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: `fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"}`, onClick: handleOverlayClick, "aria-hidden": "true" }),
               /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("form", { onSubmit: handleSubmit, className: `w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? "scale-100 opacity-100" : "scale-95 opacity-0"}`, style: { paddingBottom: `env(safe-area-inset-bottom)` }, children: [
                 /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ref: cardRef, className: "bg-[var(--color-surface-container)] rounded-xl card-shadow p-4 overflow-y-auto max-h-[75vh]", children: [
                   error && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("p", { className: "text-[var(--color-functional-red)] text-sm text-center mb-2", children: error }),
@@ -41137,19 +41236,58 @@ ${suffix}`;
                         /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Fixed" })
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", ref: durationIconRef, children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { type: "button", title: "Set Duration", onClick: () => handlePopoverToggle("duration", durationIconRef), className: `p-2 rounded-full transition-colors ${duration ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(DurationIcon, { className: "w-5 h-5" }) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+                          "button",
+                          {
+                            type: "button",
+                            title: "Set Duration",
+                            onClick: () => {
+                              if (Date.now() - lastToggleRef.current < 300) return;
+                              handlePopoverToggle("duration", durationIconRef);
+                            },
+                            onPointerUp: (e) => {
+                              lastToggleRef.current = Date.now();
+                              handlePopoverToggle("duration", durationIconRef);
+                              e.stopPropagation();
+                            },
+                            disabled: isOtherPopoverOpen("duration"),
+                            className: `p-2 rounded-full transition-colors ${duration ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"} ${isOtherPopoverOpen("duration") ? "opacity-50 pointer-events-none" : ""}`,
+                            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(DurationIcon, { className: "w-5 h-5" })
+                          }
+                        ),
                         /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Duration" })
                       ] }),
                       taskType === "Fixed" && /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", ref: startTimeIconRef, children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { type: "button", title: "Set Start Date", onClick: () => handlePopoverToggle("startTime", startTimeIconRef), className: `p-2 rounded-full transition-colors ${startTime ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ClockIcon, { className: "w-5 h-5" }) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { type: "button", title: "Set Start Date", onClick: () => {
+                          if (Date.now() - lastToggleRef.current < 300) return;
+                          handlePopoverToggle("startTime", startTimeIconRef);
+                        }, onPointerUp: (e) => {
+                          lastToggleRef.current = Date.now();
+                          handlePopoverToggle("startTime", startTimeIconRef);
+                          e.stopPropagation();
+                        }, disabled: isOtherPopoverOpen("startTime"), className: `p-2 rounded-full transition-colors ${startTime ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"} ${isOtherPopoverOpen("startTime") ? "opacity-50 pointer-events-none" : ""}`, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ClockIcon, { className: "w-5 h-5" }) }),
                         /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Start" })
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", ref: calendarIconRef, children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { type: "button", title: "Set Due Date", onClick: () => handlePopoverToggle("dueDate", calendarIconRef), className: `p-2 rounded-full transition-colors ${dueDate ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CalendarIcon, { className: "w-5 h-5" }) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { type: "button", title: "Set Due Date", onClick: () => {
+                          if (Date.now() - lastToggleRef.current < 300) return;
+                          handlePopoverToggle("dueDate", calendarIconRef);
+                        }, onPointerUp: (e) => {
+                          lastToggleRef.current = Date.now();
+                          handlePopoverToggle("dueDate", calendarIconRef);
+                          e.stopPropagation();
+                        }, disabled: isOtherPopoverOpen("dueDate"), className: `p-2 rounded-full transition-colors ${dueDate ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"} ${isOtherPopoverOpen("dueDate") ? "opacity-50 pointer-events-none" : ""}`, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CalendarIcon, { className: "w-5 h-5" }) }),
                         /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Due" })
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", ref: listIconRef, children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { type: "button", title: "Select List", onClick: () => handlePopoverToggle("list", listIconRef), className: `p-2 rounded-full transition-colors ${category ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(TagIcon, { className: "w-5 h-5" }) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { type: "button", title: "Select List", onClick: () => {
+                          if (Date.now() - lastToggleRef.current < 300) return;
+                          handlePopoverToggle("list", listIconRef);
+                        }, onPointerUp: (e) => {
+                          lastToggleRef.current = Date.now();
+                          handlePopoverToggle("list", listIconRef);
+                          e.stopPropagation();
+                        }, disabled: isOtherPopoverOpen("list"), className: `p-2 rounded-full transition-colors ${category ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"} ${isOtherPopoverOpen("list") ? "opacity-50 pointer-events-none" : ""}`, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(TagIcon, { className: "w-5 h-5" }) }),
                         /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "List" })
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", children: [
@@ -41157,7 +41295,14 @@ ${suffix}`;
                         /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Subs" })
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: "flex flex-col items-center flex-1 min-w-0 text-center", ref: reminderIconRef, children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { type: "button", title: "Set Reminder", onClick: () => handlePopoverToggle("reminder", reminderIconRef), className: `p-2 rounded-full transition-colors ${reminder !== null ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(BellIcon, { className: "w-5 h-5" }) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { type: "button", title: "Set Reminder", onClick: () => {
+                          if (Date.now() - lastToggleRef.current < 300) return;
+                          handlePopoverToggle("reminder", reminderIconRef);
+                        }, onPointerUp: (e) => {
+                          lastToggleRef.current = Date.now();
+                          handlePopoverToggle("reminder", reminderIconRef);
+                          e.stopPropagation();
+                        }, disabled: isOtherPopoverOpen("reminder"), className: `p-2 rounded-full transition-colors ${reminder !== null ? "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"} ${isOtherPopoverOpen("reminder") ? "opacity-50 pointer-events-none" : ""}`, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(BellIcon, { className: "w-5 h-5" }) }),
                         /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: "text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight", children: "Alert" })
                       ] })
                     ] })
@@ -41172,40 +41317,84 @@ ${suffix}`;
           }
         ),
         /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(PopoverPortal, { children: [
-          activePopover === "duration" && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in", style: popoverPosition, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { children: [
+          activePopover === "duration" && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { onPointerDown: (e) => e.stopPropagation(), onMouseDown: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60]", style: popoverPosition, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { children: [
             /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("label", { className: "text-xs font-medium text-[var(--color-text-secondary)]", children: "Duration (minutes)" }),
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { type: "number", value: duration, onChange: (e) => setDuration(e.target.value), placeholder: "e.g. 30", className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { type: "number", value: duration, onChange: (e) => setDuration(e.target.value), placeholder: "e.g. 30", onFocus: () => setActiveInput(null), onPointerDown: (e) => e.stopPropagation(), onPointerUp: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
           ] }) }),
-          activePopover === "startTime" && /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in space-y-3", style: popoverPosition, children: [
+          activePopover === "startTime" && /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { onPointerDown: (e) => e.stopPropagation(), onMouseDown: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] space-y-3", style: popoverPosition, children: [
             /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { children: [
               /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("label", { className: "text-xs font-medium text-[var(--color-text-secondary)]", children: "Start Date" }),
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { type: "date", value: startDate || todayStr, onChange: (e) => setStartDate(e.target.value), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { type: "date", value: startDate || todayStr, onChange: (e) => setStartDate(e.target.value), onFocus: () => setActiveInput(null), onPointerDown: (e) => e.stopPropagation(), onPointerUp: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { children: [
               /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("label", { className: "text-xs font-medium text-[var(--color-text-secondary)]", children: "Start Time" }),
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { type: "time", value: startTime, onChange: (e) => setStartTime(e.target.value), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { type: "time", value: startTime, onChange: (e) => setStartTime(e.target.value), onFocus: () => setActiveInput(null), onPointerDown: (e) => e.stopPropagation(), onPointerUp: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
             ] })
           ] }),
-          activePopover === "dueDate" && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in", style: popoverPosition, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { children: [
+          activePopover === "dueDate" && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { onPointerDown: (e) => e.stopPropagation(), onMouseDown: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60]", style: popoverPosition, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { children: [
             /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("label", { className: "text-xs font-medium text-[var(--color-text-secondary)]", children: "Due Date" }),
             /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { type: "date", value: dueDate, onChange: (e) => {
               setDueDate(e.target.value);
-            }, className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
+            }, onFocus: () => setActiveInput(null), onPointerDown: (e) => e.stopPropagation(), onPointerUp: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]" })
           ] }) }),
-          activePopover === "list" && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: "popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] animate-page-fade-in max-h-48 overflow-y-auto", style: popoverPosition, children: listOptions.map((listName) => /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("button", { type: "button", onClick: () => {
-            setCategory(listName);
-            setActivePopover(null);
-          }, className: `w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${category === listName ? "bg-primary-100 text-[var(--color-primary-500)]" : "hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"}`, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { children: listName }),
-            category === listName && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CheckIcon, { className: "w-4 h-4" })
-          ] }, listName)) }),
-          activePopover === "reminder" && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: "popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] animate-page-fade-in max-h-48 overflow-y-auto", style: popoverPosition, children: reminderOptions3.map((option) => /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("button", { type: "button", onClick: () => {
-            setReminder(option.value);
-            setActivePopover(null);
-          }, className: `w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${reminder === option.value ? "bg-primary-100 text-[var(--color-primary-500)]" : "hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"}`, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { children: option.label }),
-            reminder === option.value && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CheckIcon, { className: "w-4 h-4" })
-          ] }, option.label)) })
+          activePopover === "list" && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+            "div",
+            {
+              onPointerDown: (e) => {
+                e.stopPropagation();
+              },
+              onMouseDown: (e) => {
+                e.stopPropagation();
+              },
+              onClick: (e) => {
+                e.stopPropagation();
+              },
+              className: "popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] max-h-48 overflow-y-auto",
+              style: { ...popoverPosition, pointerEvents: "auto" },
+              children: listOptions.map((listName) => /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => {
+                    setCategory(listName);
+                    setTimeout(() => setActivePopover(null), 50);
+                  },
+                  onPointerUp: (e) => {
+                    setCategory(listName);
+                    setTimeout(() => setActivePopover(null), 50);
+                    e.stopPropagation();
+                  },
+                  className: `w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${category === listName ? "bg-primary-100 text-[var(--color-primary-500)]" : "hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"}`,
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { children: listName }),
+                    category === listName && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CheckIcon, { className: "w-4 h-4" })
+                  ]
+                },
+                listName
+              ))
+            }
+          ),
+          activePopover === "reminder" && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { onPointerDown: (e) => e.stopPropagation(), onMouseDown: (e) => e.stopPropagation(), onClick: (e) => e.stopPropagation(), className: "popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] max-h-48 overflow-y-auto", style: popoverPosition, children: reminderOptions3.map((option) => /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
+            "button",
+            {
+              type: "button",
+              onClick: () => {
+                setReminder(option.value);
+                setTimeout(() => setActivePopover(null), 50);
+              },
+              onPointerUp: (e) => {
+                setReminder(option.value);
+                setTimeout(() => setActivePopover(null), 50);
+                e.stopPropagation();
+              },
+              className: `w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${reminder === option.value ? "bg-primary-100 text-[var(--color-primary-500)]" : "hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"}`,
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { children: option.label }),
+                reminder === option.value && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CheckIcon, { className: "w-4 h-4" })
+              ]
+            },
+            option.label
+          )) })
         ] })
       ] }),
       document.body

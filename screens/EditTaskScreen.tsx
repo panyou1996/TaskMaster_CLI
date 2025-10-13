@@ -65,6 +65,9 @@ const getReminderLabel = (value: number | null) => {
 const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, onSave }) => {
     const { lists: userLists } = useData();
     const listOptions = userLists.map(l => l.name);
+
+    
+
     const keyboardHeight = useKeyboardHeight();
 
     const [title, setTitle] = useState('');
@@ -97,6 +100,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
     const reminderIconRef = useRef<HTMLDivElement>(null);
     const cardRef = useRef<HTMLDivElement>(null);
     const prevIsOpen = useRef(isOpen);
+    const lastToggleRef = useRef<number>(0);
 
     const todayStr = useMemo(() => new Date().toISOString().substring(0, 10), []);
     const isTodayLocked = useMemo(() => dueDate === todayStr, [dueDate, todayStr]);
@@ -131,6 +135,12 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
     }, [isOpen, task, listOptions]);
     
     const handlePopoverToggle = useCallback((popoverName: string, ref: React.RefObject<HTMLDivElement>) => {
+        // If a popover is already open and it's not this one, ignore the click.
+        // This prevents gesture conflicts: after opening, only clicking the same icon
+        // will close it. Option buttons inside popovers still close it explicitly.
+        if (activePopover && activePopover !== popoverName) {
+            return;
+        }
         if (activePopover === popoverName) {
             setActivePopover(null);
             return;
@@ -163,24 +173,46 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
         setActivePopover(popoverName);
     }, [activePopover]);
 
+    const isOtherPopoverOpen = (name: string) => !!(activePopover && activePopover !== name);
+
     useEffect(() => {
+        // Clear active input when clicking outside the card, but do NOT auto-close
+        // popovers. Popovers are only toggled by clicking their icon (handlePopoverToggle)
+        // or explicitly closed by option buttons inside the popover.
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as Node;
-            if (cardRef.current && !cardRef.current.contains(target)) setActiveInput(null);
-            if (activePopover && cardRef.current && !cardRef.current.contains(target)) {
-                 const popovers = document.querySelectorAll('.popover-content');
-                 let clickedInsidePopover = false;
-                 popovers.forEach(p => {
-                     if (p.contains(target)) clickedInsidePopover = true;
-                 });
-                 if (!clickedInsidePopover) {
-                    setActivePopover(null);
-                 }
+            // If the click happened inside a popover, ignore it entirely so we don't
+            // clear focus or trigger re-renders which restart the popover animation.
+            const popovers = document.querySelectorAll('.popover-content');
+            for (let i = 0; i < popovers.length; i++) {
+                const p = popovers[i];
+                if (p.contains(target)) return;
             }
+
+            if (cardRef.current && !cardRef.current.contains(target)) {
+                setActiveInput(null);
+            }
+            // NOTE: intentionally do NOT close activePopover on outside clicks.
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [activePopover]);
+    }, []);
+
+    // Ensure popover is cleared when the modal is closed from outside
+    useEffect(() => {
+        if (!isOpen && activePopover) {
+            setActivePopover(null);
+        }
+    }, [isOpen, activePopover]);
+
+    const handleOverlayClick = useCallback(() => {
+        // When overlay closes the modal, also clear any open popover so it
+        // doesn't persist after the task detail window is closed.
+        setActivePopover(null);
+        onClose();
+    }, [onClose]);
+
+    // debug logs removed
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -241,7 +273,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
               className={`fixed inset-0 z-50 grid place-items-center p-4 transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}
               style={{ paddingBottom: `max(1rem, ${keyboardHeight}px)` }}
             >
-                <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
+                <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={handleOverlayClick} aria-hidden="true" />
                 
                 <form onSubmit={handleSubmit} className={`w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} style={{ paddingBottom: `env(safe-area-inset-bottom)` }}>
                     <div ref={cardRef} className="bg-[var(--color-surface-container)] rounded-xl card-shadow p-4 overflow-y-auto max-h-[75vh]">
@@ -301,21 +333,29 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Fixed</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center" ref={durationIconRef}>
-                                    <button type="button" title="Set Duration" onClick={() => handlePopoverToggle('duration', durationIconRef)} className={`p-2 rounded-full transition-colors ${duration ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><DurationIcon className="w-5 h-5" /></button>
+                                    <button
+                                        type="button"
+                                        title="Set Duration"
+                                        onClick={() => { if (Date.now() - lastToggleRef.current < 300) return; handlePopoverToggle('duration', durationIconRef); }}
+                                        onPointerUp={(e: React.PointerEvent) => { lastToggleRef.current = Date.now(); handlePopoverToggle('duration', durationIconRef); e.stopPropagation(); }}
+                                        disabled={isOtherPopoverOpen('duration')}
+                                        className={`p-2 rounded-full transition-colors ${duration ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'} ${isOtherPopoverOpen('duration') ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        <DurationIcon className="w-5 h-5" />
+                                    </button>
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Duration</span>
                                 </div>
                                 {taskType === 'Fixed' && (
                                     <div className="flex flex-col items-center flex-1 min-w-0 text-center" ref={startTimeIconRef}>
-                                        <button type="button" title="Set Start Date" onClick={() => handlePopoverToggle('startTime', startTimeIconRef)} className={`p-2 rounded-full transition-colors ${startTime ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><ClockIcon className="w-5 h-5" /></button>
+                                        <button type="button" title="Set Start Date" onClick={() => { if (Date.now() - lastToggleRef.current < 300) return; handlePopoverToggle('startTime', startTimeIconRef); }} onPointerUp={(e: React.PointerEvent) => { lastToggleRef.current = Date.now(); handlePopoverToggle('startTime', startTimeIconRef); e.stopPropagation(); }} disabled={isOtherPopoverOpen('startTime')} className={`p-2 rounded-full transition-colors ${startTime ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'} ${isOtherPopoverOpen('startTime') ? 'opacity-50 pointer-events-none' : ''}`}><ClockIcon className="w-5 h-5" /></button>
                                         <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Start</span>
                                     </div>
                                 )}
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center" ref={calendarIconRef}>
-                                    <button type="button" title="Set Due Date" onClick={() => handlePopoverToggle('dueDate', calendarIconRef)} className={`p-2 rounded-full transition-colors ${dueDate ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><CalendarIcon className="w-5 h-5" /></button>
+                                    <button type="button" title="Set Due Date" onClick={() => { if (Date.now() - lastToggleRef.current < 300) return; handlePopoverToggle('dueDate', calendarIconRef); }} onPointerUp={(e: React.PointerEvent) => { lastToggleRef.current = Date.now(); handlePopoverToggle('dueDate', calendarIconRef); e.stopPropagation(); }} disabled={isOtherPopoverOpen('dueDate')} className={`p-2 rounded-full transition-colors ${dueDate ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'} ${isOtherPopoverOpen('dueDate') ? 'opacity-50 pointer-events-none' : ''}`}><CalendarIcon className="w-5 h-5" /></button>
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Due</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center" ref={listIconRef}>
-                                    <button type="button" title="Select List" onClick={() => handlePopoverToggle('list', listIconRef)} className={`p-2 rounded-full transition-colors ${category ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><TagIcon className="w-5 h-5" /></button>
+                                    <button type="button" title="Select List" onClick={() => { if (Date.now() - lastToggleRef.current < 300) return; handlePopoverToggle('list', listIconRef); }} onPointerUp={(e: React.PointerEvent) => { lastToggleRef.current = Date.now(); handlePopoverToggle('list', listIconRef); e.stopPropagation(); }} disabled={isOtherPopoverOpen('list')} className={`p-2 rounded-full transition-colors ${category ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'} ${isOtherPopoverOpen('list') ? 'opacity-50 pointer-events-none' : ''}`}><TagIcon className="w-5 h-5" /></button>
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">List</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
@@ -323,7 +363,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Subs</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center" ref={reminderIconRef}>
-                                    <button type="button" title="Set Reminder" onClick={() => handlePopoverToggle('reminder', reminderIconRef)} className={`p-2 rounded-full transition-colors ${reminder !== null ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><BellIcon className="w-5 h-5" /></button>
+                                    <button type="button" title="Set Reminder" onClick={() => { if (Date.now() - lastToggleRef.current < 300) return; handlePopoverToggle('reminder', reminderIconRef); }} onPointerUp={(e: React.PointerEvent) => { lastToggleRef.current = Date.now(); handlePopoverToggle('reminder', reminderIconRef); e.stopPropagation(); }} disabled={isOtherPopoverOpen('reminder')} className={`p-2 rounded-full transition-colors ${reminder !== null ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'} ${isOtherPopoverOpen('reminder') ? 'opacity-50 pointer-events-none' : ''}`}><BellIcon className="w-5 h-5" /></button>
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Alert</span>
                                 </div>
                             </div>
@@ -338,11 +378,61 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                 </form>
             </div>
             <PopoverPortal>
-                {activePopover === 'duration' && (<div className="popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in" style={popoverPosition}><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Duration (minutes)</label><input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="e.g. 30" className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div></div>)}
-                {activePopover === 'startTime' && (<div className="popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in space-y-3" style={popoverPosition}><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Start Date</label><input type="date" value={startDate || todayStr} onChange={e => setStartDate(e.target.value)} className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div></div>)}
-                {activePopover === 'dueDate' && (<div className="popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] animate-page-fade-in" style={popoverPosition}><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Due Date</label><input type="date" value={dueDate} onChange={e => { setDueDate(e.target.value); }} className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div></div>)}
-                {activePopover === 'list' && (<div className="popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] animate-page-fade-in max-h-48 overflow-y-auto" style={popoverPosition}>{listOptions.map(listName => (<button key={listName} type="button" onClick={() => { setCategory(listName); setActivePopover(null); }} className={`w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${category === listName ? 'bg-primary-100 text-[var(--color-primary-500)]' : 'hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]'}`}><span>{listName}</span>{category === listName && <CheckIcon className="w-4 h-4" />}</button>))}</div>)}
-                {activePopover === 'reminder' && (<div className="popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] animate-page-fade-in max-h-48 overflow-y-auto" style={popoverPosition}>{reminderOptions.map(option => (<button key={option.label} type="button" onClick={() => { setReminder(option.value); setActivePopover(null); }} className={`w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${reminder === option.value ? 'bg-primary-100 text-[var(--color-primary-500)]' : 'hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]'}`}><span>{option.label}</span>{reminder === option.value && <CheckIcon className="w-4 h-4" />}</button>))}</div>)}
+                {activePopover === 'duration' && (<div onPointerDown={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()} className="popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60]" style={popoverPosition}><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Duration (minutes)</label><input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="e.g. 30" onFocus={() => setActiveInput(null)} onPointerDown={e => e.stopPropagation()} onPointerUp={e => e.stopPropagation()} onClick={e => e.stopPropagation()} className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div></div>)}
+                    {activePopover === 'startTime' && (<div onPointerDown={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()} className="popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60] space-y-3" style={popoverPosition}><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Start Date</label><input type="date" value={startDate || todayStr} onChange={e => setStartDate(e.target.value)} onFocus={() => setActiveInput(null)} onPointerDown={e => e.stopPropagation()} onPointerUp={e => e.stopPropagation()} onClick={e => e.stopPropagation()} className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} onFocus={() => setActiveInput(null)} onPointerDown={e => e.stopPropagation()} onPointerUp={e => e.stopPropagation()} onClick={e => e.stopPropagation()} className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div></div>)}
+                    {activePopover === 'dueDate' && (<div onPointerDown={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()} className="popover-content w-56 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-3 z-[60]" style={popoverPosition}><div><label className="text-xs font-medium text-[var(--color-text-secondary)]">Due Date</label><input type="date" value={dueDate} onChange={e => { setDueDate(e.target.value); }} onFocus={() => setActiveInput(null)} onPointerDown={e => e.stopPropagation()} onPointerUp={e => e.stopPropagation()} onClick={e => e.stopPropagation()} className="w-full mt-1 p-2 border border-[var(--color-border)] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]"/></div></div>)}
+                    {activePopover === 'list' && (
+                        <div
+                            onPointerDown={e => { e.stopPropagation(); }}
+                            onMouseDown={e => { e.stopPropagation(); }}
+                            onClick={e => { e.stopPropagation(); }}
+                            className="popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] max-h-48 overflow-y-auto"
+                            style={{ ...popoverPosition, pointerEvents: 'auto' }}
+                        >
+                            {listOptions.map(listName => (
+                                <button
+                                    key={listName}
+                                    type="button"
+                                    onClick={() => {
+                                        setCategory(listName);
+                                        setTimeout(() => setActivePopover(null), 50);
+                                    }}
+                                    onPointerUp={(e: React.PointerEvent) => {
+                                        // Defensive: run selection on pointerup in case React's
+                                        // synthetic click handler doesn't fire due to unmounting.
+                                        setCategory(listName);
+                                        setTimeout(() => setActivePopover(null), 50);
+                                        e.stopPropagation();
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${category === listName ? 'bg-primary-100 text-[var(--color-primary-500)]' : 'hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]'}`}>
+                                    <span>{listName}</span>
+                                    {category === listName && <CheckIcon className="w-4 h-4" />}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    {activePopover === 'reminder' && (
+                        <div onPointerDown={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()} className="popover-content w-48 bg-[var(--color-surface-container)] rounded-lg modal-shadow p-2 z-[60] max-h-48 overflow-y-auto" style={popoverPosition}>
+                            {reminderOptions.map(option => (
+                                <button
+                                    key={option.label}
+                                    type="button"
+                                    onClick={() => {
+                                        setReminder(option.value);
+                                        setTimeout(() => setActivePopover(null), 50);
+                                    }}
+                                    onPointerUp={(e: React.PointerEvent) => {
+                                        setReminder(option.value);
+                                        setTimeout(() => setActivePopover(null), 50);
+                                        e.stopPropagation();
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-sm rounded-md flex justify-between items-center ${reminder === option.value ? 'bg-primary-100 text-[var(--color-primary-500)]' : 'hover:bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]'}`}>
+                                    <span>{option.label}</span>
+                                    {reminder === option.value && <CheckIcon className="w-4 h-4" />}
+                                </button>
+                            ))}
+                        </div>
+                    )}
             </PopoverPortal>
         </>,
         document.body
