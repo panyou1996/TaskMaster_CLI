@@ -66,13 +66,13 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
     };
 
     const EmptySquareCheckIcon = () => (
-        <svg className="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <svg className="w-6 h-6 text-[var(--color-text-tertiary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <rect x="4" y="4" width="16" height="16" rx="4" />
         </svg>
     );
 
     const SubtaskCircleIcon = ({completed}: {completed: boolean}) => (
-        <svg className={`w-5 h-5 transition-colors ${completed ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className={`w-5 h-5 transition-colors ${completed ? 'text-[var(--color-primary-500)]' : 'text-[var(--color-text-tertiary)]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             {completed ? <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /> : <circle cx="12" cy="12" r="8" />}
         </svg>
     );
@@ -85,25 +85,25 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                 <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" />
                 
                 <div className={`w-full max-w-sm bg-transparent transition-transform duration-300 ease-out transform ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} style={{ paddingBottom: `env(safe-area-inset-bottom)` }}>
-                    <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 overflow-y-auto max-h-[75vh]">
+                    <div className="bg-[var(--color-surface-container)] rounded-xl card-shadow p-4 overflow-y-auto max-h-[75vh]">
                         <div className="flex items-start gap-3">
                             <div className="pt-1"><EmptySquareCheckIcon /></div>
                             <div className="flex-grow min-w-0">
                                 <div className="flex justify-between items-start gap-2">
-                                    <p className="flex-grow w-full text-base font-semibold text-gray-900 dark:text-gray-100">{task?.title || 'No Title'}</p>
+                                    <p className="flex-grow w-full text-base font-semibold text-[var(--color-text-primary)]">{task?.title || 'No Title'}</p>
                                     <div className="flex items-start pt-1 shrink-0">
                                         {task?.important && (
                                             <div className="flex flex-col items-center w-[50px]">
-                                                <div className="w-9 h-9 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                                                    <FlagIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                                <div className="w-9 h-9 flex items-center justify-center rounded-full bg-[var(--color-functional-red)]/20">
+                                                    <FlagIcon className="w-5 h-5 text-[var(--color-functional-red)]" />
                                                 </div>
                                                 <span className="text-[10px] font-medium text-center text-[var(--color-text-tertiary)] mt-1 leading-tight">Important</span>
                                             </div>
                                         )}
                                         {task?.today && (
                                             <div className="flex flex-col items-center w-[50px]">
-                                                <div className="w-9 h-9 flex items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30">
-                                                    <StarIcon className="w-5 h-5 text-yellow-500 dark:text-yellow-300" />
+                                                <div className="w-9 h-9 flex items-center justify-center rounded-full bg-yellow-400">
+                                                    <StarIcon className="w-5 h-5 text-white" />
                                                 </div>
                                                 <span className="text-[10px] font-medium text-center text-[var(--color-text-tertiary)] mt-1 leading-tight">Today</span>
                                             </div>
@@ -111,24 +111,24 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                                     </div>
                                 </div>
 
-                                {task?.notes && <p className="w-full text-sm mt-1 text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{task.notes}</p>}
+                                {task?.notes && <p className="w-full text-sm mt-1 text-[var(--color-text-secondary)] whitespace-pre-wrap">{task.notes}</p>}
                                 
                                 {task?.subtasks && task.subtasks.length > 0 && (
-                                    <div className="mt-2 space-y-1 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                    <div className="mt-2 space-y-1 pt-2 border-t border-[var(--color-border)]">
                                         {task.subtasks.map((sub) => (
                                             <div key={sub.id} className="flex items-center gap-2 group">
                                                 <SubtaskCircleIcon completed={sub.completed} />
-                                                <p className={`text-sm ${sub.completed ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-800 dark:text-gray-200'}`}>{sub.text}</p>
+                                                <p className={`text-sm ${sub.completed ? 'text-[var(--color-text-tertiary)] line-through' : 'text-[var(--color-text-secondary)]'}`}>{sub.text}</p>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
                         </div>
-                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
                              <div className="flex items-center gap-2 flex-wrap min-w-0 mb-3 min-h-[1.75rem]">
                                 {task?.duration && (
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-semibold">
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-surface-container-low)] text-[var(--color-text-secondary)] text-xs font-semibold">
                                         <DurationIcon className="w-3.5 h-3.5" />
                                         <span>{task.duration} min</span>
                                     </div>
@@ -145,45 +145,45 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                                         <span className="truncate">Starts {formatChipDate(task.startDate || todayStr)}, {new Date('1970-01-01T' + task.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                                     </div>
                                 )}
-                                {task?.dueDate && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-semibold"><span>Due {formatChipDate(task.dueDate)}</span></div>)}
+                                {task?.dueDate && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-surface-container-low)] text-[var(--color-text-secondary)] text-xs font-semibold"><span>Due {formatChipDate(task.dueDate)}</span></div>)}
                                 {task?.category && (<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-semibold"><span>{task.category}</span></div>)}
                              </div>
                              <div className="flex items-start justify-around">
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
-                                    <div title={task?.type} className={`p-2 rounded-full ${task?.type === 'Fixed' ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'}`}><LockIcon className="w-5 h-5" /></div>
+                                    <div title={task?.type} className={`p-2 rounded-full ${task?.type === 'Fixed' ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-[var(--color-text-secondary)] bg-[var(--color-surface-container-low)]'}`}><LockIcon className="w-5 h-5" /></div>
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Type</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
-                                    <div title="Duration" className={`p-2 rounded-full ${(task?.duration) ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'}`}><DurationIcon className="w-5 h-5" /></div>
+                                    <div title="Duration" className={`p-2 rounded-full ${(task?.duration) ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-[var(--color-text-secondary)] bg-[var(--color-surface-container-low)]'}`}><DurationIcon className="w-5 h-5" /></div>
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Duration</span>
                                 </div>
                                 {task?.type === 'Fixed' && (
                                     <div className="flex flex-col items-center flex-1 min-w-0 text-center">
-                                        <div title="Start Time" className={`p-2 rounded-full ${task?.startTime ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'}`}><ClockIcon className="w-5 h-5" /></div>
+                                        <div title="Start Time" className={`p-2 rounded-full ${task?.startTime ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-[var(--color-text-secondary)] bg-[var(--color-surface-container-low)]'}`}><ClockIcon className="w-5 h-5" /></div>
                                         <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Start</span>
                                     </div>
                                 )}
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
-                                    <div title="Due Date" className={`p-2 rounded-full ${task?.dueDate ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'}`}><CalendarIcon className="w-5 h-5" /></div>
+                                    <div title="Due Date" className={`p-2 rounded-full ${task?.dueDate ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-[var(--color-text-secondary)] bg-[var(--color-surface-container-low)]'}`}><CalendarIcon className="w-5 h-5" /></div>
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Due</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
-                                    <div title="List" className={`p-2 rounded-full ${task?.category ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'}`}><TagIcon className="w-5 h-5" /></div>
+                                    <div title="List" className={`p-2 rounded-full ${task?.category ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-[var(--color-text-secondary)] bg-[var(--color-surface-container-low)]'}`}><TagIcon className="w-5 h-5" /></div>
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">List</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
-                                    <div title="Subtasks" className={`p-2 rounded-full ${(task?.subtasks?.length || 0) > 0 ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'}`}><ListCheckIcon className="w-5 h-5" /></div>
+                                    <div title="Subtasks" className={`p-2 rounded-full ${(task?.subtasks?.length || 0) > 0 ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-[var(--color-text-secondary)] bg-[var(--color-surface-container-low)]'}`}><ListCheckIcon className="w-5 h-5" /></div>
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Subs</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
-                                    <div title="Reminder" className={`p-2 rounded-full ${task?.reminder !== null && task?.reminder !== undefined ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'}`}><BellIcon className="w-5 h-5" /></div>
+                                    <div title="Reminder" className={`p-2 rounded-full ${task?.reminder !== null && task?.reminder !== undefined ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-[var(--color-text-secondary)] bg-[var(--color-surface-container-low)]'}`}><BellIcon className="w-5 h-5" /></div>
                                     <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Alert</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                      <div className="grid grid-cols-2 gap-3 pt-2">
-                        <button onClick={() => setIsDeleteConfirmOpen(true)} className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-red-600 dark:text-red-400 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors w-full flex items-center justify-center gap-2">
+                        <button onClick={() => setIsDeleteConfirmOpen(true)} className="px-4 py-2.5 bg-[var(--color-surface-container-low)] text-[var(--color-functional-red)] font-semibold rounded-xl hover:bg-[var(--color-border)] transition-colors w-full flex items-center justify-center gap-2">
                             <DeleteButtonIcon />
                             <span>Delete</span>
                         </button>

@@ -243,7 +243,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                             className={`relative w-5 h-5 rounded-md border-2 shrink-0 transition-colors flex items-center justify-center
                                 ${isCompleting 
                                     ? 'animate-checkmark' 
-                                    : `border-gray-400 dark:border-gray-500 hover:border-gray-500 dark:hover:border-gray-400`
+                                    : 'border-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)]'
                                 }
                             `}
                             aria-label="Mark task as complete"
@@ -293,7 +293,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                                 aria-label={important ? "Remove importance" : "Mark as important"}
                                 disabled={completed}
                             >
-                                <FlagIcon className={`w-4 h-4 transition-colors ${important ? (completed ? 'text-red-300 dark:text-red-700' : 'text-[var(--color-functional-red)]') : 'text-gray-300 dark:text-gray-600'}`} />
+                                <FlagIcon className={`w-4 h-4 transition-colors ${important ? (completed ? 'text-red-300 dark:text-red-700' : 'text-[var(--color-functional-red)]') : 'text-[var(--color-text-tertiary)]'}`} />
                             </button>
                         </div>
                     </div>
@@ -343,7 +343,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                                                     onToggleSubtask?.(id, sub.id);
                                                 }
                                             }}
-                                            className="h-3.5 w-3.5 rounded-sm border-gray-400 dark:border-gray-500 text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:focus:ring-offset-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="h-3.5 w-3.5 rounded-sm border-[var(--color-border)] text-[var(--color-primary-500)] focus:ring-[var(--color-primary-500)] bg-transparent focus:ring-offset-2 focus:ring-offset-[var(--color-surface-container)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                             disabled={completed}
                                         />
                                         <label 

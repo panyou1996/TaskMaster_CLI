@@ -19,14 +19,14 @@ const START_HOUR = 7;
 const END_HOUR = 22;
 
 const colorVariants = {
-    green: { bg: 'bg-green-100', border: 'border-green-500', text: 'text-green-800', subtext: 'text-green-600' },
-    blue: { bg: 'bg-blue-100', border: 'border-blue-500', text: 'text-blue-800', subtext: 'text-blue-600' },
-    pink: { bg: 'bg-pink-100', border: 'border-pink-500', text: 'text-pink-800', subtext: 'text-pink-600' },
-    purple: { bg: 'bg-purple-100', border: 'border-purple-500', text: 'text-purple-800', subtext: 'text-purple-600' },
-    yellow: { bg: 'bg-yellow-100', border: 'border-yellow-500', text: 'text-yellow-800', subtext: 'text-yellow-600' },
-    red: { bg: 'bg-red-100', border: 'border-red-500', text: 'text-red-800', subtext: 'text-red-600' },
-    orange: { bg: 'bg-orange-100', border: 'border-orange-500', text: 'text-orange-800', subtext: 'text-orange-600' },
-    gray: { bg: 'bg-gray-100', border: 'border-gray-500', text: 'text-gray-800', subtext: 'text-gray-600' },
+    green: { bg: 'bg-green-100 dark:bg-green-900/30', border: 'border-green-500', text: 'text-green-800 dark:text-green-300', subtext: 'text-green-600 dark:text-green-400' },
+    blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', border: 'border-blue-500', text: 'text-blue-800 dark:text-blue-300', subtext: 'text-blue-600 dark:text-blue-400' },
+    pink: { bg: 'bg-pink-100 dark:bg-pink-900/30', border: 'border-pink-500', text: 'text-pink-800 dark:text-pink-300', subtext: 'text-pink-600 dark:text-pink-400' },
+    purple: { bg: 'bg-purple-100 dark:bg-purple-900/30', border: 'border-purple-500', text: 'text-purple-800 dark:text-purple-300', subtext: 'text-purple-600 dark:text-purple-400' },
+    yellow: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', border: 'border-yellow-500', text: 'text-yellow-800 dark:text-yellow-300', subtext: 'text-yellow-600 dark:text-yellow-400' },
+    red: { bg: 'bg-red-100 dark:bg-red-900/30', border: 'border-red-500', text: 'text-red-800 dark:text-red-300', subtext: 'text-red-600 dark:text-red-400' },
+    orange: { bg: 'bg-orange-100 dark:bg-orange-900/30', border: 'border-orange-500', text: 'text-orange-800 dark:text-orange-300', subtext: 'text-orange-600 dark:text-orange-400' },
+    gray: { bg: 'bg-gray-100 dark:bg-gray-700', border: 'border-gray-500', text: 'text-gray-800 dark:text-gray-200', subtext: 'text-gray-600 dark:text-gray-400' },
 };
 
 // Clickable unscheduled task card
@@ -34,11 +34,11 @@ const UnscheduledTaskCard: React.FC<{ task: Task; onClick: () => void; }> = ({ t
     return (
         <button
             onClick={onClick}
-            className="bg-white rounded-lg p-3 w-40 flex-shrink-0 card-shadow text-left cursor-pointer hover:bg-gray-50 transition-colors border-l-4"
+            className="bg-[var(--color-surface-container)] rounded-lg p-3 w-40 flex-shrink-0 card-shadow text-left cursor-pointer hover:bg-[var(--color-surface-container-low)] transition-colors border-l-4"
             style={{ borderColor: task.color }}
         >
-            <p className="font-semibold text-sm truncate text-gray-800">{task.title}</p>
-            <p className="text-xs text-gray-500">{task.duration} min</p>
+            <p className="font-semibold text-sm truncate text-[var(--color-text-primary)]">{task.title}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">{task.duration} min</p>
         </button>
     );
 };
@@ -257,10 +257,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => i + START_HOUR);
 
     return (
-        <div className="h-full flex flex-col bg-gray-50">
+        <div className="h-full flex flex-col bg-[var(--color-background-primary)]">
             <div className="flex-grow flex flex-col overflow-hidden">
                 <section className="flex-shrink-0 py-4 px-6">
-                    <h2 className="text-lg font-bold text-gray-800 mb-3">Unscheduled</h2>
+                    <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-3">Unscheduled</h2>
                     <div className="flex gap-3 overflow-x-auto pb-3 -mx-6 px-6">
                         {unscheduledTasks.length > 0 ? (
                             unscheduledTasks.map(task => 
@@ -271,9 +271,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                                 />
                             )
                         ) : (
-                            <div className="w-full text-center py-4 bg-gray-100 rounded-lg">
-                                <p className="text-gray-600 font-semibold text-sm">No tasks to schedule</p>
-                                <p className="text-gray-500 text-xs mt-1 px-2">Add a duration to flexible tasks on your 'Today' list to see them here.</p>
+                            <div className="w-full text-center py-4 bg-[var(--color-surface-container)] rounded-lg">
+                                <p className="text-[var(--color-text-secondary)] font-semibold text-sm">No tasks to schedule</p>
+                                <p className="text-[var(--color-text-tertiary)] text-xs mt-1 px-2">Add a duration to flexible tasks on your 'Today' list to see them here.</p>
                             </div>
                         )}
                     </div>
@@ -286,8 +286,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                     <div className="relative h-full px-6" style={{ height: (END_HOUR - START_HOUR + 1) * PIXELS_PER_HOUR }}>
                         {hours.map(hour => (
                             <div key={hour} className="absolute w-full flex items-center" style={{ top: (hour - START_HOUR) * PIXELS_PER_HOUR, left: 0, right: 0 }}>
-                                <span className="text-xs text-gray-400 w-12 text-right pr-2">{`${hour % 12 === 0 ? 12 : hour % 12}${hour < 12 || hour === 24 ? 'am' : 'pm'}`}</span>
-                                <div className="flex-grow border-t border-gray-200"></div>
+                                <span className="text-xs text-[var(--color-text-tertiary)] w-12 text-right pr-2">{`${hour % 12 === 0 ? 12 : hour % 12}${hour < 12 || hour === 24 ? 'am' : 'pm'}`}</span>
+                                <div className="flex-grow border-t border-[var(--color-border)]"></div>
                             </div>
                         ))}
                         
@@ -301,10 +301,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({
 
                             if (task.completed) {
                                 colors = {
-                                    bg: 'bg-gray-100',
-                                    border: 'border-gray-400',
-                                    text: 'text-gray-500 line-through',
-                                    subtext: 'text-gray-400'
+                                    bg: 'bg-gray-100 dark:bg-gray-800/50',
+                                    border: 'border-gray-400 dark:border-gray-700',
+                                    text: 'text-gray-500 dark:text-gray-400 line-through',
+                                    subtext: 'text-gray-400 dark:text-gray-500'
                                 };
                             }
                             

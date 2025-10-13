@@ -607,19 +607,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addToQueue({ type: 'ADD_LIST', payload: { listData }, tempId });
     }, [user, setLists, addToQueue]);
 
+    // This effect ensures the 'Google Calendar' list exists if tasks from it are pulled,
+    // without creating it prematurely or creating duplicates.
     useEffect(() => {
-        if (user && lists.length > 0 && !loading) {
-            const hasGoogleCalendarList = lists.some(list => list.name === 'Google Calendar');
-            if (!hasGoogleCalendarList) {
-                const isPendingCreation = offlineQueue.some(op => 
-                    op.type === 'ADD_LIST' && op.payload.listData.name === 'Google Calendar'
-                );
-                if (!isPendingCreation) {
-                    addList({ name: 'Google Calendar', icon: '🗓️', color: 'blue' });
+        if (user && !loading) {
+            // 1. Check if there are any tasks that need the 'Google Calendar' list.
+            const hasGoogleCalendarTasks = tasks.some(t => t.category === 'Google Calendar');
+
+            if (hasGoogleCalendarTasks) {
+                // 2. If tasks exist, check if the list is already present (synced or local).
+                const hasGoogleCalendarList = lists.some(list => list.name === 'Google Calendar');
+                
+                if (!hasGoogleCalendarList) {
+                    // 3. To prevent race conditions, also check if it's already in the offline queue.
+                    const isPendingCreation = offlineQueue.some(op => 
+                        op.type === 'ADD_LIST' && op.payload.listData.name === 'Google Calendar'
+                    );
+
+                    if (!isPendingCreation) {
+                        // 4. If all checks pass, create the list.
+                        addList({ name: 'Google Calendar', icon: '🗓️', color: 'blue' });
+                    }
                 }
             }
         }
-    }, [user, lists, loading, offlineQueue, addList]);
+    }, [user, lists, tasks, loading, offlineQueue, addList]);
 
     const addTask = useCallback(async (taskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'>): Promise<string | undefined> => {
         if (!user) {
@@ -845,6 +857,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [tags, moments, setTags, updateMoment]);
 
     const deleteTag = useCallback(async (tagToDelete: string) => {
+        setTags(current => current.filter(t => t !== tagToDelete));
+    
         const momentsToUpdate = moments.filter(m => m.tags?.includes(tagToDelete));
         const updatePromises = momentsToUpdate.map(moment => {
             const newTags = moment.tags?.filter(t => t !== tagToDelete);
@@ -852,10 +866,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         
         await Promise.all(updatePromises);
-        
-        setTags(current => current.filter(t => t !== tagToDelete));
-    
-    }, [moments, updateMoment, setTags]);
+    }, [moments, setTags, updateMoment]);
 
     const value = useMemo(() => ({
         session, user, loading,
