@@ -19,20 +19,16 @@ import AddTaskScreen, { NewTaskData } from './AddTaskScreen';
 import TaskCard from '../components/common/TaskCard';
 import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
-// FIX: Switched to a namespace import for react-window to resolve module resolution errors where named exports were not being found.
-// Reverting to named imports as namespace properties are not being found.
-// FIX: Replaced namespace import with named imports for react-window to resolve type and component errors.
-// FIX: Use namespace import for react-window to fix module resolution issues.
-import * as ReactWindow from 'react-window';
+import { FixedSizeList } from 'react-window';
 
 const colorVariants = {
-    green: { bg: 'bg-green-100 dark:bg-green-900/30' },
-    blue: { bg: 'bg-blue-100 dark:bg-blue-900/30' },
-    pink: { bg: 'bg-pink-100 dark:bg-pink-900/30' },
-    purple: { bg: 'bg-purple-100 dark:bg-purple-900/30' },
-    yellow: { bg: 'bg-yellow-100 dark:bg-yellow-900/30' },
-    red: { bg: 'bg-red-100 dark:bg-red-900/30' },
-    orange: { bg: 'bg-orange-100 dark:bg-orange-900/30' },
+    green: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-600 dark:text-green-300' },
+    blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-300' },
+    pink: { bg: 'bg-pink-100 dark:bg-pink-900/30', text: 'text-pink-600 dark:text-pink-300' },
+    purple: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-600 dark:text-purple-300' },
+    yellow: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-600 dark:text-yellow-300' },
+    red: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-300' },
+    orange: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-300' },
 };
 
 const formatDateToYYYYMMDD = (date: Date) => {
@@ -186,7 +182,7 @@ const PlanScreen: React.FC = () => {
     };
 
     // -- ROW RENDERER FOR VIRTUALIZED LIST --
-    const ListRow = ({ data, index: index2, style }: ReactWindow.ListChildComponentProps<TaskList[]>) => {
+    const ListRow = ({ data, index: index2, style }: {data: TaskList[], index: number, style: React.CSSProperties}) => {
         const list = data[index2];
         const colors3 = colorVariants[list.color as keyof typeof colorVariants] || colorVariants.blue;
         const count = taskCounts[list.name] || 0;
@@ -199,15 +195,15 @@ const PlanScreen: React.FC = () => {
                         onPointerUp={() => onPointerUp(list.id)}
                         onPointerLeave={cancelLongPress}
                         onPointerCancel={cancelLongPress}
-                        className="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors select-none h-[80px]"
+                        className="bg-[var(--color-surface-container)] p-4 rounded-xl card-shadow flex items-center space-x-4 cursor-pointer hover:bg-[var(--color-surface-container-low)] transition-colors select-none h-[80px]"
                         onContextMenu={(e) => e.preventDefault()}
                     >
                         <div className={`p-2 rounded-lg flex items-center justify-center w-12 h-12 ${colors3.bg}`}>
                             <span className="text-2xl">{list.icon}</span>
                         </div>
                         <div>
-                            <p className="font-semibold text-gray-800 dark:text-gray-200">{list.name}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{count} tasks</p>
+                            <p className="font-semibold text-[var(--color-text-primary)]">{list.name}</p>
+                            <p className="text-sm text-[var(--color-text-secondary)]">{count} tasks</p>
                         </div>
                     </div>
                 </div>
@@ -400,7 +396,7 @@ const PlanScreen: React.FC = () => {
         <MainLayout>
              <div className="absolute inset-0 flex flex-col overflow-hidden">
                 <div className={`absolute top-0 left-0 right-0 h-14 flex justify-center items-center transition-opacity duration-300 pointer-events-none ${pullDelta > 0 || isRefreshing ? 'opacity-100' : 'opacity-0'}`}>
-                    {isRefreshing ? <RefreshSpinnerIcon /> : <ChevronDownIcon className={`w-6 h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${pullDelta > REFRESH_THRESHOLD ? 'rotate-180' : ''}`} />}
+                    {isRefreshing ? <RefreshSpinnerIcon /> : <ChevronDownIcon className={`w-6 h-6 text-[var(--color-text-secondary)] transition-transform duration-300 ${pullDelta > REFRESH_THRESHOLD ? 'rotate-180' : ''}`} />}
                 </div>
                 <div
                     className="h-full flex flex-col"
@@ -414,21 +410,21 @@ const PlanScreen: React.FC = () => {
                         style={{ paddingTop: `calc(1.5rem + env(safe-area-inset-top, 0px))` }}
                     >
                         <div className="flex justify-start">
-                            <button className="text-gray-600 dark:text-gray-400 p-1" onClick={() => setIsSearchVisible(true)}>
+                            <button className="text-[var(--color-text-secondary)] p-1" onClick={() => setIsSearchVisible(true)}>
                                 <SearchIcon />
                             </button>
                         </div>
                         <div className="flex justify-center">
-                            <div className="grid grid-cols-2 bg-gray-200 dark:bg-gray-700 rounded-lg p-1 w-full max-w-48">
-                                <button onClick={() => setViewMode('lists')} className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'lists' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Lists</button>
-                                <button onClick={() => setViewMode('calendar')} className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Calendar</button>
+                            <div className="grid grid-cols-2 bg-[var(--color-surface-container-low)] rounded-lg p-1 w-full max-w-48">
+                                <button onClick={() => setViewMode('lists')} className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'lists' ? 'bg-[var(--color-surface-container)] text-[var(--color-text-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'}`}>Lists</button>
+                                <button onClick={() => setViewMode('calendar')} className={`w-full text-center py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'calendar' ? 'bg-[var(--color-surface-container)] text-[var(--color-text-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'}`}>Calendar</button>
                             </div>
                         </div>
                         <div className="flex justify-end">
                             {viewMode === 'lists' ? (
-                                <button className="text-gray-800 dark:text-gray-200" onClick={() => setIsAddListOpen(true)}><PlusIconHeader /></button>
+                                <button className="text-[var(--color-text-primary)]" onClick={() => setIsAddListOpen(true)}><PlusIconHeader /></button>
                             ) : (
-                                <button onClick={() => setTaskFilterMode(p => p === 'due' ? 'start' : 'due')} className="text-gray-600 dark:text-gray-400 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><HamburgerMenuIcon /></button>
+                                <button onClick={() => setTaskFilterMode(p => p === 'due' ? 'start' : 'due')} className="text-[var(--color-text-secondary)] p-1 rounded-full hover:bg-[var(--color-surface-container-low)]"><HamburgerMenuIcon /></button>
                             )}
                         </div>
                     </header>
@@ -444,15 +440,15 @@ const PlanScreen: React.FC = () => {
                                     <EmptyListsIllustration onAddList={() => setIsAddListOpen(true)} />
                                 ) : (
                                     mainListSize.height > 0 && (
-                                        <ReactWindow.FixedSizeList
+                                        <FixedSizeList
                                             height={mainListSize.height}
                                             width={mainListSize.width}
                                             itemCount={taskLists.length}
                                             itemSize={LIST_ITEM_SIZE}
                                             itemData={taskLists}
                                         >
-                                            {ListRow}
-                                        </ReactWindow.FixedSizeList>
+                                            {ListRow as any}
+                                        </FixedSizeList>
                                     )
                                 )}
                             </div>
@@ -461,27 +457,29 @@ const PlanScreen: React.FC = () => {
                                 <div className="pt-4 -mx-1">
                                     <div className="mb-6 flex-shrink-0">
                                         <div className={`flex items-center mb-4 ${isCalendarCollapsed ? 'justify-center' : 'justify-between'}`}>
-                                            {!isCalendarCollapsed && <button onClick={handlePrevMonth} className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"><ChevronLeftIcon /></button>}
-                                            <button onClick={() => setIsCalendarCollapsed(!isCalendarCollapsed)} className="flex items-center gap-1 font-bold text-lg text-gray-800 dark:text-gray-200 focus:outline-none rounded-md px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                            {!isCalendarCollapsed && <button onClick={handlePrevMonth} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"><ChevronLeftIcon /></button>}
+                                            <button onClick={() => setIsCalendarCollapsed(!isCalendarCollapsed)} className="flex items-center gap-1 font-bold text-lg text-[var(--color-text-primary)] focus:outline-none rounded-md px-2 py-1 hover:bg-[var(--color-surface-container-low)]">
                                                 {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                                <ChevronDownIcon className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isCalendarCollapsed ? 'rotate-180' : ''}`} />
+                                                <ChevronDownIcon className={`w-5 h-5 text-[var(--color-text-secondary)] transition-transform duration-300 ${isCalendarCollapsed ? 'rotate-180' : ''}`} />
                                             </button>
-                                            {!isCalendarCollapsed && <button onClick={handleNextMonth} className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"><ChevronRightIcon /></button>}
+                                            {!isCalendarCollapsed && <button onClick={handleNextMonth} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"><ChevronRightIcon /></button>}
                                         </div>
                                         <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCalendarCollapsed ? 'max-h-20' : 'max-h-96'}`}>
                                             <div className="grid grid-cols-7 gap-y-2 text-center">
-                                                {dayHeaders.map(day => <div key={day} className="text-sm font-medium text-gray-500 dark:text-gray-400">{day}</div>)}
+                                                {dayHeaders.map(day => <div key={day} className="text-sm font-medium text-[var(--color-text-secondary)]">{day}</div>)}
                                                 {displayedDays.map((dayObj, index2) => {
                                                     const isSelected = dayObj.date && isSameDay(dayObj.date, selectedDate);
                                                     const isToday = dayObj.date && isSameDay(dayObj.date, today);
-                                                    let buttonClass = 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700';
-                                                    if (isSelected) buttonClass = 'bg-blue-600 text-white';
-                                                    else if (isToday) buttonClass = 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
+                                                    
+                                                    let buttonClass = 'text-[var(--color-text-primary)] hover:bg-[var(--color-surface-container-low)]';
+                                                    if (isSelected) buttonClass = 'bg-[var(--color-primary-500)] text-[var(--color-on-primary)]';
+                                                    else if (isToday) buttonClass = 'bg-[var(--color-surface-container-low)] text-[var(--color-text-primary)]';
+
                                                     return (
                                                         <div key={index2} className="py-1.5 flex justify-center items-center">
                                                             {dayObj.day && (<button onClick={() => dayObj.date && handleSelectDate(dayObj.date)} className={`w-8 h-8 rounded-full text-sm font-medium flex flex-col items-center justify-center transition-colors relative ${buttonClass}`}>
-                                                                {dayObj.day}
-                                                                {dayObj.hasTask && !isSelected && <div className="absolute bottom-1 w-1 h-1 bg-blue-500 rounded-full" />}
+                                                                <span className={`w-6 h-6 flex items-center justify-center rounded-full ${isSelected ? '' : isToday ? 'bg-[var(--color-surface-container)]' : ''}`}>{dayObj.day}</span>
+                                                                {dayObj.hasTask && !isSelected && <div className="absolute bottom-1 w-1 h-1 bg-[var(--color-primary-500)] rounded-full" />}
                                                             </button>)}
                                                         </div>
                                                     );
@@ -490,7 +488,7 @@ const PlanScreen: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="flex-grow flex flex-col">
-                                        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex-shrink-0">
+                                        <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4 flex-shrink-0">
                                             {taskFilterMode === 'due' ? 'Tasks Due for ' : 'Tasks Starting '}
                                             {selectedDate.toLocaleString('default', { month: 'long' })} {selectedDate.getDate()}
                                         </h2>
@@ -506,7 +504,7 @@ const PlanScreen: React.FC = () => {
             </div>
 
             {/* Search Overlay */}
-            <div className={`fixed inset-0 z-40 bg-gray-50 dark:bg-gray-900 flex flex-col transition-transform duration-300 ease-in-out ${isSearchVisible ? 'translate-y-0' : 'translate-y-full'}`}
+            <div className={`fixed inset-0 z-40 bg-[var(--color-background-primary)] flex flex-col transition-transform duration-300 ease-in-out ${isSearchVisible ? 'translate-y-0' : 'translate-y-full'}`}
                  style={{ paddingTop: `var(--safe-area-inset-top, 0px)` }}>
                 <div className="flex-shrink-0 px-4 pt-4 pb-3 flex items-center gap-2">
                     <div className="relative flex-grow">
@@ -519,12 +517,12 @@ const PlanScreen: React.FC = () => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search lists..."
-                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
+                            className="w-full pl-10 pr-4 py-2 bg-[var(--color-surface-container)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] text-[var(--color-text-primary)]"
                         />
                     </div>
                     <button 
                         onClick={() => { setIsSearchVisible(false); setSearchQuery(''); }}
-                        className="font-semibold text-blue-600 dark:text-blue-400 px-2"
+                        className="font-semibold text-[var(--color-primary-500)] px-2"
                     >
                         Cancel
                     </button>
@@ -533,20 +531,20 @@ const PlanScreen: React.FC = () => {
                 <div ref={searchListContainerRef} className="flex-grow px-6 pb-24 pt-4">
                      {filteredTaskLists.length === 0 && searchQuery ? (
                         <div className="text-center py-16">
-                            <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">No lists found</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Try a different search term.</p>
+                            <p className="text-lg font-semibold text-[var(--color-text-primary)]">No lists found</p>
+                            <p className="text-sm text-[var(--color-text-secondary)] mt-1">Try a different search term.</p>
                         </div>
                     ) : (
                         searchListSize.height > 0 && (
-                            <ReactWindow.FixedSizeList
+                            <FixedSizeList
                                 height={searchListSize.height}
                                 width={searchListSize.width}
                                 itemCount={filteredTaskLists.length}
                                 itemSize={LIST_ITEM_SIZE}
                                 itemData={filteredTaskLists}
                             >
-                                {ListRow}
-                            </ReactWindow.FixedSizeList>
+                                {ListRow as any}
+                            </FixedSizeList>
                         )
                     )}
                 </div>

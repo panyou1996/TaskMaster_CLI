@@ -49,25 +49,25 @@ const RecommendTasksScreen: React.FC<RecommendTasksScreenProps> = ({ isOpen, onC
     <div className={`fixed inset-0 z-50 flex items-end transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
       {/* Backdrop */}
       <div 
-        className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} 
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} 
         onClick={onClose}
         aria-hidden="true"
       />
       
       {/* Modal Sheet */}
       <div 
-        className={`w-full bg-white dark:bg-gray-800 rounded-t-3xl modal-shadow transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'} flex flex-col max-h-[80vh]`}
+        className={`w-full bg-[var(--color-surface-container)] rounded-t-3xl modal-shadow transition-transform duration-300 ease-out transform ${isOpen ? 'translate-y-0' : 'translate-y-full'} flex flex-col max-h-[80vh]`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="recommend-title"
       >
         {/* Header */}
-        <div className="pt-3 px-4 pb-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-3" />
+        <div className="pt-3 px-4 pb-3 border-b border-[var(--color-border)] flex-shrink-0">
+          <div className="w-8 h-1 bg-[var(--color-border)] rounded-full mx-auto mb-3" />
           <div className="flex justify-between items-center h-8">
-            <button className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"><TrashIcon /></button>
-            <h2 id="recommend-title" className="text-base font-bold text-gray-900 dark:text-gray-100">Recommend Tasks</h2>
-            <button className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"><RegenerateIcon /></button>
+            <button className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"><TrashIcon /></button>
+            <h2 id="recommend-title" className="text-base font-bold text-[var(--color-text-primary)]">Recommend Tasks</h2>
+            <button className="p-1 text-[var(--color-primary-500)] hover:opacity-80"><RegenerateIcon /></button>
           </div>
         </div>
         
@@ -81,14 +81,14 @@ const RecommendTasksScreen: React.FC<RecommendTasksScreenProps> = ({ isOpen, onC
                 const listInfo = listInfoMap.get(task.category) || { icon: '💼', color: 'blue' };
                 const colors = colorVariants[listInfo.color as keyof typeof colorVariants] || colorVariants.blue;
                 return (
-                    <div key={task.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-xl flex items-center justify-between">
+                    <div key={task.id} className="bg-[var(--color-surface-container-low)] p-3 rounded-xl flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                         <div className={`w-10 h-10 flex items-center justify-center rounded-full ${colors.bg}`}>
                             <span className="text-xl">{listInfo.icon}</span>
                         </div>
                         <div>
-                        <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{task.title}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{task.reason}</p>
+                        <p className="font-semibold text-sm text-[var(--color-text-primary)]">{task.title}</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{task.reason}</p>
                         </div>
                     </div>
                     <button onClick={() => handleAdd(task.id)} className="text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/40 p-1.5 rounded-full">
@@ -98,7 +98,7 @@ const RecommendTasksScreen: React.FC<RecommendTasksScreenProps> = ({ isOpen, onC
                 )
               })
           ) : (
-             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+             <div className="text-center py-8 text-[var(--color-text-secondary)]">
                 <p>No recommendations for now!</p>
             </div>
           )}

@@ -57,6 +57,8 @@ const BottomNavBar: React.FC = () => {
             setInitialAIPrompt(finalTranscript);
             setIsAddTaskWithAIOpen(true);
         }
+        // Reset the long-press flag only after its value has been checked.
+        isLongPressRef.current = false;
     }, [addDebugLog]);
 
     useEffect(() => {
@@ -71,7 +73,7 @@ const BottomNavBar: React.FC = () => {
               clearTimeout(longPressTimerRef.current);
               longPressTimerRef.current = null;
           }
-          isLongPressRef.current = false;
+          // Do not reset isLongPressRef here; it's handled by the final transcript callback.
       };
       window.addEventListener('pointerup', handleGlobalPointerUp);
       return () => { window.removeEventListener('pointerup', handleGlobalPointerUp); };

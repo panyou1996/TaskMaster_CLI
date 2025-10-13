@@ -6,9 +6,14 @@ import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 export const useWebSpeech = (addDebugLog: (log: string) => void) => {
     const [isRecording, setIsRecording] = useState(false);
     const [transcript, setTranscript] = useState('');
+    const transcriptRef = useRef(''); // Use a ref to access latest transcript in callbacks
     const recognitionRef = useRef<any>(null);
     const onEndRef = useRef<(result: string) => void>(() => {});
     const finalTranscriptAccumulatorRef = useRef('');
+
+    useEffect(() => {
+        transcriptRef.current = transcript;
+    }, [transcript]);
 
     const start = useCallback((onEnd: (result: string) => void) => {
         onEndRef.current = onEnd;
@@ -47,21 +52,20 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
                     });
 
                     addDebugLog('Native Speech: Starting recognition.');
-                    await SpeechRecognition.start({
+                    // Do not await here. The promise resolves when recognition stops.
+                    // But we need to stop it from an external event.
+                    SpeechRecognition.start({
                         language: 'zh-CN',
                         maxResults: 1,
                         prompt: 'Say something...',
                         partialResults: true,
+                    }).catch(error => {
+                        // This catch is important for when stop() is called, which rejects the promise.
+                        addDebugLog(`Native speech recognition ended or errored: ${error.message}`);
                     });
                     
-                    // Note: For Capacitor plugin, 'partialResults' is the main way to get live results.
-                    // The final result is often delivered through the last partial result event
-                    // before recognition stops. The `start` promise might not resolve with the final transcript
-                    // in all implementations/platforms in the way web speech does. We will rely on the state
-                    // managed by partialResults. The stop function will trigger the onEnd callback.
-                    
                 } catch (error: any) {
-                    addDebugLog(`Native speech error: ${error.message}`);
+                    addDebugLog(`Native speech error during start: ${error.message}`);
                     onEndRef.current('');
                     setIsRecording(false);
                     setTranscript('');
@@ -104,7 +108,6 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
 
             recognition.onerror = (event: any) => {
                 addDebugLog(`Web Speech: onerror - ${event.error}: ${event.message}`);
-                // onEnd will be called automatically, which will call the onEndRef
             };
             
             recognition.onresult = (event: any) => {
@@ -135,7 +138,8 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
             SpeechRecognition.stop()
               .then(() => {
                 addDebugLog('Native speech stopped successfully.');
-                onEndRef.current(transcript);
+                // Use the ref to get the most up-to-date transcript value
+                onEndRef.current(transcriptRef.current);
               })
               .catch(err => addDebugLog(`Native Speech: stop() error: ${err.message}`))
               .finally(() => {
@@ -151,7 +155,7 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
                  addDebugLog('Web Speech: stop() called but no recognitionRef.');
             }
         }
-    }, [addDebugLog, transcript]);
+    }, [addDebugLog]); // Removed transcript from dependency array
 
     // Cleanup listeners on unmount
     useEffect(() => {

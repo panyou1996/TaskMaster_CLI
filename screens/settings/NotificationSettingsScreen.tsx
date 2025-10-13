@@ -35,7 +35,7 @@ const SettingsToggleItem: React.FC<{
         </div>
         <button
             aria-hidden="true"
-            className={`relative inline-flex items-center h-7 w-12 rounded-full transition-colors ${enabled ? 'bg-blue-600' : 'bg-[var(--color-border)]'}`}
+            className={`relative inline-flex items-center h-7 w-12 rounded-full transition-colors ${enabled ? 'bg-[var(--color-primary-500)]' : 'bg-[var(--color-border)]'}`}
         >
             <span className={`inline-block w-5 h-5 transform bg-white rounded-full transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
         </button>
