@@ -57,7 +57,7 @@ const BottomNavBar: React.FC = () => {
             setInitialAIPrompt(finalTranscript);
             setIsAddTaskWithAIOpen(true);
         }
-    }, [addDebugLog, setIsAddTaskWithAIOpen, setInitialAIPrompt]);
+    }, [addDebugLog]);
 
     useEffect(() => {
       const handleGlobalPointerUp = () => {

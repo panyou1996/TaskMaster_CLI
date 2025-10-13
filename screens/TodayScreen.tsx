@@ -219,8 +219,7 @@ const TodayScreen: React.FC = () => {
         profile,
         addTask,
         updateTask,
-        syncData,
-        debugLog
+        syncData
     } = useData();
     const [completingTaskId, setCompletingTaskId] = useState<number | string | null>(null);
     const [collapsingTaskId, setCollapsingTaskId] = useState<number | string | null>(null);
@@ -866,15 +865,7 @@ const TodayScreen: React.FC = () => {
                                         </p>
                                     </div>
                                 )}
-                                <div className="p-4 mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl flex flex-col gap-2 animate-page-fade-in">
-                                    <h3 className="font-bold text-yellow-800 dark:text-yellow-300 self-center">Debug Panel</h3>
-                                    <div className="mt-2 w-full text-left bg-yellow-100 dark:bg-yellow-900/50 p-2 rounded-md max-h-48 overflow-y-auto self-stretch">
-                                        <h4 className="font-semibold text-yellow-900 dark:text-yellow-200">Gesture Log:</h4>
-                                        {debugLog && debugLog.length === 0 ? <p className="text-xs">No logs yet. Long-press the mic button.</p> :
-                                          debugLog?.map((msg, i) => <pre key={i} className="text-xs text-yellow-800 dark:text-yellow-300 whitespace-pre-wrap">{msg}</pre>)
-                                        }
-                                    </div>
-                                </div>
+                                
                                 {totalTodayTasks > 0 ? (
                                     <>
                                         <div className="mb-4 flex-shrink-0">

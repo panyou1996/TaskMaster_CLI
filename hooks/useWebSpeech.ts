@@ -8,6 +8,7 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
     const [transcript, setTranscript] = useState('');
     const recognitionRef = useRef<any>(null);
     const onEndRef = useRef<(result: string) => void>(() => {});
+    const finalTranscriptAccumulatorRef = useRef('');
 
     const start = useCallback((onEnd: (result: string) => void) => {
         onEndRef.current = onEnd;
@@ -46,25 +47,22 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
                     });
 
                     addDebugLog('Native Speech: Starting recognition.');
-                    const result = await SpeechRecognition.start({
+                    await SpeechRecognition.start({
                         language: 'zh-CN',
                         maxResults: 1,
                         prompt: 'Say something...',
                         partialResults: true,
                     });
                     
-                    let finalTranscript = '';
-                    if (result && result.matches && result.matches.length > 0) {
-                        finalTranscript = result.matches[0].trim();
-                    }
-                    addDebugLog(`Native Speech: Final transcript: "${finalTranscript}"`);
-                    onEndRef.current(finalTranscript);
-
+                    // Note: For Capacitor plugin, 'partialResults' is the main way to get live results.
+                    // The final result is often delivered through the last partial result event
+                    // before recognition stops. The `start` promise might not resolve with the final transcript
+                    // in all implementations/platforms in the way web speech does. We will rely on the state
+                    // managed by partialResults. The stop function will trigger the onEnd callback.
+                    
                 } catch (error: any) {
                     addDebugLog(`Native speech error: ${error.message}`);
                     onEndRef.current('');
-                } finally {
-                    addDebugLog('Native Speech: Cleaning up.');
                     setIsRecording(false);
                     setTranscript('');
                     SpeechRecognition.removeAllListeners();
@@ -83,13 +81,12 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
                 return;
             }
 
+            finalTranscriptAccumulatorRef.current = '';
             const recognition = new (window as any).webkitSpeechRecognition();
             recognitionRef.current = recognition;
             recognition.continuous = true;
             recognition.interimResults = true;
             recognition.lang = 'zh-CN';
-
-            let finalTranscriptAccumulator = '';
 
             recognition.onstart = () => {
                 addDebugLog('Web Speech: onstart');
@@ -100,7 +97,7 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
                 addDebugLog('Web Speech: onend');
                 setIsRecording(false);
                 if (recognitionRef.current) {
-                    onEndRef.current(finalTranscriptAccumulator.trim());
+                    onEndRef.current(finalTranscriptAccumulatorRef.current.trim());
                 }
                 recognitionRef.current = null;
             };
@@ -112,16 +109,15 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
             
             recognition.onresult = (event: any) => {
                 let interimTranscript = '';
-                finalTranscriptAccumulator = ''; // Start from scratch
-                for (let i = 0; i < event.results.length; ++i) {
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
                      if (event.results[i].isFinal) {
-                        finalTranscriptAccumulator += event.results[i][0].transcript;
+                        finalTranscriptAccumulatorRef.current += event.results[i][0].transcript;
                     } else {
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                addDebugLog(`Web Speech onresult: final="${finalTranscriptAccumulator}" interim="${interimTranscript}"`);
-                setTranscript(finalTranscriptAccumulator + interimTranscript);
+                addDebugLog(`Web Speech onresult: final="${finalTranscriptAccumulatorRef.current}" interim="${interimTranscript}"`);
+                setTranscript(finalTranscriptAccumulatorRef.current + interimTranscript);
             };
 
             try {
@@ -136,7 +132,17 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
     const stop = useCallback(() => {
         if (Capacitor.isNativePlatform()) {
             addDebugLog('Native Speech: stop() called.');
-            SpeechRecognition.stop().catch(err => addDebugLog(`Native Speech: stop() error: ${err.message}`));
+            SpeechRecognition.stop()
+              .then(() => {
+                addDebugLog('Native speech stopped successfully.');
+                onEndRef.current(transcript);
+              })
+              .catch(err => addDebugLog(`Native Speech: stop() error: ${err.message}`))
+              .finally(() => {
+                  setIsRecording(false);
+                  setTranscript('');
+                  SpeechRecognition.removeAllListeners();
+              });
         } else {
             if (recognitionRef.current) {
                 addDebugLog('Web Speech: stop() called.');
@@ -145,7 +151,7 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
                  addDebugLog('Web Speech: stop() called but no recognitionRef.');
             }
         }
-    }, [addDebugLog]);
+    }, [addDebugLog, transcript]);
 
     // Cleanup listeners on unmount
     useEffect(() => {
