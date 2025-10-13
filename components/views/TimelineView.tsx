@@ -48,18 +48,18 @@ interface ScheduledTaskProps {
     colors: { bg: string; border: string; text: string; subtext: string; };
     top: number;
     height: number;
+    leftPercent: number;
+    widthPercent: number;
     onShortPress: (task: Task) => void;
     onLongPress: (task: Task) => void;
-    // FIX: Changed id to allow string for temporary items
     onComplete: (id: number | string) => void;
-    // FIX: Changed id to allow string for temporary items
     onUncomplete: (id: number | string) => void;
     isCompleting: boolean;
     isUncompleting: boolean;
     isOverdue: boolean;
 }
 
-const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height, onShortPress, onLongPress, onComplete, onUncomplete, isCompleting, isUncompleting, isOverdue }) => {
+const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height, leftPercent, widthPercent, onShortPress, onLongPress, onComplete, onUncomplete, isCompleting, isUncompleting, isOverdue }) => {
     const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isClickRef = useRef(true);
     const interactionStartedOnButton = useRef(false);
@@ -109,8 +109,15 @@ const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height
             onPointerLeave={cancelLongPress}
             onPointerCancel={cancelLongPress}
             onContextMenu={(e) => e.preventDefault()}
-            className={`absolute right-0 rounded-lg p-2 overflow-hidden cursor-pointer select-none flex items-start gap-2 ${colors.bg} ${colors.border} ${isCompleting ? 'animate-card-fade-out' : ''}`}
-            style={{ top, height: Math.max(height, 20), left: '3rem', borderLeftWidth: '4px', willChange: 'transform, opacity' }}
+            className={`absolute rounded-lg p-2 overflow-hidden cursor-pointer select-none flex items-start gap-2 ${colors.bg} ${colors.border} ${isCompleting ? 'animate-card-fade-out' : ''}`}
+            style={{ 
+                top, 
+                height: Math.max(height, 20), 
+                left: `calc(3rem + (100% - 3rem) * ${leftPercent / 100})`, 
+                width: `calc((100% - 3rem) * ${widthPercent / 100} - 4px)`,
+                borderLeftWidth: '4px', 
+                willChange: 'transform, opacity' 
+            }}
         >
             <div className="pt-0.5">
                 {task.completed ? (
@@ -128,7 +135,7 @@ const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height
                     <button
                         onClick={(e) => { e.stopPropagation(); onComplete(task.id); }}
                         className={`relative w-4.5 h-4.5 rounded-full border-2 shrink-0 transition-colors flex items-center justify-center
-                            ${isCompleting
+                            ${isCompleting 
                                 ? 'animate-checkmark' 
                                 : 'border-gray-400 hover:border-blue-500'
                             }
@@ -253,6 +260,91 @@ const TimelineView: React.FC<TimelineViewProps> = ({
             scheduledTasks: todayTasks.filter(t => t.startTime),
         };
     }, [tasks]);
+    
+    const scheduledTasksWithLayout = useMemo(() => {
+        const sortedTasks = scheduledTasks
+            .sort((a, b) => timeToMinutes(a.startTime!) - timeToMinutes(b.startTime!));
+
+        if (sortedTasks.length === 0) return [];
+
+        const collisionGroups: Task[][] = [];
+        if (sortedTasks.length > 0) {
+            collisionGroups.push([sortedTasks[0]]);
+            let currentGroup = collisionGroups[0];
+            let groupEndTime = timeToMinutes(sortedTasks[0].startTime!) + (sortedTasks[0].duration || 0);
+
+            for (let i = 1; i < sortedTasks.length; i++) {
+                const task = sortedTasks[i];
+                const startTime = timeToMinutes(task.startTime!);
+                
+                if (startTime < groupEndTime) {
+                    currentGroup.push(task);
+                    groupEndTime = Math.max(groupEndTime, startTime + (task.duration || 0));
+                } else {
+                    currentGroup = [task];
+                    collisionGroups.push(currentGroup);
+                    groupEndTime = startTime + (task.duration || 0);
+                }
+            }
+        }
+        
+        const allLayoutTasks: (Task & { layout: any })[] = [];
+
+        for (const group of collisionGroups) {
+            const columns: { lastEndTime: number }[] = [];
+            group.forEach(task => {
+                let placed = false;
+                const taskStartTime = timeToMinutes(task.startTime!);
+                
+                for (let i = 0; i < columns.length; i++) {
+                    if (columns[i].lastEndTime <= taskStartTime) {
+                        (task as any)._layout = { columnIndex: i };
+                        columns[i].lastEndTime = taskStartTime + (task.duration || 0);
+                        placed = true;
+                        break;
+                    }
+                }
+
+                if (!placed) {
+                    const columnIndex = columns.length;
+                    (task as any)._layout = { columnIndex };
+                    columns.push({ lastEndTime: taskStartTime + (task.duration || 0) });
+                }
+            });
+
+            const numColumns = columns.length;
+
+            group.forEach(task => {
+                const { columnIndex } = (task as any)._layout;
+                const colorName = listColorMap[task.category] || 'gray';
+                let colors = colorVariants[colorName as keyof typeof colorVariants] || colorVariants.gray;
+                const isOverdue = isTaskOverdue(task, currentTime);
+                if (task.completed) {
+                    colors = {
+                        bg: 'bg-gray-100 dark:bg-gray-800/50',
+                        border: 'border-gray-400 dark:border-gray-700',
+                        text: 'text-gray-500 dark:text-gray-400 line-through',
+                        subtext: 'text-gray-400 dark:text-gray-500'
+                    };
+                }
+
+                allLayoutTasks.push({
+                    ...task,
+                    layout: {
+                        top: ((timeToMinutes(task.startTime!) - (START_HOUR * 60)) / 60) * PIXELS_PER_HOUR,
+                        height: ((task.duration || 30) / 60) * PIXELS_PER_HOUR,
+                        widthPercent: 100 / numColumns,
+                        leftPercent: columnIndex * (100 / numColumns),
+                        colors,
+                        isOverdue,
+                    }
+                });
+                delete (task as any)._layout;
+            });
+        }
+        return allLayoutTasks;
+    }, [scheduledTasks, listColorMap, currentTime]);
+
 
     const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => i + START_HOUR);
 
@@ -291,40 +383,24 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                             </div>
                         ))}
                         
-                        {scheduledTasks.map(task => {
-                            const startMinutes = timeToMinutes(task.startTime!);
-                            const top = ((startMinutes - (START_HOUR * 60)) / 60) * PIXELS_PER_HOUR;
-                            const height = ((task.duration || 30) / 60) * PIXELS_PER_HOUR;
-                            const colorName = listColorMap[task.category] || 'gray';
-                            let colors = colorVariants[colorName as keyof typeof colorVariants] || colorVariants.gray;
-                            const isOverdue = isTaskOverdue(task, currentTime);
-
-                            if (task.completed) {
-                                colors = {
-                                    bg: 'bg-gray-100 dark:bg-gray-800/50',
-                                    border: 'border-gray-400 dark:border-gray-700',
-                                    text: 'text-gray-500 dark:text-gray-400 line-through',
-                                    subtext: 'text-gray-400 dark:text-gray-500'
-                                };
-                            }
-                            
-                            return (
-                                <ScheduledTask
-                                    key={task.id}
-                                    task={task}
-                                    colors={colors}
-                                    top={top}
-                                    height={height}
-                                    onShortPress={onScheduledTaskShortPress}
-                                    onLongPress={onScheduledTaskLongPress}
-                                    onComplete={onCompleteTask}
-                                    onUncomplete={onUncompleteTask}
-                                    isCompleting={completingTaskId === task.id}
-                                    isUncompleting={uncompletingTaskId === task.id}
-                                    isOverdue={isOverdue}
-                                />
-                            );
-                        })}
+                        {scheduledTasksWithLayout.map(taskWithLayout => (
+                            <ScheduledTask
+                                key={taskWithLayout.id}
+                                task={taskWithLayout}
+                                colors={taskWithLayout.layout.colors}
+                                top={taskWithLayout.layout.top}
+                                height={taskWithLayout.layout.height}
+                                leftPercent={taskWithLayout.layout.leftPercent}
+                                widthPercent={taskWithLayout.layout.widthPercent}
+                                onShortPress={onScheduledTaskShortPress}
+                                onLongPress={onScheduledTaskLongPress}
+                                onComplete={onCompleteTask}
+                                onUncomplete={onUncompleteTask}
+                                isCompleting={completingTaskId === taskWithLayout.id}
+                                isUncompleting={uncompletingTaskId === taskWithLayout.id}
+                                isOverdue={taskWithLayout.layout.isOverdue}
+                            />
+                        ))}
 
                         {currentTimePosition !== null && (
                             <div 

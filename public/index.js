@@ -41669,7 +41669,7 @@ ${suffix}`;
       }
     );
   };
-  var ScheduledTask = ({ task, colors: colors3, top, height, onShortPress, onLongPress, onComplete, onUncomplete, isCompleting, isUncompleting, isOverdue }) => {
+  var ScheduledTask = ({ task, colors: colors3, top, height, leftPercent, widthPercent, onShortPress, onLongPress, onComplete, onUncomplete, isCompleting, isUncompleting, isOverdue }) => {
     const pressTimerRef = (0, import_react19.useRef)(null);
     const isClickRef = (0, import_react19.useRef)(true);
     const interactionStartedOnButton = (0, import_react19.useRef)(false);
@@ -41713,8 +41713,15 @@ ${suffix}`;
         onPointerLeave: cancelLongPress,
         onPointerCancel: cancelLongPress,
         onContextMenu: (e) => e.preventDefault(),
-        className: `absolute right-0 rounded-lg p-2 overflow-hidden cursor-pointer select-none flex items-start gap-2 ${colors3.bg} ${colors3.border} ${isCompleting ? "animate-card-fade-out" : ""}`,
-        style: { top, height: Math.max(height, 20), left: "3rem", borderLeftWidth: "4px", willChange: "transform, opacity" },
+        className: `absolute rounded-lg p-2 overflow-hidden cursor-pointer select-none flex items-start gap-2 ${colors3.bg} ${colors3.border} ${isCompleting ? "animate-card-fade-out" : ""}`,
+        style: {
+          top,
+          height: Math.max(height, 20),
+          left: `calc(3rem + (100% - 3rem) * ${leftPercent / 100})`,
+          width: `calc((100% - 3rem) * ${widthPercent / 100} - 4px)`,
+          borderLeftWidth: "4px",
+          willChange: "transform, opacity"
+        },
         children: [
           /* @__PURE__ */ (0, import_jsx_runtime30.jsx)("div", { className: "pt-0.5", children: task.completed ? /* @__PURE__ */ (0, import_jsx_runtime30.jsx)(
             "button",
@@ -41837,6 +41844,77 @@ ${suffix}`;
         scheduledTasks: todayTasks.filter((t) => t.startTime)
       };
     }, [tasks]);
+    const scheduledTasksWithLayout = (0, import_react19.useMemo)(() => {
+      const sortedTasks = scheduledTasks.sort((a, b) => timeToMinutes2(a.startTime) - timeToMinutes2(b.startTime));
+      if (sortedTasks.length === 0) return [];
+      const collisionGroups = [];
+      if (sortedTasks.length > 0) {
+        collisionGroups.push([sortedTasks[0]]);
+        let currentGroup = collisionGroups[0];
+        let groupEndTime = timeToMinutes2(sortedTasks[0].startTime) + (sortedTasks[0].duration || 0);
+        for (let i = 1; i < sortedTasks.length; i++) {
+          const task = sortedTasks[i];
+          const startTime = timeToMinutes2(task.startTime);
+          if (startTime < groupEndTime) {
+            currentGroup.push(task);
+            groupEndTime = Math.max(groupEndTime, startTime + (task.duration || 0));
+          } else {
+            currentGroup = [task];
+            collisionGroups.push(currentGroup);
+            groupEndTime = startTime + (task.duration || 0);
+          }
+        }
+      }
+      const allLayoutTasks = [];
+      for (const group of collisionGroups) {
+        const columns = [];
+        group.forEach((task) => {
+          let placed = false;
+          const taskStartTime = timeToMinutes2(task.startTime);
+          for (let i = 0; i < columns.length; i++) {
+            if (columns[i].lastEndTime <= taskStartTime) {
+              task._layout = { columnIndex: i };
+              columns[i].lastEndTime = taskStartTime + (task.duration || 0);
+              placed = true;
+              break;
+            }
+          }
+          if (!placed) {
+            const columnIndex = columns.length;
+            task._layout = { columnIndex };
+            columns.push({ lastEndTime: taskStartTime + (task.duration || 0) });
+          }
+        });
+        const numColumns = columns.length;
+        group.forEach((task) => {
+          const { columnIndex } = task._layout;
+          const colorName = listColorMap[task.category] || "gray";
+          let colors3 = colorVariants3[colorName] || colorVariants3.gray;
+          const isOverdue = isTaskOverdue(task, currentTime);
+          if (task.completed) {
+            colors3 = {
+              bg: "bg-gray-100 dark:bg-gray-800/50",
+              border: "border-gray-400 dark:border-gray-700",
+              text: "text-gray-500 dark:text-gray-400 line-through",
+              subtext: "text-gray-400 dark:text-gray-500"
+            };
+          }
+          allLayoutTasks.push({
+            ...task,
+            layout: {
+              top: (timeToMinutes2(task.startTime) - START_HOUR * 60) / 60 * PIXELS_PER_HOUR,
+              height: (task.duration || 30) / 60 * PIXELS_PER_HOUR,
+              widthPercent: 100 / numColumns,
+              leftPercent: columnIndex * (100 / numColumns),
+              colors: colors3,
+              isOverdue
+            }
+          });
+          delete task._layout;
+        });
+      }
+      return allLayoutTasks;
+    }, [scheduledTasks, listColorMap, currentTime]);
     const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => i + START_HOUR);
     return /* @__PURE__ */ (0, import_jsx_runtime30.jsx)("div", { className: "h-full flex flex-col bg-[var(--color-background-primary)]", children: /* @__PURE__ */ (0, import_jsx_runtime30.jsxs)("div", { className: "flex-grow flex flex-col overflow-hidden", children: [
       /* @__PURE__ */ (0, import_jsx_runtime30.jsxs)("section", { className: "flex-shrink-0 py-4 px-6", children: [
@@ -41865,39 +41943,25 @@ ${suffix}`;
               /* @__PURE__ */ (0, import_jsx_runtime30.jsx)("span", { className: "text-xs text-[var(--color-text-tertiary)] w-12 text-right pr-2", children: `${hour % 12 === 0 ? 12 : hour % 12}${hour < 12 || hour === 24 ? "am" : "pm"}` }),
               /* @__PURE__ */ (0, import_jsx_runtime30.jsx)("div", { className: "flex-grow border-t border-[var(--color-border)]" })
             ] }, hour)),
-            scheduledTasks.map((task) => {
-              const startMinutes = timeToMinutes2(task.startTime);
-              const top = (startMinutes - START_HOUR * 60) / 60 * PIXELS_PER_HOUR;
-              const height = (task.duration || 30) / 60 * PIXELS_PER_HOUR;
-              const colorName = listColorMap[task.category] || "gray";
-              let colors3 = colorVariants3[colorName] || colorVariants3.gray;
-              const isOverdue = isTaskOverdue(task, currentTime);
-              if (task.completed) {
-                colors3 = {
-                  bg: "bg-gray-100 dark:bg-gray-800/50",
-                  border: "border-gray-400 dark:border-gray-700",
-                  text: "text-gray-500 dark:text-gray-400 line-through",
-                  subtext: "text-gray-400 dark:text-gray-500"
-                };
-              }
-              return /* @__PURE__ */ (0, import_jsx_runtime30.jsx)(
-                ScheduledTask,
-                {
-                  task,
-                  colors: colors3,
-                  top,
-                  height,
-                  onShortPress: onScheduledTaskShortPress,
-                  onLongPress: onScheduledTaskLongPress,
-                  onComplete: onCompleteTask,
-                  onUncomplete: onUncompleteTask,
-                  isCompleting: completingTaskId === task.id,
-                  isUncompleting: uncompletingTaskId === task.id,
-                  isOverdue
-                },
-                task.id
-              );
-            }),
+            scheduledTasksWithLayout.map((taskWithLayout) => /* @__PURE__ */ (0, import_jsx_runtime30.jsx)(
+              ScheduledTask,
+              {
+                task: taskWithLayout,
+                colors: taskWithLayout.layout.colors,
+                top: taskWithLayout.layout.top,
+                height: taskWithLayout.layout.height,
+                leftPercent: taskWithLayout.layout.leftPercent,
+                widthPercent: taskWithLayout.layout.widthPercent,
+                onShortPress: onScheduledTaskShortPress,
+                onLongPress: onScheduledTaskLongPress,
+                onComplete: onCompleteTask,
+                onUncomplete: onUncompleteTask,
+                isCompleting: completingTaskId === taskWithLayout.id,
+                isUncompleting: uncompletingTaskId === taskWithLayout.id,
+                isOverdue: taskWithLayout.layout.isOverdue
+              },
+              taskWithLayout.id
+            )),
             currentTimePosition !== null && /* @__PURE__ */ (0, import_jsx_runtime30.jsxs)(
               "div",
               {
