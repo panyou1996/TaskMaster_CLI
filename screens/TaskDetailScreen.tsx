@@ -91,19 +91,19 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                             <div className="flex-grow min-w-0">
                                 <div className="flex justify-between items-start gap-2">
                                     <p className="flex-grow w-full text-base font-semibold text-[var(--color-text-primary)]">{task?.title || 'No Title'}</p>
-                                    <div className="flex items-start pt-1 shrink-0">
+                                     <div className="flex items-start pt-1 shrink-0">
                                         {task?.important && (
                                             <div className="flex flex-col items-center w-[50px]">
-                                                <div className="w-9 h-9 flex items-center justify-center rounded-full bg-[var(--color-functional-red)]/20">
-                                                    <FlagIcon className="w-5 h-5 text-[var(--color-functional-red)]" />
+                                                <div className="w-9 h-9 flex items-center justify-center rounded-full text-red-600 bg-red-100 dark:bg-red-900/30">
+                                                    <FlagIcon className="w-5 h-5" />
                                                 </div>
                                                 <span className="text-[10px] font-medium text-center text-[var(--color-text-tertiary)] mt-1 leading-tight">Important</span>
                                             </div>
                                         )}
                                         {task?.today && (
                                             <div className="flex flex-col items-center w-[50px]">
-                                                <div className="w-9 h-9 flex items-center justify-center rounded-full bg-yellow-400">
-                                                    <StarIcon className="w-5 h-5 text-white" />
+                                                <div className="w-9 h-9 flex items-center justify-center rounded-full text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30">
+                                                    <StarIcon className="w-5 h-5" />
                                                 </div>
                                                 <span className="text-[10px] font-medium text-center text-[var(--color-text-tertiary)] mt-1 leading-tight">Today</span>
                                             </div>
@@ -114,9 +114,9 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                                 {task?.notes && <p className="w-full text-sm mt-1 text-[var(--color-text-secondary)] whitespace-pre-wrap">{task.notes}</p>}
                                 
                                 {task?.subtasks && task.subtasks.length > 0 && (
-                                    <div className="mt-2 space-y-1 pt-2 border-t border-[var(--color-border)]">
+                                    <div className="mt-2 space-y-1.5 pt-2 border-t border-[var(--color-border)]">
                                         {task.subtasks.map((sub) => (
-                                            <div key={sub.id} className="flex items-center gap-2 group">
+                                            <div key={sub.id} className="flex items-start gap-2 group">
                                                 <SubtaskCircleIcon completed={sub.completed} />
                                                 <p className={`text-sm ${sub.completed ? 'text-[var(--color-text-tertiary)] line-through' : 'text-[var(--color-text-secondary)]'}`}>{sub.text}</p>
                                             </div>
@@ -151,7 +151,7 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ isOpen, onClose, ta
                              <div className="flex items-start justify-around">
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
                                     <div title={task?.type} className={`p-2 rounded-full ${task?.type === 'Fixed' ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-[var(--color-text-secondary)] bg-[var(--color-surface-container-low)]'}`}><LockIcon className="w-5 h-5" /></div>
-                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Type</span>
+                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Fixed</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
                                     <div title="Duration" className={`p-2 rounded-full ${(task?.duration) ? 'text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' : 'text-[var(--color-text-secondary)] bg-[var(--color-surface-container-low)]'}`}><DurationIcon className="w-5 h-5" /></div>

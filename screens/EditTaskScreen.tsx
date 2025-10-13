@@ -248,7 +248,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                         {error && <p className="text-[var(--color-functional-red)] text-sm text-center mb-2">{error}</p>}
                         
                         <div className="flex items-start gap-3">
-                            <div className="pt-1"><EmptySquareCheckIcon /></div>
+                            <div><EmptySquareCheckIcon /></div>
                             <div className="flex-grow min-w-0">
                                 <div className="flex justify-between items-start gap-2">
                                     <div className="flex-grow">
@@ -271,15 +271,15 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                                     </div>
                                 </div>
                                 {isSubtaskSectionVisible && (
-                                    <div className="mt-2 space-y-1 pt-2 border-t border-[var(--color-border)]">
+                                    <div className="mt-2 space-y-1.5 pt-2 border-t border-[var(--color-border)]">
                                         {subtasks.map((sub) => (
-                                            <div key={sub.id} className="flex items-center gap-2 group">
+                                            <div key={sub.id} className="flex items-start gap-2 group">
                                                 <SubtaskCircleIcon />
                                                 <input type="text" value={sub.text} onChange={e => { const newText = e.target.value; setSubtasks(subs => subs.map(s => s.id === sub.id ? { ...s, text: newText } : s)); }} className="w-full text-sm text-[var(--color-text-primary)] focus:outline-none bg-transparent" />
                                                 <button type="button" onClick={() => setSubtasks(subs => subs.filter(s => s.id !== sub.id))} className="text-[var(--color-text-tertiary)] hover:text-[var(--color-functional-red)] opacity-0 group-hover:opacity-100"><TrashIcon /></button>
                                             </div>
                                         ))}
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-start gap-2">
                                             <SubtaskCircleIcon />
                                             <input ref={newSubtaskInputRef} type="text" value={newSubtaskText} onChange={e => setNewSubtaskText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask(); } }} placeholder="Add item" className="w-full text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none bg-transparent" />
                                         </div>
@@ -298,7 +298,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                             <div className="flex items-start justify-around">
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center">
                                     <button type="button" title={taskType === 'Fixed' ? "Set as Flexible" : "Set as Fixed"} onClick={() => setTaskType(p => p === 'Fixed' ? 'Flexible' : 'Fixed')} className={`p-2 rounded-full transition-colors ${taskType === 'Fixed' ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><LockIcon className="w-5 h-5" /></button>
-                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Type</span>
+                                    <span className="text-[9px] text-[var(--color-text-tertiary)] mt-1 leading-tight">Fixed</span>
                                 </div>
                                 <div className="flex flex-col items-center flex-1 min-w-0 text-center" ref={durationIconRef}>
                                     <button type="button" title="Set Duration" onClick={() => handlePopoverToggle('duration', durationIconRef)} className={`p-2 rounded-full transition-colors ${duration ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><DurationIcon className="w-5 h-5" /></button>
