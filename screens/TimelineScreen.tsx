@@ -23,7 +23,6 @@ const TimelineScreen: React.FC = () => {
     const [timeToSet, setTimeToSet] = useState<string | null>(null);
     const [completingTaskId, setCompletingTaskId] = useState<number | string | null>(null);
     const [uncompletingTaskId, setUncompletingTaskId] = useState<number | string | null>(null);
-    // FIX: Add currentTime state to pass to TimelineView
     const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
@@ -34,7 +33,6 @@ const TimelineScreen: React.FC = () => {
     }, []);
 
     // Interaction handlers
-    // FIX: Changed taskId to allow string for temporary items
     const handleCompleteTask = (taskId: number | string) => {
         setCompletingTaskId(taskId);
         setTimeout(async () => {
@@ -43,7 +41,6 @@ const TimelineScreen: React.FC = () => {
         }, 600);
     };
 
-    // FIX: Changed taskId to allow string for temporary items
     const handleUncompleteTask = (taskId: number | string) => {
         setUncompletingTaskId(taskId);
         setTimeout(async () => {
@@ -131,6 +128,11 @@ const TimelineScreen: React.FC = () => {
         handleCloseDurationPicker();
     };
 
+    // FIX: Add handler for when a task's time is changed by dragging in the timeline.
+    const handleTaskTimeChange = async (taskId: string | number, newStartTime: string) => {
+      await updateTask(taskId, { startTime: newStartTime, time: newStartTime });
+    };
+
     return (
         <MainLayout>
             <TimelineView
@@ -139,7 +141,8 @@ const TimelineScreen: React.FC = () => {
                 currentTime={currentTime}
                 onUnscheduledTaskClick={handleOpenTimePicker}
                 onScheduledTaskShortPress={handleOpenTaskDetail}
-                onScheduledTaskLongPress={handleOpenTimePicker}
+                // FIX: Removed non-existent 'onScheduledTaskLongPress' prop and added required 'onTaskTimeChange' prop.
+                onTaskTimeChange={handleTaskTimeChange}
                 onCompleteTask={handleCompleteTask}
                 onUncompleteTask={handleUncompleteTask}
                 completingTaskId={completingTaskId}

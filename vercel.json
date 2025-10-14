@@ -1,1 +1,8 @@
-{}
+{
+  "rewrites": [
+    {
+      "source": "/gemini/:path*",
+      "destination": "https://gemini-cli-delta.vercel.app/:path*"
+    }
+  ]
+}

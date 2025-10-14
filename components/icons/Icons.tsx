@@ -424,3 +424,9 @@ export const OutlookCalendarIcon: React.FC<{className?: string}> = ({ className 
         <path d="M21 5H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-1 14H4V9h16v10zM17 3h-2v3h2V3zm-4 0h-2v3h2V3zm-4 0H7v3h2V3z"/>
     </svg>
 );
+
+export const TerminalIcon: React.FC<{className?: string}> = ({ className = "w-5 h-5" }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9.75 6.75h13.5c.621 0 1.125-.504 1.125-1.125v-9c0-.621-.504-1.125-1.125-1.125h-13.5c-.621 0-1.125.504-1.125 1.125v9c0 .621.504 1.125 1.125 1.125z" />
+    </svg>
+);

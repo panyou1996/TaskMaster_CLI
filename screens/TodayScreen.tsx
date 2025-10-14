@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
 import TaskCard from '../components/common/TaskCard';
-import { RecommendIcon, OverdueIcon, ChevronDownIcon, RefreshSpinnerIcon, SparklesIcon, TimelineIcon, ListsIcon, PlusIconHeader, LockIcon, FocusHeaderIcon, SettingsHeaderIcon, BugIcon } from '../components/icons/Icons';
+import { RecommendIcon, OverdueIcon, ChevronDownIcon, RefreshSpinnerIcon, SparklesIcon, TimelineIcon, ListsIcon, PlusIconHeader, LockIcon, FocusHeaderIcon, SettingsHeaderIcon, BugIcon, TerminalIcon } from '../components/icons/Icons';
 import RecommendTasksScreen from './RecommendTasksScreen';
 import OverdueTasksScreen from './OverdueTasksScreen';
 import AddTaskScreen, { NewTaskData } from './AddTaskScreen';
@@ -878,6 +878,13 @@ const TodayScreen: React.FC = () => {
                                                     <span className="text-sm font-medium text-[var(--color-text-secondary)]">{finishedTasks.length}/{totalTodayTasks}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
+                                                     <a
+                                                        href="/gemini"
+                                                        className="flex-shrink-0 p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-container-low)] rounded-full transition-colors"
+                                                        aria-label="Open Gemini CLI"
+                                                    >
+                                                        <TerminalIcon className="w-5 h-5" />
+                                                    </a>
                                                     <button
                                                         onClick={() => setIsPlanningSettingsOpen(true)}
                                                         className="flex-shrink-0 p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-container-low)] rounded-full transition-colors"
