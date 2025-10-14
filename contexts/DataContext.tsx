@@ -17,6 +17,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { checkAndRequestNotificationPermission } from '../utils/permissions';
 import { Capacitor } from '@capacitor/core';
 import { type Theme, type FontSize } from '../screens/settings/ThemeSettingsScreen';
+import { getLocalISOString } from '../utils/date';
 
 type OperationType = 
     | 'ADD_TASK' | 'UPDATE_TASK' | 'DELETE_TASK'
@@ -245,7 +246,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Derive the event date: prefer startDate, then dueDate, then today's date when assigned to Today
-        const eventDateStr = task.startDate || task.dueDate || (task.today ? new Date().toISOString().split('T')[0] : undefined);
+        const eventDateStr = task.startDate || task.dueDate || (task.today ? getLocalISOString() : undefined);
         if (!eventDateStr) {
             // Cannot determine which date the startTime belongs to; skip scheduling
             addDebugLog(`Skipping scheduling for task ${task.id}: no event date available`);
@@ -313,7 +314,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (e) {
             console.error("Failed to schedule notification:", e);
         }
-    }, [cancelNotification]);
+    }, [cancelNotification, addDebugLog]);
 
     
 
@@ -734,7 +735,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const dataForSupabase = { ...taskData, completed: false };
         if (dataForSupabase.today) {
-            (dataForSupabase as Partial<Task>).today_assigned_date = new Date().toISOString().split('T')[0];
+            (dataForSupabase as Partial<Task>).today_assigned_date = getLocalISOString();
         }
 
         const newTask: Task = { ...dataForSupabase, id: tempId, user_id: user.id, status: 'pending' };
@@ -751,7 +752,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let updatedTask: Task | undefined;
         const fullUpdates = { ...updates };
         if (fullUpdates.today === true) {
-            fullUpdates.today_assigned_date = new Date().toISOString().split('T')[0];
+            fullUpdates.today_assigned_date = getLocalISOString();
         } else if (fullUpdates.today === false) {
             fullUpdates.today_assigned_date = undefined;
         }
@@ -926,7 +927,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     useEffect(() => {
         if (user && tasks.length > 0 && !cleanupRun.current) {
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = getLocalISOString();
             
             tasks.forEach(task => {
                 // If a task was assigned to 'Today' on a previous day, reset its 'today' status.

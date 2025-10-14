@@ -4,6 +4,7 @@ import { CheckIcon, TrashIcon, FlagIcon, ListCheckIcon, TagIcon, CalendarIcon, S
 import { useData } from '../contexts/DataContext';
 import type { Task } from '../data/mockData';
 import { useKeyboardHeight } from '../utils/permissions';
+import { getLocalISOString } from '../utils/date';
 
 interface EditTaskScreenProps {
   isOpen: boolean;
@@ -102,7 +103,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
     const prevIsOpen = useRef(isOpen);
     const lastToggleRef = useRef<number>(0);
 
-    const todayStr = useMemo(() => new Date().toISOString().substring(0, 10), []);
+    const todayStr = useMemo(() => getLocalISOString(), []);
     const isTodayLocked = useMemo(() => dueDate === todayStr, [dueDate, todayStr]);
 
     useEffect(() => {
@@ -234,7 +235,7 @@ const EditTaskScreen: React.FC<EditTaskScreenProps> = ({ isOpen, onClose, task, 
                 subtasks: isSubtaskSectionVisible ? subtasks.filter(s => s.text.trim()) : [],
                 dueDate: dueDate || undefined,
                 type: taskType,
-                startDate: taskType === 'Fixed' && startTime ? (startDate || new Date().toISOString().substring(0, 10)) : undefined,
+                startDate: taskType === 'Fixed' && startTime ? (startDate || getLocalISOString()) : undefined,
                 startTime: taskType === 'Fixed' ? startTime || undefined : undefined,
                 time: taskType === 'Fixed' ? startTime || '--:--' : '--:--',
                 duration: duration ? parseInt(duration, 10) : undefined,

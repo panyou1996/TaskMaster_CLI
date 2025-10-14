@@ -3,6 +3,7 @@ import { supabase } from '../utils/supabase';
 import { useData } from '../contexts/DataContext';
 import { Task } from '../data/mockData';
 import { RefreshSpinnerIcon, SparklesIcon, SendIcon, CloseIcon } from '../components/icons/Icons';
+import { getLocalISOString } from '../utils/date';
 
 interface AddTaskWithAIScreenProps {
     isOpen: boolean;
@@ -53,7 +54,7 @@ const AddTaskWithAIScreen: React.FC<AddTaskWithAIScreenProps> = ({ isOpen, onClo
             if (error) throw error;
             if (parsed.error) throw new Error(parsed.error);
 
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalISOString();
             const chosenList = listNames.includes(parsed.list) ? parsed.list : (listNames[0] || 'Personal');
             const isDueToday = parsed.dueDate === today;
             const isStartingToday = parsed.startTime && (!parsed.dueDate || parsed.dueDate === today);

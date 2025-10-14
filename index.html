@@ -365,6 +365,15 @@
           animation: task-collapse-animation 0.3s ease-in forwards;
           overflow: hidden;
       }
+      .cursor-grab { cursor: grab; }
+      .dragging {
+        z-index: 20;
+        transform: scale(1.02);
+        box-shadow: var(--shadow-pop);
+        cursor: grabbing;
+        transition: box-shadow 0.2s ease-out, transform 0.2s ease-out;
+        touch-action: none;
+      }
       .card-shadow {
         box-shadow: var(--shadow-subtle);
       }

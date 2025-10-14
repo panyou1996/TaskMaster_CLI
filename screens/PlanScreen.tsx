@@ -20,6 +20,7 @@ import TaskCard from '../components/common/TaskCard';
 import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
 import { FixedSizeList } from 'react-window';
+import { getLocalISOString } from '../utils/date';
 
 const colorVariants = {
     green: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-600 dark:text-green-300' },
@@ -29,13 +30,6 @@ const colorVariants = {
     yellow: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-600 dark:text-yellow-300' },
     red: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-300' },
     orange: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-300' },
-};
-
-const formatDateToYYYYMMDD = (date: Date) => {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
 };
 
 const PlanScreen: React.FC = () => {
@@ -241,7 +235,7 @@ const PlanScreen: React.FC = () => {
              for (let i = 0; i < dayCount; i++) {
                 const date = new Date(startDate);
                 date.setDate(date.getDate() + i);
-                const dateString = formatDateToYYYYMMDD(date);
+                const dateString = getLocalISOString(date);
                 const dayTasks = tasksByDay.get(dateString);
                 days.push({ day: date.getDate(), date, hasTask: !!dayTasks && (dayTasks.due.length > 0 || dayTasks.start.length > 0) });
             }
@@ -257,7 +251,7 @@ const PlanScreen: React.FC = () => {
     }, [isCalendarCollapsed, selectedDate, tasksByDay, firstDayOfMonth, lastDayOfMonth]);
     
     const selectedDayTasks = useMemo(() => {
-        const dateString = formatDateToYYYYMMDD(selectedDate);
+        const dateString = getLocalISOString(selectedDate);
         const dayTasks = tasksByDay.get(dateString);
         if (!dayTasks) return [];
         const tasksToShow = taskFilterMode === 'start' ? dayTasks.start : dayTasks.due;
@@ -552,7 +546,7 @@ const PlanScreen: React.FC = () => {
 
             <AddListScreen isOpen={isAddListOpen} onClose={() => setIsAddListOpen(false)} onAddList={handleAddList} />
             <EditListScreen isOpen={isEditListOpen} onClose={handleCloseEditModal} list={listToEdit} onSaveList={handleSaveList} onDeleteList={handleDeleteList} />
-            <AddTaskScreen isOpen={isAddTaskOpen} onClose={() => setIsAddTaskOpen(false)} initialDate={formatDateToYYYYMMDD(selectedDate)} onAddTask={handleAddTask} />
+            <AddTaskScreen isOpen={isAddTaskOpen} onClose={() => setIsAddTaskOpen(false)} initialDate={getLocalISOString(selectedDate)} onAddTask={handleAddTask} />
             <TaskDetailScreen isOpen={isDetailOpen} onClose={handleCloseTaskDetail} task={selectedTask} onEdit={handleOpenEditTask} />
             <EditTaskScreen
                 isOpen={isEditOpen}

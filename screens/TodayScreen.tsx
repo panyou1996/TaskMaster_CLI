@@ -670,6 +670,9 @@ const TodayScreen: React.FC = () => {
         }
     }, [algorithmToRun, allTasks, planningSettings, updateTask]);
 
+    const handleTaskTimeChange = async (taskId: string | number, newStartTime: string) => {
+      await updateTask(taskId, { startTime: newStartTime, time: newStartTime });
+    };
 
     useEffect(() => {
         if (planningTrigger > 0 && algorithmToRun) {
@@ -1074,7 +1077,7 @@ const TodayScreen: React.FC = () => {
                                     currentTime={currentTime}
                                     onUnscheduledTaskClick={handleOpenTimePicker}
                                     onScheduledTaskShortPress={handleOpenTaskDetail}
-                                    onScheduledTaskLongPress={handleOpenTimePicker}
+                                    onTaskTimeChange={handleTaskTimeChange}
                                     onCompleteTask={handleCompleteTask}
                                     onUncompleteTask={handleUncompleteTask}
                                     completingTaskId={completingTaskId}

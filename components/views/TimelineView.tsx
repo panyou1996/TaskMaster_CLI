@@ -51,7 +51,7 @@ interface ScheduledTaskProps {
     leftPercent: number;
     widthPercent: number;
     onShortPress: (task: Task) => void;
-    onLongPress: (task: Task) => void;
+    onTaskTimeChange: (taskId: number | string, newStartTime: string) => void;
     onComplete: (id: number | string) => void;
     onUncomplete: (id: number | string) => void;
     isCompleting: boolean;
@@ -59,64 +59,94 @@ interface ScheduledTaskProps {
     isOverdue: boolean;
 }
 
-const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height, leftPercent, widthPercent, onShortPress, onLongPress, onComplete, onUncomplete, isCompleting, isUncompleting, isOverdue }) => {
-    const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const isClickRef = useRef(true);
-    const interactionStartedOnButton = useRef(false);
+const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height, leftPercent, widthPercent, onShortPress, onTaskTimeChange, onComplete, onUncomplete, isCompleting, isUncompleting, isOverdue }) => {
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartRef = useRef({ y: 0, top: 0 });
+    const [dragOffset, setDragOffset] = useState(0);
+    const wasDragged = useRef(false);
 
     const fireworksData = [
         { color: 'blue', particles: 6, delay: 0 },
         { color: 'pink', particles: 6, delay: 0.1 },
         { color: 'yellow', particles: 6, delay: 0.2 },
     ];
-
-    const cancelLongPress = useCallback(() => {
-        if (pressTimerRef.current) {
-            clearTimeout(pressTimerRef.current);
-            pressTimerRef.current = null;
-        }
-    }, []);
-
+    
     const onPointerDown = useCallback((e: React.PointerEvent) => {
         const targetEl = e.target as HTMLElement;
-        interactionStartedOnButton.current = !!targetEl.closest('button');
-
-        if (interactionStartedOnButton.current || e.button !== 0) return;
-
-        isClickRef.current = true;
-        cancelLongPress();
-        if (!task.completed) {
-            pressTimerRef.current = setTimeout(() => {
-                isClickRef.current = false;
-                onLongPress(task);
-            }, 500);
+        if (task.completed || e.button !== 0 || targetEl.closest('button')) {
+            return;
         }
-    }, [cancelLongPress, onLongPress, task]);
-    
-    const onPointerUp = useCallback(() => {
-        cancelLongPress();
-        if (isClickRef.current && !interactionStartedOnButton.current) {
+
+        e.currentTarget.setPointerCapture(e.pointerId);
+        wasDragged.current = false;
+        setIsDragging(true);
+        dragStartRef.current = { y: e.clientY, top };
+        setDragOffset(0);
+    }, [task.completed, top]);
+
+    const onPointerMove = useCallback((e: React.PointerEvent) => {
+        if (!isDragging) return;
+        
+        const deltaY = e.clientY - dragStartRef.current.y;
+        if (!wasDragged.current && Math.abs(deltaY) > 5) {
+            wasDragged.current = true;
+        }
+        setDragOffset(deltaY);
+    }, [isDragging]);
+
+    const onPointerUp = useCallback((e: React.PointerEvent) => {
+        if (!isDragging) return;
+
+        e.currentTarget.releasePointerCapture(e.pointerId);
+        
+        if (wasDragged.current) {
+            const finalTop = dragStartRef.current.top + dragOffset;
+            
+            // Snap to 15-minute grid
+            const quarterHourPixels = PIXELS_PER_HOUR / 4;
+            const snappedTop = Math.round(finalTop / quarterHourPixels) * quarterHourPixels;
+            
+            const minutesFromStart = (snappedTop / PIXELS_PER_HOUR) * 60;
+            const totalMinutes = START_HOUR * 60 + minutesFromStart;
+            const newStartTime = minutesToTime(Math.max(0, totalMinutes));
+
+            if (newStartTime !== task.startTime) {
+                onTaskTimeChange(task.id, newStartTime);
+            }
+        } else {
             onShortPress(task);
         }
-        interactionStartedOnButton.current = false;
-        isClickRef.current = true;
-    }, [cancelLongPress, onShortPress, task]);
+        
+        setIsDragging(false);
+        setDragOffset(0);
+    }, [isDragging, dragOffset, onShortPress, onTaskTimeChange, task]);
+
+     const onPointerCancel = useCallback((e: React.PointerEvent) => {
+        if (!isDragging) return;
+        e.currentTarget.releasePointerCapture(e.pointerId);
+        setIsDragging(false);
+        setDragOffset(0);
+    }, [isDragging]);
 
     return (
         <div
             onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            onPointerLeave={cancelLongPress}
-            onPointerCancel={cancelLongPress}
-            onContextMenu={(e) => e.preventDefault()}
-            className={`absolute rounded-lg p-2 overflow-hidden cursor-pointer select-none flex items-start gap-2 ${colors.bg} ${colors.border} ${isCompleting ? 'animate-card-fade-out' : ''}`}
+            onPointerCancel={onPointerCancel}
+            className={`absolute rounded-lg p-2 overflow-hidden select-none flex items-start gap-2 ${colors.bg} ${colors.border} ${isCompleting ? 'animate-card-fade-out' : ''} ${!task.completed ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
             style={{ 
                 top, 
                 height: Math.max(height, 20), 
                 left: `calc(3rem + (100% - 3rem) * ${leftPercent / 100})`, 
                 width: `calc((100% - 3rem) * ${widthPercent / 100} - 4px)`,
                 borderLeftWidth: '4px', 
-                willChange: 'transform, opacity' 
+                willChange: 'transform',
+                transform: `translateY(${dragOffset}px) scale(${isDragging ? 1.02 : 1})`,
+                boxShadow: isDragging ? 'var(--shadow-pop)' : 'none',
+                transition: isDragging ? 'none' : 'box-shadow 0.2s ease-out, transform 0.2s ease-out',
+                touchAction: 'none',
+                zIndex: isDragging ? 20 : 10,
             }}
         >
             <div className="pt-0.5">
@@ -183,7 +213,7 @@ interface TimelineViewProps {
   currentTime: Date;
   onUnscheduledTaskClick: (task: Task) => void;
   onScheduledTaskShortPress: (task: Task) => void;
-  onScheduledTaskLongPress: (task: Task) => void;
+  onTaskTimeChange: (taskId: number | string, newStartTime: string) => void;
   onCompleteTask: (taskId: number | string) => void;
   onUncompleteTask: (taskId: number | string) => void;
   completingTaskId: number | string | null;
@@ -206,7 +236,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     currentTime,
     onUnscheduledTaskClick,
     onScheduledTaskShortPress,
-    onScheduledTaskLongPress,
+    onTaskTimeChange,
     onCompleteTask,
     onUncompleteTask,
     completingTaskId,
@@ -393,7 +423,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                                 leftPercent={taskWithLayout.layout.leftPercent}
                                 widthPercent={taskWithLayout.layout.widthPercent}
                                 onShortPress={onScheduledTaskShortPress}
-                                onLongPress={onScheduledTaskLongPress}
+                                onTaskTimeChange={onTaskTimeChange}
                                 onComplete={onCompleteTask}
                                 onUncomplete={onUncompleteTask}
                                 isCompleting={completingTaskId === taskWithLayout.id}

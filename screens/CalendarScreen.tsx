@@ -8,14 +8,7 @@ import { Task } from '../data/mockData';
 import TaskCard from '../components/common/TaskCard';
 import TaskDetailScreen from './TaskDetailScreen';
 import EditTaskScreen from './EditTaskScreen';
-
-const formatDateToYYYYMMDD = (date: Date) => {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-
+import { getLocalISOString } from '../utils/date';
 
 const CalendarScreen: React.FC = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -84,7 +77,7 @@ const CalendarScreen: React.FC = () => {
              for (let i = 0; i < dayCount; i++) {
                 const date = new Date(startDate);
                 date.setDate(date.getDate() + i);
-                const dateString = formatDateToYYYYMMDD(date);
+                const dateString = getLocalISOString(date);
                 const dayTasks = tasksByDay.get(dateString);
                 days.push({
                     day: date.getDate(),
@@ -105,7 +98,7 @@ const CalendarScreen: React.FC = () => {
     }, [isCalendarCollapsed, selectedDate, tasksByDay, firstDayOfMonth, lastDayOfMonth]);
     
     const selectedDayTasks = useMemo(() => {
-        const dateString = formatDateToYYYYMMDD(selectedDate);
+        const dateString = getLocalISOString(selectedDate);
         const dayTasks = tasksByDay.get(dateString);
         if (!dayTasks) return [];
 
@@ -311,7 +304,7 @@ const CalendarScreen: React.FC = () => {
             <AddTaskScreen 
                 isOpen={isAddTaskOpen}
                 onClose={() => setIsAddTaskOpen(false)}
-                initialDate={formatDateToYYYYMMDD(selectedDate)}
+                initialDate={getLocalISOString(selectedDate)}
                 onAddTask={handleAddTask}
             />
              <TaskDetailScreen

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CheckIcon, TrashIcon, FlagIcon, ListCheckIcon, TagIcon, CalendarIcon, StarIcon, RefreshSpinnerIcon, ClockIcon, LockIcon, BellIcon, DurationIcon } from '../components/icons/Icons';
 import { useData } from '../contexts/DataContext';
 import { useKeyboardHeight } from '../utils/permissions';
+import { getLocalISOString } from '../utils/date';
 
 export interface NewTaskData {
     title: string;
@@ -114,7 +115,7 @@ const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialD
     const prevIsOpen = useRef(isOpen);
     const lastToggleRef = useRef<number>(0);
 
-    const todayStr = useMemo(() => new Date().toISOString().substring(0, 10), []);
+    const todayStr = useMemo(() => getLocalISOString(), []);
     const isTodayLocked = useMemo(() => dueDate === todayStr, [dueDate, todayStr]);
 
     useEffect(() => {
@@ -248,7 +249,7 @@ const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ isOpen, onClose, initialD
                     title, list: category, isImportant, isToday, notes: notes,
                     subtasks: isSubtaskSectionVisible ? subtasks.filter(s => s.text.trim()) : [],
                     dueDate, type: taskType,
-                    startDate: taskType === 'Fixed' && startTime ? (startDate || new Date().toISOString().substring(0, 10)) : '',
+                    startDate: taskType === 'Fixed' && startTime ? (startDate || getLocalISOString()) : '',
                     startTime: taskType === 'Fixed' ? startTime : '',
                     duration: duration, 
                     reminder: reminder,
