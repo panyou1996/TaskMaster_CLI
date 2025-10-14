@@ -37578,6 +37578,9 @@ ${suffix}`;
     const isProcessingQueue = (0, import_react3.useRef)(false);
     const cleanupRun = (0, import_react3.useRef)(false);
     const offlineQueueRef = (0, import_react3.useRef)(offlineQueue);
+    (0, import_react3.useEffect)(() => {
+      offlineQueueRef.current = offlineQueue;
+    }, [offlineQueue]);
     const [debugLog, setDebugLog] = (0, import_react3.useState)([]);
     const addDebugLog = (0, import_react3.useCallback)((log) => {
       const timestamp = (/* @__PURE__ */ new Date()).toLocaleTimeString([], {
@@ -37868,13 +37871,35 @@ ${suffix}`;
         }
         if (tasksData) {
           setTasks((currentLocalTasks) => {
-            const pendingDeletionIds = new Set(offlineQueue.filter((op) => op.type === "DELETE_TASK").map((op) => op.payload.taskId));
-            const serverDataFiltered = tasksData.filter((t) => !pendingDeletionIds.has(t.id));
-            const localUpdates = new Map(currentLocalTasks.filter((t) => t.status === "pending").map((t) => [t.id, t]));
-            const syncedData = serverDataFiltered.map((serverTask) => localUpdates.get(serverTask.id) || serverTask);
-            const syncedIds = new Set(syncedData.map((t) => t.id));
-            const newItems = currentLocalTasks.filter((t) => t.status === "pending" && !syncedIds.has(t.id));
-            return [...syncedData, ...newItems];
+            const pendingOps = offlineQueueRef.current || [];
+            const pendingDeletionIds = new Set(pendingOps.filter((op) => op.type === "DELETE_TASK").map((op) => op.payload.taskId));
+            const pendingCreates = new Map(pendingOps.filter((op) => op.type === "ADD_TASK").map((op) => [op.tempId, op.payload.taskData]));
+            const pendingUpdates = new Map(pendingOps.filter((op) => op.type === "UPDATE_TASK").map((op) => [String(op.payload.taskId), op.payload.updates]));
+            const merged = [];
+            for (const serverTask of tasksData) {
+              if (pendingDeletionIds.has(serverTask.id)) continue;
+              const serverIdStr = String(serverTask.id);
+              const pendingUpdate = pendingUpdates.get(serverIdStr);
+              const localPending = currentLocalTasks.find((t) => String(t.id) === serverIdStr && t.status === "pending");
+              if (localPending) {
+                merged.push(localPending);
+                continue;
+              }
+              if (pendingUpdate) {
+                const mergedObj = Object.assign({}, serverTask, pendingUpdate, { status: "pending" });
+                merged.push(mergedObj);
+              } else {
+                merged.push(serverTask);
+              }
+            }
+            const existingIds = new Set(merged.map((t) => String(t.id)));
+            const localPendingCreates = currentLocalTasks.filter((t) => t.status === "pending" && typeof t.id === "string" && t.id.startsWith("temp_"));
+            for (const p of localPendingCreates) {
+              if (!existingIds.has(String(p.id))) {
+                merged.push(p);
+              }
+            }
+            return merged;
           });
         }
         if (momentsData) {
@@ -38295,6 +38320,38 @@ ${suffix}`;
         }
       }
     }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, updateTag, deleteTag, theme, setTheme, fontSize, setFontSize, debugLog, addDebugLog]);
+    (0, import_react3.useEffect)(() => {
+      window.__debugNotifyNow = async (taskId) => {
+        try {
+          const t = taskId ? tasks.find((x) => x.id === taskId) : tasks.find((x) => !x.completed && x.today);
+          if (!t) return console.warn("window.__debugNotifyNow: no matching task");
+          console.log("[DataContext] window.__debugNotifyNow ->", t.id);
+          if ("serviceWorker" in navigator && "showNotification" in ServiceWorkerRegistration.prototype) {
+            const registration = await navigator.serviceWorker.ready;
+            const options = {
+              body: t.title,
+              icon: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`,
+              tag: String(t.id),
+              actions: [{ action: "snooze_5", title: "Snooze 5min" }, { action: "snooze_15", title: "Snooze 15min" }, { action: "complete", title: "Complete" }],
+              data: { taskId: t.id, url: `/task/${t.id}` }
+            };
+            await registration.showNotification("Task Reminder", options);
+          } else if (Notification.permission === "granted") {
+            new Notification("Task Reminder", { body: t.title });
+          } else {
+            console.warn("Notifications not permitted");
+          }
+        } catch (e) {
+          console.error("window.__debugNotifyNow failed", e);
+        }
+      };
+      return () => {
+        try {
+          delete window.__debugNotifyNow;
+        } catch {
+        }
+      };
+    }, [tasks]);
     return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DataContext.Provider, { value, children });
   };
   var useData = () => {

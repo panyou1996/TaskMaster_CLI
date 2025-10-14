@@ -76,6 +76,32 @@ self.addEventListener('fetch', (event) => {
     // Production behavior: only intercept GET requests
     if (event.request.method !== 'GET') return;
 
+    // Don't cache API calls or dynamic endpoints (Supabase, functions, auth, etc.)
+    try {
+        const requestUrl = new URL(event.request.url);
+        const IGNORED_API_HOSTS = ['supabase.co'];
+        const IGNORED_API_PATH_PREFIXES = ['/rest/v1', '/functions/v1', '/auth/v1', '/storage/v1', '/api/'];
+
+        // If host matches known API hosts, use network-only
+        if (IGNORED_API_HOSTS.some(h => requestUrl.host.includes(h))) {
+            event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
+            return;
+        }
+
+        // If the path begins with any API prefix, use network-only
+        if (IGNORED_API_PATH_PREFIXES.some(p => requestUrl.pathname.startsWith(p))) {
+            event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
+            return;
+        }
+    } catch (e) {
+        // If URL parsing fails, fall back to simple include checks
+        const requestUrlStr = event.request.url || '';
+        if (requestUrlStr.includes('supabase.co') || requestUrlStr.includes('/api/')) {
+            event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
+            return;
+        }
+    }
+
     // For navigation requests, use a network-first strategy to get the latest app shell
     if (event.request.mode === 'navigate') {
         event.respondWith(
@@ -124,21 +150,32 @@ self.addEventListener('notificationclick', (event) => {
     // Always close the notification that was clicked
     notification.close();
 
-    if (action === 'snooze') {
-        const title = notification.title.includes('(Snoozed)') ? notification.title : `${notification.title} (Snoozed)`;
-        // Schedule a new notification in 5 minutes
+    // Helper to schedule a follow-up notification from the SW
+    const scheduleFromSW = (delayMs, titleOverride) => {
+        const title = titleOverride || (notification.title.includes('(Snoozed)') ? notification.title : `${notification.title} (Snoozed)`);
         setTimeout(() => {
             self.registration.showNotification(title, {
                 body: notification.body,
                 icon: notification.icon,
-                tag: notification.tag, // Re-use tag to replace if snoozed again
+                tag: notification.tag,
                 actions: notification.actions,
                 data: notification.data
-            });
-        }, 5 * 60 * 1000); // 5 minutes in milliseconds
-    } else if (action === 'close') {
-        // The notification is already closed, so we do nothing.
-    } else if (action === 'complete') {
+            }).catch(err => console.warn('SW: showNotification failed in snooze', err));
+        }, delayMs);
+    };
+
+    if (action === 'snooze_5' || action === 'snooze_15') {
+        const minutes = action === 'snooze_5' ? 5 : 15;
+        scheduleFromSW(minutes * 60 * 1000);
+        return;
+    }
+
+    if (action === 'close') {
+        // nothing to do
+        return;
+    }
+
+    if (action === 'complete') {
         // Notify all clients that the task was completed from the notification action
         const taskId = notification.data && notification.data.taskId ? notification.data.taskId : undefined;
         self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
@@ -146,24 +183,31 @@ self.addEventListener('notificationclick', (event) => {
                 client.postMessage({ type: 'NOTIFICATION_ACTION', action: 'complete', taskId });
             }
         });
-    } else {
-        // Default action (no action button clicked, just the notification body)
-        // Focus the existing window or open a new one
-        event.waitUntil(
-            clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-                if (clientList.length > 0) {
-                    let client = clientList[0];
-                    for (let i = 0; i < clientList.length; i++) {
-                        if (clientList[i].focused) {
-                            client = clientList[i];
-                        }
-                    }
-                    return client.focus();
-                }
-                return clients.openWindow('/');
-            })
-        );
+        return;
     }
+
+    // Default action (notification body clicked): open/focus the task URL if provided
+    event.waitUntil(
+        (async () => {
+            const url = notification.data && notification.data.url ? notification.data.url : '/';
+            const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+            if (clientList.length > 0) {
+                // Try to focus an existing client, and navigate it if possible
+                for (const client of clientList) {
+                    try {
+                        await client.focus();
+                        // Attempt to navigate if the client supports postMessage open
+                        client.postMessage({ type: 'NAVIGATE_TO', url });
+                        return;
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+            }
+            // No client to focus, open a new window/tab
+            await clients.openWindow(url);
+        })()
+    );
 });
 
 // Handle messages from the client to schedule notifications
