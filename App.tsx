@@ -26,6 +26,8 @@ import MomentDetailScreen from './screens/MomentDetailScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import FocusScreen from './screens/FocusScreen';
 import TagDetailScreen from './screens/TagDetailScreen';
+import NotesScreen from './screens/NotesScreen';
+import NoteDetailScreen from './screens/NoteDetailScreen';
 
 const AppRoutes: React.FC = () => {
   const { session, loading, syncError, theme, fontSize } = useData();
@@ -125,7 +127,7 @@ const AppRoutes: React.FC = () => {
     let listener: PluginListenerHandle;
 
     const handleBackButton = () => {
-      const exitRoutes = ['/today', '/plan', '/moments', '/settings', '/login', '/onboarding/welcome'];
+      const exitRoutes = ['/today', '/plan', '/notes', '/moments', '/settings', '/login', '/onboarding/welcome'];
       const isOnExitRoute = exitRoutes.includes(location.pathname);
 
       if (isOnExitRoute) {
@@ -194,6 +196,8 @@ const AppRoutes: React.FC = () => {
             <Route path="/today" element={<TodayScreen />} />
             <Route path="/plan" element={<PlanScreen />} />
             <Route path="/lists/:listId" element={<ListDetailScreen />} />
+            <Route path="/notes" element={<NotesScreen />} />
+            <Route path="/notes/:id" element={<NoteDetailScreen />} />
             <Route path="/moments" element={<MomentsScreen />} />
             <Route path="/moments/:id" element={<MomentDetailScreen />} />
             <Route path="/moments/tags/:tagName" element={<TagDetailScreen />} />

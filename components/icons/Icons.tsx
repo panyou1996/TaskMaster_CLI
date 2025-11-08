@@ -50,6 +50,15 @@ export const ListsIcon: React.FC = () => (
     </svg>
 );
 
+export const NotebookPenIcon: React.FC = () => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 2a2 2 0 0 1 2 2v2M15 2a2 2 0 0 0-2 2v2" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="m10.4 12.6-2.8 2.8-1.2-1.2" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13.2 9.8 8.8 5.4a2 2 0 1 0-2.8 2.8l4.4 4.4" />
+  </svg>
+);
+
 export const TimelineIcon: React.FC = () => (
     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m-12 5h12m-12 5h8" />
@@ -187,6 +196,57 @@ export const TravelIcon: React.FC = () => (
 export const IdeasIcon: React.FC = () => (
     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.311a7.5 7.5 0 01-7.5 0c-1.451 0-2.733-.52-3.75-1.342m11.25 1.342c1.017-.822 1.5-1.85 1.5-2.924m-8.636-14.812A9.331 9.331 0 0112 3.75c1.451 0 2.733.52 3.75 1.342M12 6.75A2.25 2.25 0 009.75 9v1.076c0 .54.436.98.976.998 1.053.034 2.095.034 3.148 0 .54-.018.976-.458.976-.998V9A2.25 2.25 0 0012 6.75z" />
+    </svg>
+);
+
+export const AddNoteMenuIcon: React.FC<{className?: string}> = ({ className = "w-6 h-6 text-blue-600" }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+);
+
+export const SaveIcon: React.FC<{ className?: string }> = ({ className = 'w-6 h-6' }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+    </svg>
+);
+
+
+export const BoldIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h8a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4H4V4zm0 8h9a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4H4v-8z" />
+    </svg>
+);
+
+export const ItalicIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5l-4 14m8-14l-4 14M5 19h14M5 5h14" />
+    </svg>
+);
+
+export const ListIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+);
+
+export const ListOrderedIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5h11M9 12h11M9 19h11M3.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm0 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm0 7a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z" />
+    </svg>
+);
+
+export const PaperclipIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14l-4-4m4 4-4 4" />
+        <path d="M16.121 17.121a3 3 0 0 1-4.242 0l-4.242-4.242a5 5 0 0 1 7.07-7.07l7.072 7.072a7 7 0 0 1-9.9 9.9l-7.07-7.07" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const XIcon: React.FC<{className?: string}> = ({ className = "w-6 h-6" }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
     </svg>
 );
 

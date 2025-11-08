@@ -107,3 +107,20 @@ export const EmptyMomentsIllustration: React.FC<{ onAddMoment: () => void }> = (
         </svg>
     </IllustrationContainer>
 );
+
+export const EmptyNotesIllustration: React.FC<{ onAddNote: () => void }> = ({ onAddNote }) => (
+    <IllustrationContainer
+        title="No notes yet"
+        message="Create your first note to capture thoughts, ideas, or reminders."
+        cta={
+            <Button onClick={onAddNote} variant="primary">
+                + Create Note
+            </Button>
+        }
+    >
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13.75 4.5H6.25C5.55964 4.5 5 5.05964 5 5.75V19.25C5 19.9404 5.55964 20.5 6.25 20.5H17.75C18.4404 20.5 19 19.9404 19 19.25V10.25L13.75 4.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M13.5 4.5V10.5H19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+    </IllustrationContainer>
+);

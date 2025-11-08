@@ -58,6 +58,27 @@ export interface Moment {
     imageUrl: string;
 }
 
+export interface Attachment {
+    name: string;
+    url: string;
+    type: string;
+}
+
+export interface Note {
+    id: number | string;
+    user_id?: string;
+    created_at?: string;
+    updated_at?: string;
+    status?: 'pending' | 'synced';
+    title: string;
+    content: string;
+    attachments: Attachment[];
+    tags?: string[];
+    // For offline handling of new attachments
+    localAttachmentsToUpload?: { name: string; type: string; data: string }[];
+}
+
+
 export interface UserProfile {
     id: string; // Corresponds to Supabase auth user ID
     updated_at?: string;
@@ -84,6 +105,7 @@ export interface FocusSession {
 export const initialTasksData: Task[] = [];
 export const initialListsData: TaskList[] = [];
 export const initialMomentsData: Moment[] = [];
+export const initialNotesData: Note[] = [];
 export const initialFocusHistoryData: FocusSession[] = [];
 
 // This will be used only if a profile doesn't exist in the database yet.

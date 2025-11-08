@@ -7,10 +7,13 @@ import {
     Moment, 
     UserProfile,
     FocusSession,
+    Note,
+    Attachment,
     initialTasksData,
     initialListsData,
     initialMomentsData,
     initialFocusHistoryData,
+    initialNotesData,
 } from '../data/mockData';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -23,7 +26,8 @@ type OperationType =
     | 'ADD_TASK' | 'UPDATE_TASK' | 'DELETE_TASK'
     | 'ADD_LIST' | 'UPDATE_LIST' | 'DELETE_LIST'
     | 'ADD_MOMENT' | 'UPDATE_MOMENT' | 'DELETE_MOMENT'
-    | 'ADD_FOCUS_SESSION';
+    | 'ADD_FOCUS_SESSION'
+    | 'ADD_NOTE' | 'UPDATE_NOTE' | 'DELETE_NOTE';
 
 interface OfflineOperation {
     id: string; // Unique ID for the operation itself
@@ -60,6 +64,12 @@ interface DataContextType {
     addMoment: (momentData: Omit<Moment, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>) => Promise<void>;
     updateMoment: (momentId: number | string, updates: Partial<Moment>) => Promise<void>;
     deleteMoment: (momentId: number | string) => Promise<void>;
+
+    notes: Note[];
+    setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
+    addNote: (noteData: Omit<Note, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>, filesToUpload?: File[]) => Promise<void>;
+    updateNote: (noteId: number | string, updates: Partial<Note>, filesToUpload?: File[]) => Promise<void>;
+    deleteNote: (noteId: number | string) => Promise<void>;
 
     focusHistory: FocusSession[];
     addFocusSession: (sessionData: Omit<FocusSession, 'id' | 'user_id' | 'created_at' | 'status'>) => Promise<void>;
@@ -179,6 +189,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [tasks, setTasks] = useLocalStorage<Task[]>('tasks', initialTasksData);
     const [lists, setLists] = useLocalStorage<TaskList[]>('lists', initialListsData);
     const [moments, setMoments] = useLocalStorage<Moment[]>('moments', initialMomentsData);
+    const [notes, setNotes] = useLocalStorage<Note[]>('notes', initialNotesData);
     const [profile, setProfile] = useLocalStorage<UserProfile | null>('userProfile', null);
     const [tags, setTags] = useLocalStorage<string[]>('checkinTags', []);
     const [focusHistory, setFocusHistory] = useLocalStorage<FocusSession[]>('focusHistory', initialFocusHistoryData);
@@ -430,6 +441,92 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         success = true;
                         break;
                     }
+                    case 'ADD_NOTE': {
+                        const payload = operation.payload.noteData;
+                        const noteDataForInsert: any = {
+                            title: payload.title,
+                            content: payload.content,
+                            tags: payload.tags,
+                            attachments: payload.attachments || [],
+                            user_id: targetUser.id,
+                        };
+                        
+                        if (payload.localAttachmentsToUpload) {
+                            for (const attachmentToUpload of payload.localAttachmentsToUpload) {
+                                const filePath = `${targetUser.id}/notes/${operation.tempId}/${attachmentToUpload.name}`;
+                                const fileBody = Uint8Array.from(atob(attachmentToUpload.data), c => c.charCodeAt(0));
+                                
+                                const { error: uploadError } = await supabase.storage
+                                    .from('note_attachments')
+                                    .upload(filePath, fileBody, { contentType: attachmentToUpload.type, upsert: true });
+                                if (uploadError) throw uploadError;
+
+                                const { data: { publicUrl } } = supabase.storage.from('note_attachments').getPublicUrl(filePath);
+                                noteDataForInsert.attachments.push({ name: attachmentToUpload.name, url: publicUrl, type: attachmentToUpload.type });
+                            }
+                        }
+                        
+                        const { data: synced, error } = await supabase.from('notes').insert(noteDataForInsert).select().single();
+                        if (error) throw error;
+                        
+                        setNotes(current => current.map(n => n.id === operation.tempId ? { ...synced, status: 'synced' } : n));
+                        success = true;
+                        break;
+                    }
+                    case 'UPDATE_NOTE': {
+                        const { noteId, updates } = operation.payload;
+                        
+                        const { data: serverNote } = await supabase.from('notes').select('attachments').eq('id', noteId).single();
+                        const serverAttachments = serverNote?.attachments || [];
+
+                        const finalUpdates: any = { ...updates };
+                        let newAttachments: Attachment[] = updates.attachments !== undefined ? updates.attachments : [...serverAttachments];
+
+                        // Upload new files
+                        if (updates.localAttachmentsToUpload) {
+                            for (const attachmentToUpload of updates.localAttachmentsToUpload) {
+                                const filePath = `${targetUser.id}/notes/${noteId}/${attachmentToUpload.name}`;
+                                const fileBody = Uint8Array.from(atob(attachmentToUpload.data), c => c.charCodeAt(0));
+                                
+                                const { error: uploadError } = await supabase.storage.from('note_attachments').upload(filePath, fileBody, { contentType: attachmentToUpload.type, upsert: true });
+                                if (uploadError) throw uploadError;
+
+                                const { data: { publicUrl } } = supabase.storage.from('note_attachments').getPublicUrl(filePath);
+                                newAttachments.push({ name: attachmentToUpload.name, url: publicUrl, type: attachmentToUpload.type });
+                            }
+                        }
+                        finalUpdates.attachments = newAttachments;
+                        delete finalUpdates.localAttachmentsToUpload;
+
+                        // Delete attachments that are no longer in the list
+                        const clientAttachmentUrls = new Set(newAttachments.map((a: Attachment) => a.url));
+                        const attachmentsToDelete = serverAttachments.filter((att: Attachment) => !clientAttachmentUrls.has(att.url));
+                        if (attachmentsToDelete.length > 0) {
+                            const pathsToRemove = attachmentsToDelete.map((att: Attachment) => new URL(att.url).pathname.split(`/storage/v1/object/public/note_attachments/`)[1]);
+                            await supabase.storage.from('note_attachments').remove(pathsToRemove);
+                        }
+
+                        const { error } = await supabase.from('notes').update(finalUpdates).eq('id', noteId);
+                        if (error) throw error;
+
+                        setNotes(current => current.map(n => n.id === noteId ? { ...n, ...finalUpdates, status: 'synced', localAttachmentsToUpload: [] } : n));
+                        success = true;
+                        break;
+                    }
+                    case 'DELETE_NOTE': {
+                        const { noteId } = operation.payload;
+                        // Delete attachments folder from storage
+                        const { data: files } = await supabase.storage.from('note_attachments').list(`${targetUser.id}/notes/${noteId}`);
+                        if (files && files.length > 0) {
+                            const pathsToRemove = files.map(file => `${targetUser.id}/notes/${noteId}/${file.name}`);
+                            await supabase.storage.from('note_attachments').remove(pathsToRemove);
+                        }
+
+                        const { error } = await supabase.from('notes').delete().eq('id', noteId);
+                        if (error) throw error;
+                        success = true;
+                        break;
+                    }
                     case 'ADD_FOCUS_SESSION': {
                         const { data: synced, error } = await supabase.from('focus_sessions').insert({ ...operation.payload.sessionData, user_id: targetUser.id }).select().single();
                         if (error) throw error;
@@ -465,7 +562,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
         }
         isProcessingQueue.current = false;
-    }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments, setFocusHistory, scheduleNotification, cancelNotification]);
+    }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments, setFocusHistory, setNotes, scheduleNotification, cancelNotification]);
     
     const syncData = useCallback(async (userOverride?: User | null) => {
         const targetUser = userOverride !== undefined ? userOverride : user;
@@ -492,11 +589,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // allow React state (offlineQueue) to settle before fetching server data to avoid races
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            const [{ data: profileData, error: profileError }, { data: listsData, error: listsError }, { data: tasksData, error: tasksError }, { data: momentsData, error: momentsError }, { data: focusData, error: focusError }] = await Promise.all([
+            const [{ data: profileData, error: profileError }, { data: listsData, error: listsError }, { data: tasksData, error: tasksError }, { data: momentsData, error: momentsError }, { data: notesData, error: notesError }, { data: focusData, error: focusError }] = await Promise.all([
                 supabase.from('profiles').select('*').eq('id', targetUser.id).single(),
                 supabase.from('lists').select('*').eq('user_id', targetUser.id),
                 supabase.from('tasks').select('*').eq('user_id', targetUser.id),
                 supabase.from('moments').select('*').eq('user_id', targetUser.id),
+                supabase.from('notes').select('*').eq('user_id', targetUser.id),
                 supabase.from('focus_sessions').select('*').eq('user_id', targetUser.id)
             ]);
     
@@ -504,6 +602,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (listsError) throw listsError;
             if (tasksError) throw tasksError;
             if (momentsError) throw momentsError;
+            if (notesError) throw notesError;
             if (focusError) throw focusError;
     
             if (profileData) setProfile(profileData);
@@ -580,6 +679,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 });
             }
             
+            if (notesData) {
+                setNotes(currentLocalNotes => {
+                    const pendingDeletionIds = new Set(offlineQueue.filter(op => op.type === 'DELETE_NOTE').map(op => op.payload.noteId));
+                    const serverDataFiltered = notesData.filter(n => !pendingDeletionIds.has(n.id));
+
+                    const localUpdates = new Map(currentLocalNotes.filter(n => n.status === 'pending').map(n => [n.id, n]));
+                    const syncedData = serverDataFiltered.map(serverNote => localUpdates.get(serverNote.id) || serverNote);
+                    const syncedIds = new Set(syncedData.map(n => n.id));
+                    const newItems = currentLocalNotes.filter(n => n.status === 'pending' && !syncedIds.has(n.id));
+                    return [...syncedData, ...newItems];
+                });
+            }
+            
             if (focusData) {
                 setFocusHistory(currentLocal => {
                     const localPending = currentLocal.filter(s => s.status === 'pending');
@@ -597,7 +709,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } finally {
             setIsSyncing(false);
         }
-    }, [user, isOnline, isSyncing, offlineQueue, processOfflineQueueInternal, setProfile, setLists, setTasks, setMoments, setFocusHistory]);
+    }, [user, isOnline, isSyncing, offlineQueue, processOfflineQueueInternal, setProfile, setLists, setTasks, setMoments, setNotes, setFocusHistory]);
 
     const syncDataRef = useRef(syncData);
     useEffect(() => {
@@ -666,9 +778,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setTasks([]);
               setLists([]);
               setMoments([]);
+              setNotes([]);
               setFocusHistory([]);
-                            setOfflineQueue([]);
-                            offlineQueueRef.current = [];
+              setOfflineQueue([]);
+              offlineQueueRef.current = [];
               setSyncError(null);
             }
           }
@@ -915,6 +1028,105 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [setMoments, setOfflineQueue, addToQueue]);
 
+    const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = error => reject(error);
+    });
+    
+    const addNote = useCallback(async (
+        noteData: Omit<Note, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>,
+        filesToUpload: File[] = []
+    ) => {
+        if (!user) throw new Error("User not logged in");
+        const tempId = `temp_note_${Date.now()}`;
+        
+        const localAttachmentsToUpload = await Promise.all(filesToUpload.map(async file => ({
+            name: file.name,
+            type: file.type,
+            data: await fileToBase64(file),
+        })));
+        
+        const newNote: Note = { 
+            ...noteData, 
+            id: tempId, 
+            user_id: user.id, 
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            attachments: [],
+            localAttachmentsToUpload: localAttachmentsToUpload.length > 0 ? localAttachmentsToUpload : undefined
+        };
+
+        const payloadForQueue = { ...noteData, attachments: [], localAttachmentsToUpload: localAttachmentsToUpload.length > 0 ? localAttachmentsToUpload : undefined };
+        
+        addToQueue({ type: 'ADD_NOTE', payload: { noteData: payloadForQueue }, tempId });
+        setNotes(current => [newNote, ...current]);
+    }, [user, addToQueue, setNotes]);
+
+    const updateNote = useCallback(async (
+        noteId: number | string, 
+        updates: Partial<Note>,
+        filesToUpload: File[] = []
+    ) => {
+        const localAttachmentsToUpload = await Promise.all(filesToUpload.map(async file => ({
+            name: file.name,
+            type: file.type,
+            data: await fileToBase64(file),
+        })));
+
+        setNotes(current => current.map(n => {
+            if (n.id === noteId) {
+                return { 
+                    ...n, 
+                    ...updates, 
+                    localAttachmentsToUpload: [...(n.localAttachmentsToUpload || []), ...localAttachmentsToUpload],
+                    status: 'pending',
+                    updated_at: new Date().toISOString(),
+                };
+            }
+            return n;
+        }));
+        
+        const payloadForQueue = { ...updates, updated_at: new Date().toISOString() };
+        if (localAttachmentsToUpload.length > 0) {
+            (payloadForQueue as any).localAttachmentsToUpload = localAttachmentsToUpload;
+        }
+
+        if (typeof noteId === 'string' && noteId.startsWith('temp_')) {
+            setOfflineQueue(currentQueue => currentQueue.map(op => {
+                if (op.tempId === noteId && op.type === 'ADD_NOTE') {
+                    return {
+                        ...op,
+                        payload: {
+                            noteData: {
+                                ...op.payload.noteData,
+                                ...payloadForQueue,
+                                localAttachmentsToUpload: [
+                                    ...(op.payload.noteData.localAttachmentsToUpload || []),
+                                    ...localAttachmentsToUpload,
+                                ],
+                            }
+                        }
+                    };
+                }
+                return op;
+            }));
+        } else {
+            addToQueue({ type: 'UPDATE_NOTE', payload: { noteId, updates: payloadForQueue } });
+        }
+    }, [setNotes, setOfflineQueue, addToQueue]);
+
+    const deleteNote = useCallback(async (noteId: string | number) => {
+        setNotes(current => current.filter(n => n.id !== noteId));
+        if (typeof noteId === 'string' && noteId.startsWith('temp_')) {
+            setOfflineQueue(currentQueue => currentQueue.filter(op => op.tempId !== noteId));
+        } else {
+            addToQueue({ type: 'DELETE_NOTE', payload: { noteId } });
+        }
+    }, [setNotes, setOfflineQueue, addToQueue]);
+
     const addFocusSession = useCallback(async (sessionData: Omit<FocusSession, 'id' | 'user_id' | 'created_at' | 'status'>) => {
         if (!user) throw new Error("User not logged in");
         const newSession: FocusSession = { ...sessionData, user_id: user.id, status: 'pending' };
@@ -990,6 +1202,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         tasks, setTasks,
         lists, setLists,
         moments, setMoments,
+        notes, setNotes,
         focusHistory,
         profile, setProfile,
         syncData,
@@ -997,43 +1210,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addTask, updateTask, deleteTask,
         addList, updateList, deleteList,
         addMoment, updateMoment, deleteMoment,
+        addNote, updateNote, deleteNote,
         addFocusSession,
         tags, addTag, updateTag, deleteTag,
         theme, setTheme,
         fontSize, setFontSize,
         debugLog, addDebugLog,
-        // Debug helper to show a notification now for a given task id (useful for testing)
-        debugNotifyNow: async (taskId?: string | number) => {
-            try {
-                const t = taskId ? tasks.find(x => x.id === taskId) : tasks.find(x => !x.completed && x.today);
-                if (!t) {
-                    console.warn('debugNotifyNow: no matching task found');
-                    return;
-                }
-                console.log(`[DataContext] debugNotifyNow for task ${t.id}`);
-                if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
-                    const registration = await navigator.serviceWorker.ready;
-                    const options: NotificationOptions = {
-                        body: t.title,
-                        icon: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`,
-                        tag: String(t.id),
-                        actions: [ { action: 'snooze', title: 'Snooze 5min' }, { action: 'complete', title: 'Complete' } ],
-                        data: { taskId: t.id }
-                    };
-                    console.log('[DataContext] calling registration.showNotification');
-                    await registration.showNotification('Task Reminder', options);
-                    console.log('[DataContext] registration.showNotification resolved');
-                } else if (Notification.permission === 'granted') {
-                    console.log('[DataContext] falling back to page Notification');
-                    new Notification('Task Reminder', { body: t.title });
-                } else {
-                    console.warn('Notifications not permitted');
-                }
-            } catch (e) {
-                console.error('debugNotifyNow failed', e);
-            }
-        }
-    }), [session, user, loading, tasks, lists, moments, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addFocusSession, tags, addTag, updateTag, deleteTag, theme, setTheme, fontSize, setFontSize, debugLog, addDebugLog]);
+    }), [session, user, loading, tasks, lists, moments, notes, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setNotes, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addNote, updateNote, deleteNote, addFocusSession, tags, addTag, updateTag, deleteTag, theme, setTheme, fontSize, setFontSize, debugLog, addDebugLog]);
 
     // Stable window helper so users can call it in console: window.__debugNotifyNow('taskId')
     useEffect(() => {

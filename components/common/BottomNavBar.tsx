@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { TodayIcon, ListsIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon, SettingsIcon } from '../icons/Icons';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { TodayIcon, ListsIcon, MomentsIcon, PlusIcon, AddTaskMenuIcon, AddListMenuIcon, AddMomentMenuIcon, MicrophoneIcon, SettingsIcon, NotebookPenIcon, AddNoteMenuIcon } from '../icons/Icons';
 import { AddMomentScreen, NewMomentData } from '../../screens/AddMomentScreen';
 import { takePhotoWithCapacitor, triggerHapticImpact, triggerHapticSelection } from '../../utils/permissions';
 import { useData } from '../../contexts/DataContext';
@@ -38,6 +38,7 @@ const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label
 const BottomNavBar: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { addMoment, addList, addDebugLog } = useData();
+    const navigate = useNavigate();
 
     const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
     const [initialPhotoData, setInitialPhotoData] = useState<string | null>(null);
@@ -140,6 +141,12 @@ const BottomNavBar: React.FC = () => {
         setIsMenuOpen(false);
         setIsAddTaskWithAIOpen(true);
     };
+    
+    const handleAddNoteClick = () => {
+        triggerHapticImpact();
+        setIsMenuOpen(false);
+        navigate('/notes/new');
+    };
 
     const handleAddMoment = async (newMomentData: NewMomentData) => {
         const newMoment: Omit<Moment, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
@@ -165,6 +172,7 @@ const BottomNavBar: React.FC = () => {
 
     const menuItems = [
         { label: 'Moment', icon: <AddMomentMenuIcon />, action: handleMomentButtonClick },
+        { label: 'Note', icon: <AddNoteMenuIcon />, action: handleAddNoteClick },
         { label: 'List', icon: <AddListMenuIcon />, action: handleAddListClick },
         { label: 'Task', icon: <AddTaskMenuIcon />, action: handleAddTaskWithAI },
     ];
@@ -198,8 +206,8 @@ const BottomNavBar: React.FC = () => {
                     onClick={() => setIsMenuOpen(false)}
                 />
                 <div
-                    className="absolute bottom-[7rem] left-1/2 -translate-x-1/2 w-full flex flex-col items-center gap-4"
-                    style={{ bottom: `calc(7rem + env(safe-area-inset-bottom, 0px))` }}
+                    className="absolute w-full flex flex-col items-end gap-4 pr-6"
+                    style={{ bottom: `calc(11rem + env(safe-area-inset-bottom, 0px))` }}
                 >
                     {menuItems.map((item, index) => (
                         <div
@@ -228,14 +236,14 @@ const BottomNavBar: React.FC = () => {
                 >
                     <NavItem to="/today" icon={<TodayIcon />} label="Today" />
                     <NavItem to="/plan" icon={<ListsIcon />} label="Plan" />
-                    <div />
+                    <NavItem to="/notes" icon={<NotebookPenIcon />} label="Notes" />
                     <NavItem to="/moments" icon={<MomentsIcon />} label="Moments" />
                     <NavItem to="/settings" icon={<SettingsIcon />} label="Settings" />
                 </div>
             </div>
              <div
-                className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
-                style={{ bottom: `calc(1rem + env(safe-area-inset-bottom, 0px))` }}
+                className="fixed right-6 z-50"
+                style={{ bottom: `calc(6rem + env(safe-area-inset-bottom, 0px))` }}
              >
                 <button
                     onPointerDown={handlePointerDown}
