@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 
 // FIX: Import React to make its types available, resolving the 'Cannot find namespace' error on line 3.

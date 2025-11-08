@@ -62,6 +62,8 @@ export interface Attachment {
     name: string;
     url: string;
     type: string;
+    // FIX: Add optional 'path' property to the Attachment interface to store the file path from storage.
+    path?: string;
 }
 
 export interface Note {

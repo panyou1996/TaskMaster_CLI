@@ -67,7 +67,7 @@ interface DataContextType {
 
     notes: Note[];
     setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
-    addNote: (noteData: Omit<Note, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>, filesToUpload?: File[]) => Promise<void>;
+    addNote: (noteData: Omit<Note, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status' | 'attachments'> & { attachments?: Attachment[] }, filesToUpload?: File[]) => Promise<string | undefined>;
     updateNote: (noteId: number | string, updates: Partial<Note>, filesToUpload?: File[]) => Promise<void>;
     deleteNote: (noteId: number | string) => Promise<void>;
 
@@ -179,6 +179,23 @@ const areNotificationsGloballyEnabled = () => {
     } catch {
         return true;
     }
+};
+
+const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+    reader.onerror = error => reject(error);
+});
+
+const base64ToBlob = (base64: string, type: string) => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type });
 };
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -376,45 +393,46 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         if (error) throw error;
                         await cancelNotification(operation.tempId!);
                         await scheduleNotification({ ...synced, status: 'synced' });
-                        setTasks(current => current.map(t => t.id === operation.tempId ? { ...synced, status: 'synced' } : t));
+                        setTasks((current) => current.map((t) => t.id === operation.tempId ? { ...synced, status: 'synced' } : t));
                         success = true;
                         break;
                     }
                     case 'UPDATE_TASK': {
                         const { error } = await supabase.from('tasks').update(operation.payload.updates).eq('id', operation.payload.taskId);
                         if (error) throw error;
-                        setTasks(current => current.map(t => t.id === operation.payload.taskId ? { ...t, status: 'synced' } : t));
+                        setTasks((current) => current.map((t) => t.id === operation.payload.taskId ? { ...t, status: 'synced' } : t));
                         success = true;
                         break;
                     }
                     case 'DELETE_TASK': {
+                        await cancelNotification(operation.payload.taskId);
                         const { error } = await supabase.from('tasks').delete().eq('id', operation.payload.taskId);
                         if (error) throw error;
                         success = true;
                         break;
                     }
-                     case 'ADD_LIST': {
+                    case 'ADD_LIST': {
                         const { data: synced, error } = await supabase.from('lists').insert({ ...operation.payload.listData, user_id: targetUser.id }).select().single();
                         if (error) throw error;
-                        setLists(current => current.map(l => l.id === operation.tempId ? { ...synced, status: 'synced' } : l));
+                        setLists((current) => current.map((l) => l.id === operation.tempId ? { ...synced, status: 'synced' } : l));
                         success = true;
                         break;
                     }
                     case 'UPDATE_LIST': {
-                         const { updates, listId, oldName } = operation.payload;
-                         if (updates.name && oldName && oldName !== updates.name) {
-                             await supabase.from('tasks').update({ category: updates.name }).eq('category', oldName);
-                         }
-                         const { error } = await supabase.from('lists').update(updates).eq('id', listId);
-                         if (error) throw error;
-                         setLists(current => current.map(l => l.id === listId ? { ...l, status: 'synced' } : l));
-                         success = true;
-                         break;
+                        const { updates, listId, oldName } = operation.payload;
+                        if (updates.name && oldName && oldName !== updates.name) {
+                            await supabase.from('tasks').update({ category: updates.name }).eq('category', oldName).eq('user_id', targetUser.id);
+                        }
+                        const { error } = await supabase.from('lists').update(updates).eq('id', listId);
+                        if (error) throw error;
+                        setLists((current) => current.map((l) => l.id === listId ? { ...l, status: 'synced' } : l));
+                        success = true;
+                        break;
                     }
                     case 'DELETE_LIST': {
                         const { listId, listName, defaultListCategory, defaultListColor } = operation.payload;
                         if (defaultListCategory) {
-                            await supabase.from('tasks').update({ category: defaultListCategory, color: defaultListColor }).eq('category', listName);
+                            await supabase.from('tasks').update({ category: defaultListCategory, color: defaultListColor }).eq('category', listName).eq('user_id', targetUser.id);
                         }
                         const { error } = await supabase.from('lists').delete().eq('id', listId);
                         if (error) throw error;
@@ -424,14 +442,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     case 'ADD_MOMENT': {
                         const { data: synced, error } = await supabase.from('moments').insert({ ...operation.payload.momentData, user_id: targetUser.id }).select().single();
                         if (error) throw error;
-                        setMoments(current => current.map(m => m.id === operation.tempId ? { ...synced, status: 'synced' } : m));
+                        setMoments((current) => current.map((m) => m.id === operation.tempId ? { ...synced, status: 'synced' } : m));
                         success = true;
                         break;
                     }
                     case 'UPDATE_MOMENT': {
                         const { error } = await supabase.from('moments').update(operation.payload.updates).eq('id', operation.payload.momentId);
                         if (error) throw error;
-                        setMoments(current => current.map(m => m.id === operation.payload.momentId ? { ...m, status: 'synced' } : m));
+                        setMoments((current) => current.map((m) => m.id === operation.payload.momentId ? { ...m, status: 'synced' } : m));
                         success = true;
                         break;
                     }
@@ -441,96 +459,79 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         success = true;
                         break;
                     }
+                    case 'ADD_FOCUS_SESSION': {
+                        const { data: synced, error } = await supabase.from('focus_sessions').insert({ ...operation.payload.sessionData, user_id: targetUser.id }).select().single();
+                        if (error) throw error;
+                        setFocusHistory((current) => current.map((s) => s.plant_id.toString() === operation.tempId ? { ...synced, status: 'synced' } : s));
+                        success = true;
+                        break;
+                    }
                     case 'ADD_NOTE': {
-                        const payload = operation.payload.noteData;
-                        const noteDataForInsert: any = {
-                            title: payload.title,
-                            content: payload.content,
-                            tags: payload.tags,
-                            attachments: payload.attachments || [],
-                            user_id: targetUser.id,
-                        };
-                        
-                        if (payload.localAttachmentsToUpload) {
-                            for (const attachmentToUpload of payload.localAttachmentsToUpload) {
-                                const filePath = `${targetUser.id}/notes/${operation.tempId}/${attachmentToUpload.name}`;
-                                const fileBody = Uint8Array.from(atob(attachmentToUpload.data), c => c.charCodeAt(0));
-                                
-                                const { error: uploadError } = await supabase.storage
-                                    .from('note_attachments')
-                                    .upload(filePath, fileBody, { contentType: attachmentToUpload.type, upsert: true });
-                                if (uploadError) throw uploadError;
+                        const { noteData, localAttachmentsToUpload } = operation.payload;
+                        const { data: syncedNote, error: noteError } = await supabase.from('notes').insert({ ...noteData, user_id: targetUser.id, attachments: [] }).select().single();
+                        if (noteError) throw noteError;
 
-                                const { data: { publicUrl } } = supabase.storage.from('note_attachments').getPublicUrl(filePath);
-                                noteDataForInsert.attachments.push({ name: attachmentToUpload.name, url: publicUrl, type: attachmentToUpload.type });
-                            }
+                        let uploadedAttachments: Attachment[] = [];
+                        if (localAttachmentsToUpload && localAttachmentsToUpload.length > 0) {
+                            const uploadPromises = localAttachmentsToUpload.map(async (att: any) => {
+                                const filePath = `${targetUser.id}/${syncedNote.id}/${att.name}`;
+                                const { error: uploadError } = await supabase.storage.from('notes_attachments').upload(filePath, base64ToBlob(att.data, att.type), { upsert: true });
+                                if (uploadError) throw uploadError;
+                                
+                                const { data: signedUrlData, error: signedUrlError } = await supabase.storage.from('notes_attachments').createSignedUrl(filePath, 315360000); // 10 years
+                                if (signedUrlError) throw signedUrlError;
+
+                                return { name: att.name, url: signedUrlData.signedUrl, type: att.type, path: filePath };
+                            });
+                            uploadedAttachments = await Promise.all(uploadPromises);
+
+                            const { error: updateError } = await supabase.from('notes').update({ attachments: uploadedAttachments }).eq('id', syncedNote.id);
+                            if (updateError) throw updateError;
                         }
                         
-                        const { data: synced, error } = await supabase.from('notes').insert(noteDataForInsert).select().single();
-                        if (error) throw error;
-                        
-                        setNotes(current => current.map(n => n.id === operation.tempId ? { ...synced, status: 'synced' } : n));
+                        setNotes(current => current.map(n => n.id === operation.tempId ? { ...syncedNote, attachments: uploadedAttachments, status: 'synced' } : n));
                         success = true;
                         break;
                     }
                     case 'UPDATE_NOTE': {
-                        const { noteId, updates } = operation.payload;
+                        const { noteId, updates, localAttachmentsToUpload, deletedAttachmentPaths } = operation.payload;
                         
-                        const { data: serverNote } = await supabase.from('notes').select('attachments').eq('id', noteId).single();
-                        const serverAttachments = serverNote?.attachments || [];
+                        if (deletedAttachmentPaths && deletedAttachmentPaths.length > 0) {
+                            const { error: deleteError } = await supabase.storage.from('notes_attachments').remove(deletedAttachmentPaths);
+                            if (deleteError) console.error('Failed to delete attachment from storage:', deleteError);
+                        }
 
-                        const finalUpdates: any = { ...updates };
-                        let newAttachments: Attachment[] = updates.attachments !== undefined ? updates.attachments : [...serverAttachments];
-
-                        // Upload new files
-                        if (updates.localAttachmentsToUpload) {
-                            for (const attachmentToUpload of updates.localAttachmentsToUpload) {
-                                const filePath = `${targetUser.id}/notes/${noteId}/${attachmentToUpload.name}`;
-                                const fileBody = Uint8Array.from(atob(attachmentToUpload.data), c => c.charCodeAt(0));
-                                
-                                const { error: uploadError } = await supabase.storage.from('note_attachments').upload(filePath, fileBody, { contentType: attachmentToUpload.type, upsert: true });
+                        let newUploadedAttachments: Attachment[] = [];
+                        if (localAttachmentsToUpload && localAttachmentsToUpload.length > 0) {
+                            const uploadPromises = localAttachmentsToUpload.map(async (att: any) => {
+                                const filePath = `${targetUser.id}/${noteId}/${att.name}`;
+                                const { error: uploadError } = await supabase.storage.from('notes_attachments').upload(filePath, base64ToBlob(att.data, att.type), { upsert: true });
                                 if (uploadError) throw uploadError;
 
-                                const { data: { publicUrl } } = supabase.storage.from('note_attachments').getPublicUrl(filePath);
-                                newAttachments.push({ name: attachmentToUpload.name, url: publicUrl, type: attachmentToUpload.type });
-                            }
-                        }
-                        finalUpdates.attachments = newAttachments;
-                        delete finalUpdates.localAttachmentsToUpload;
+                                const { data: signedUrlData, error: signedUrlError } = await supabase.storage.from('notes_attachments').createSignedUrl(filePath, 315360000); // 10 years
+                                if (signedUrlError) throw signedUrlError;
 
-                        // Delete attachments that are no longer in the list
-                        const clientAttachmentUrls = new Set(newAttachments.map((a: Attachment) => a.url));
-                        const attachmentsToDelete = serverAttachments.filter((att: Attachment) => !clientAttachmentUrls.has(att.url));
-                        if (attachmentsToDelete.length > 0) {
-                            const pathsToRemove = attachmentsToDelete.map((att: Attachment) => new URL(att.url).pathname.split(`/storage/v1/object/public/note_attachments/`)[1]);
-                            await supabase.storage.from('note_attachments').remove(pathsToRemove);
+                                return { name: att.name, url: signedUrlData.signedUrl, type: att.type, path: filePath };
+                            });
+                            newUploadedAttachments = await Promise.all(uploadPromises);
                         }
 
-                        const { error } = await supabase.from('notes').update(finalUpdates).eq('id', noteId);
-                        if (error) throw error;
+                        const finalAttachments = [...(updates.attachments || []), ...newUploadedAttachments];
+                        const { error: updateError } = await supabase.from('notes').update({ ...updates, attachments: finalAttachments }).eq('id', noteId);
+                        if (updateError) throw updateError;
 
-                        setNotes(current => current.map(n => n.id === noteId ? { ...n, ...finalUpdates, status: 'synced', localAttachmentsToUpload: [] } : n));
+                        setNotes(current => current.map(n => n.id === noteId ? { ...n, ...updates, attachments: finalAttachments, status: 'synced', localAttachmentsToUpload: [] } : n));
                         success = true;
                         break;
                     }
                     case 'DELETE_NOTE': {
-                        const { noteId } = operation.payload;
-                        // Delete attachments folder from storage
-                        const { data: files } = await supabase.storage.from('note_attachments').list(`${targetUser.id}/notes/${noteId}`);
-                        if (files && files.length > 0) {
-                            const pathsToRemove = files.map(file => `${targetUser.id}/notes/${noteId}/${file.name}`);
-                            await supabase.storage.from('note_attachments').remove(pathsToRemove);
+                        const { noteId, attachmentPaths } = operation.payload;
+                        if (attachmentPaths && attachmentPaths.length > 0) {
+                            const { error: deleteError } = await supabase.storage.from('notes_attachments').remove(attachmentPaths);
+                            if (deleteError) console.error('Failed to delete attachments from storage:', deleteError);
                         }
-
                         const { error } = await supabase.from('notes').delete().eq('id', noteId);
                         if (error) throw error;
-                        success = true;
-                        break;
-                    }
-                    case 'ADD_FOCUS_SESSION': {
-                        const { data: synced, error } = await supabase.from('focus_sessions').insert({ ...operation.payload.sessionData, user_id: targetUser.id }).select().single();
-                        if (error) throw error;
-                        setFocusHistory(current => current.map(s => s.plant_id.toString() === operation.tempId ? { ...synced, status: 'synced' } : s));
                         success = true;
                         break;
                     }
@@ -538,13 +539,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (success) {
                     processedOperationIds.add(operation.id);
                 }
-            } catch (error: any) {
+            } catch (error) {
                 console.error(`Failed to process offline operation "${operation.type}":`, error);
                 const errorMessage = getErrorMessage(error);
                 setSyncError(`Failed to process offline operation "${operation.type}": ${errorMessage}`);
                 if (processedOperationIds.size > 0) {
-                    setOfflineQueue(current => {
-                        const next = current.filter(op => !processedOperationIds.has(op.id));
+                    setOfflineQueue((current) => {
+                        const next = current.filter((op) => !processedOperationIds.has(op.id));
                         offlineQueueRef.current = next;
                         return next;
                     });
@@ -553,147 +554,69 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return;
             }
         }
-    
         if (processedOperationIds.size > 0) {
-            setOfflineQueue(current => {
-                const next = current.filter(op => !processedOperationIds.has(op.id));
+            setOfflineQueue((current) => {
+                const next = current.filter((op) => !processedOperationIds.has(op.id));
                 offlineQueueRef.current = next;
                 return next;
             });
         }
         isProcessingQueue.current = false;
-    }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments, setFocusHistory, setNotes, scheduleNotification, cancelNotification]);
-    
+    }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments, setNotes, setFocusHistory, scheduleNotification, cancelNotification]);
+
     const syncData = useCallback(async (userOverride?: User | null) => {
         const targetUser = userOverride !== undefined ? userOverride : user;
-        console.log('[DataContext] syncData invoked', { targetUserId: targetUser?.id, isOnline, isSyncing, offlineQueueLength: offlineQueue.length });
-        if (!targetUser) {
-            console.log('[DataContext] syncData aborted: no target user');
-            return;
-        }
-        if (!isOnline) {
-            console.log('[DataContext] syncData aborted: offline');
-            return;
-        }
-        if (isSyncing) {
-            console.log('[DataContext] syncData aborted: already syncing');
-            return;
-        }
-    
-    console.log('[DataContext] syncData starting upload/process');
-    setIsSyncing(true);
+        if (!targetUser) return;
+        if (!isOnline) return;
+        if (isSyncing) return;
+
+        setIsSyncing(true);
         setSyncError(null);
-    
         try {
             await processOfflineQueueInternal(targetUser);
-            // allow React state (offlineQueue) to settle before fetching server data to avoid races
-            await new Promise(resolve => setTimeout(resolve, 0));
-
-            const [{ data: profileData, error: profileError }, { data: listsData, error: listsError }, { data: tasksData, error: tasksError }, { data: momentsData, error: momentsError }, { data: notesData, error: notesError }, { data: focusData, error: focusError }] = await Promise.all([
+            await new Promise(res => setTimeout(res, 0)); 
+            
+            const [
+                { data: profileData, error: profileError },
+                { data: listsData, error: listsError },
+                { data: tasksData, error: tasksError },
+                { data: momentsData, error: momentsError },
+                { data: notesData, error: notesError },
+                { data: focusData, error: focusError },
+            ] = await Promise.all([
                 supabase.from('profiles').select('*').eq('id', targetUser.id).single(),
                 supabase.from('lists').select('*').eq('user_id', targetUser.id),
                 supabase.from('tasks').select('*').eq('user_id', targetUser.id),
                 supabase.from('moments').select('*').eq('user_id', targetUser.id),
-                supabase.from('notes').select('*').eq('user_id', targetUser.id),
-                supabase.from('focus_sessions').select('*').eq('user_id', targetUser.id)
+                supabase.from('notes').select('*').eq('user_id', targetUser.id).order('updated_at', { ascending: false }),
+                supabase.from('focus_sessions').select('*').eq('user_id', targetUser.id),
             ]);
-    
+
             if (profileError && profileError.code !== 'PGRST116') throw profileError;
             if (listsError) throw listsError;
             if (tasksError) throw tasksError;
             if (momentsError) throw momentsError;
             if (notesError) throw notesError;
             if (focusError) throw focusError;
-    
+
+            // Simple "last write wins" for most data, with local pending changes preserved
+            const mergeData = <T extends { id: string | number, status?: string }>(local: T[], server: T[], type: string, idKey: keyof OfflineOperation['payload']) => {
+                const pendingDeletes = new Set(offlineQueueRef.current.filter(op => op.type === `DELETE_${type}`).map(op => op.payload[idKey]));
+                const serverFiltered = server.filter(s => !pendingDeletes.has(s.id));
+                const localPending = new Map(local.filter(l => l.status === 'pending').map(l => [l.id, l]));
+                const synced = serverFiltered.map(s => localPending.get(s.id) || { ...s, status: 'synced' });
+                const syncedIds = new Set(synced.map(s => s.id));
+                const newLocalItems = local.filter(l => l.status === 'pending' && !syncedIds.has(l.id));
+                return [...synced, ...newLocalItems];
+            };
+
             if (profileData) setProfile(profileData);
-            
-            if (listsData) {
-                setLists(currentLocalLists => {
-                    const pendingDeletionIds = new Set(offlineQueue.filter(op => op.type === 'DELETE_LIST').map(op => op.payload.listId));
-                    const serverDataFiltered = listsData.filter(l => !pendingDeletionIds.has(l.id));
-
-                    const localUpdates = new Map(currentLocalLists.filter(l => l.status === 'pending').map(l => [l.id, l]));
-                    const syncedData = serverDataFiltered.map(serverList => localUpdates.get(serverList.id) || serverList);
-                    const syncedIds = new Set(syncedData.map(l => l.id));
-                    const newItems = currentLocalLists.filter(l => l.status === 'pending' && !syncedIds.has(l.id));
-                    return [...syncedData, ...newItems];
-                });
-            }
-
-            if (tasksData) {
-                setTasks(currentLocalTasks => {
-                    // Use offlineQueueRef.current to avoid stale closure
-                    const pendingOps = offlineQueueRef.current || [];
-
-                    const pendingDeletionIds = new Set(pendingOps.filter(op => op.type === 'DELETE_TASK').map(op => op.payload.taskId));
-                    const pendingCreates = new Map(pendingOps.filter(op => op.type === 'ADD_TASK').map(op => [op.tempId, op.payload.taskData]));
-                    const pendingUpdates = new Map(pendingOps.filter(op => op.type === 'UPDATE_TASK').map(op => [String(op.payload.taskId), op.payload.updates]));
-
-                    const merged: Task[] = [];
-
-                    // Apply server data, but skip items deleted locally and apply pending updates on top
-                    for (const serverTask of tasksData) {
-                        if (pendingDeletionIds.has(serverTask.id)) continue;
-
-                        const serverIdStr = String(serverTask.id);
-                        const pendingUpdate = pendingUpdates.get(serverIdStr);
-
-                        // If there's a local pending version of the same id (status === 'pending'), prefer it
-                        const localPending = currentLocalTasks.find(t => String(t.id) === serverIdStr && t.status === 'pending');
-                        if (localPending) {
-                            merged.push(localPending);
-                            continue;
-                        }
-
-                        if (pendingUpdate) {
-                            const mergedObj = Object.assign({}, serverTask, pendingUpdate, { status: 'pending' }) as Task;
-                            merged.push(mergedObj);
-                        } else {
-                            merged.push(serverTask);
-                        }
-                    }
-
-                    // Include local pending creations (temp ids) that are not present on server yet
-                    const existingIds = new Set(merged.map(t => String(t.id)));
-                    const localPendingCreates = currentLocalTasks.filter(t => t.status === 'pending' && typeof t.id === 'string' && t.id.startsWith('temp_'));
-                    for (const p of localPendingCreates) {
-                        if (!existingIds.has(String(p.id))) {
-                            merged.push(p);
-                        }
-                    }
-
-                    return merged;
-                });
-            }
-
-            if (momentsData) {
-                setMoments(currentLocalMoments => {
-                    const pendingDeletionIds = new Set(offlineQueue.filter(op => op.type === 'DELETE_MOMENT').map(op => op.payload.momentId));
-                    const serverDataFiltered = momentsData.filter(m => !pendingDeletionIds.has(m.id));
-                    
-                    const localUpdates = new Map(currentLocalMoments.filter(m => m.status === 'pending').map(m => [m.id, m]));
-                    const syncedData = serverDataFiltered.map(serverMoment => localUpdates.get(serverMoment.id) || serverMoment);
-                    const syncedIds = new Set(syncedData.map(m => m.id));
-                    const newItems = currentLocalMoments.filter(m => m.status === 'pending' && !syncedIds.has(m.id));
-                    return [...syncedData, ...newItems];
-                });
-            }
-            
-            if (notesData) {
-                setNotes(currentLocalNotes => {
-                    const pendingDeletionIds = new Set(offlineQueue.filter(op => op.type === 'DELETE_NOTE').map(op => op.payload.noteId));
-                    const serverDataFiltered = notesData.filter(n => !pendingDeletionIds.has(n.id));
-
-                    const localUpdates = new Map(currentLocalNotes.filter(n => n.status === 'pending').map(n => [n.id, n]));
-                    const syncedData = serverDataFiltered.map(serverNote => localUpdates.get(serverNote.id) || serverNote);
-                    const syncedIds = new Set(syncedData.map(n => n.id));
-                    const newItems = currentLocalNotes.filter(n => n.status === 'pending' && !syncedIds.has(n.id));
-                    return [...syncedData, ...newItems];
-                });
-            }
-            
+            if (listsData) setLists(local => mergeData(local, listsData, 'LIST', 'listId'));
+            if (tasksData) setTasks(local => mergeData(local, tasksData, 'TASK', 'taskId'));
+            if (momentsData) setMoments(local => mergeData(local, momentsData, 'MOMENT', 'momentId'));
+            if (notesData) setNotes(local => mergeData(local, notesData, 'NOTE', 'noteId'));
             if (focusData) {
-                setFocusHistory(currentLocal => {
+                 setFocusHistory((currentLocal) => {
                     const localPending = currentLocal.filter(s => s.status === 'pending');
                     const localPendingIds = new Set(localPending.map(s => s.plant_id));
                     const serverDataFiltered = focusData.filter(s => !localPendingIds.has(s.plant_id));
@@ -702,24 +625,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
         } catch (error) {
-            console.error("A critical error occurred during data sync:");
-            console.dir(error); // Use console.dir for better object inspection
             const errorMessage = getErrorMessage(error);
             setSyncError(`Data sync failed: ${errorMessage}`);
+            console.error("Critical data sync error:", error);
         } finally {
             setIsSyncing(false);
         }
-    }, [user, isOnline, isSyncing, offlineQueue, processOfflineQueueInternal, setProfile, setLists, setTasks, setMoments, setNotes, setFocusHistory]);
+    }, [user, isOnline, isSyncing, processOfflineQueueInternal, setProfile, setLists, setTasks, setMoments, setNotes, setFocusHistory]);
+    
+    // Auth logic, online/offline listeners, etc. (existing code)
+    // ...
 
     const syncDataRef = useRef(syncData);
     useEffect(() => {
         syncDataRef.current = syncData;
     }, [syncData]);
-    
+
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
-
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
 
@@ -734,105 +658,93 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             syncDataRef.current();
         }
     }, [isOnline, isSyncing, offlineQueue.length]);
-
-    // Ensure notifications are (re)scheduled when the app loads or tasks change
-    useEffect(() => {
-        // Run asynchronously and don't block render
+    
+     useEffect(() => {
         (async () => {
             try {
                 await rescheduleAllNotifications();
-            } catch (e) {
-                console.error('Failed to reschedule notifications on tasks change', e);
+            } catch(e) {
+                console.error("Failed to reschedule notifications on tasks change", e);
             }
         })();
     }, [rescheduleAllNotifications, tasks.length]);
-    
+
     useEffect(() => {
         setLoading(true);
         supabase.auth.getSession().then(({ data: { session } }) => {
-          setSession(session);
-          const currentUser = session?.user ?? null;
-          setUser(currentUser);
-          setLoading(false);
-          if (currentUser) {
-            syncDataRef.current(currentUser);
-          }
+            setSession(session);
+            const currentUser = session?.user ?? null;
+            setUser(currentUser);
+            setLoading(false);
+            if (currentUser) {
+                syncDataRef.current(currentUser);
+            }
         }).catch(err => {
             console.error("Error getting session:", err);
             setLoading(false);
         });
-    
+
         const { data: authListener } = supabase.auth.onAuthStateChange(
-          (event, session) => {
-            const currentUser = session?.user ?? null;
-            setSession(session);
-            setUser(currentUser);
-    
-            if (event === 'SIGNED_IN' && currentUser) {
-              syncDataRef.current(currentUser);
+            (event, session) => {
+                const currentUser = session?.user ?? null;
+                setSession(session);
+                setUser(currentUser);
+
+                if (event === 'SIGNED_IN' && currentUser) {
+                    syncDataRef.current(currentUser);
+                }
+
+                if (event === 'SIGNED_OUT') {
+                    cleanupRun.current = false;
+                    setProfile(null);
+                    setTasks([]);
+                    setLists([]);
+                    setMoments([]);
+                    setNotes([]);
+                    setFocusHistory([]);
+                    setOfflineQueue([]);
+                    offlineQueueRef.current = [];
+                    setSyncError(null);
+                }
             }
-    
-            if (event === 'SIGNED_OUT') {
-              cleanupRun.current = false;
-              setProfile(null);
-              setTasks([]);
-              setLists([]);
-              setMoments([]);
-              setNotes([]);
-              setFocusHistory([]);
-              setOfflineQueue([]);
-              offlineQueueRef.current = [];
-              setSyncError(null);
-            }
-          }
         );
-    
+
         return () => authListener.subscription.unsubscribe();
-    }, [setOfflineQueue, setFocusHistory]);
+    }, [setOfflineQueue, setFocusHistory, setNotes]);
 
     const addToQueue = useCallback((operation: Omit<OfflineOperation, 'id' | 'timestamp'>) => {
-        const newOperation: OfflineOperation = {
-            ...operation,
-            id: `op_${Date.now()}_${Math.random()}`,
-            timestamp: Date.now(),
-        };
+        const newOperation: OfflineOperation = { ...operation, id: `op_${Date.now()}_${Math.random()}`, timestamp: Date.now() };
         setSyncError(null);
         setOfflineQueue(current => [...current, newOperation]);
     }, [setOfflineQueue]);
-
+    
     const clearOfflineQueue = useCallback(() => {
         setOfflineQueue([]);
         setSyncError(null);
     }, [setOfflineQueue]);
+
+    const login = (email: string, pass: string) => supabase.auth.signInWithPassword({ email, password: pass });
+    const signup = (email: string, pass: string, fullName: string, username: string) => supabase.auth.signUp({ email, password: pass, options: { data: { full_name: fullName, username, avatar_url: `https://i.pravatar.cc/150?u=${username}` } } });
+    const logout = () => supabase.auth.signOut();
+    const resetPassword = (email: string) => supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
     
     const addList = useCallback(async (listData: Omit<TaskList, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>) => {
         if (!user) throw new Error("User not logged in");
-        const tempId = `temp_${Date.now()}`;
+        const tempId = `temp_list_${Date.now()}`;
         const newList: TaskList = { ...listData, id: tempId, user_id: user.id, status: 'pending' };
         setLists(current => [...current, newList]);
         addToQueue({ type: 'ADD_LIST', payload: { listData }, tempId });
     }, [user, setLists, addToQueue]);
 
-    // This effect ensures the 'Google Calendar' list exists if tasks from it are pulled,
-    // without creating it prematurely or creating duplicates.
     useEffect(() => {
         if (user && !loading) {
-            // 1. Check if there are any tasks that need the 'Google Calendar' list.
             const hasGoogleCalendarTasks = tasks.some(t => t.category === 'Google Calendar');
-
             if (hasGoogleCalendarTasks) {
-                // 2. If tasks exist, check if the list is already present (synced or local).
                 const hasGoogleCalendarList = lists.some(list => list.name === 'Google Calendar');
-                
                 if (!hasGoogleCalendarList) {
-                    // 3. To prevent race conditions, also check if it's already in the offline queue.
-                    const isPendingCreation = offlineQueue.some(op => 
-                        op.type === 'ADD_LIST' && op.payload.listData.name === 'Google Calendar'
-                    );
-
+                    const isPendingCreation = offlineQueue.some(op => op.type === 'ADD_LIST' && op.payload.listData.name === 'Google Calendar');
                     if (!isPendingCreation) {
-                        // 4. If all checks pass, create the list.
-                        addList({ name: 'Google Calendar', icon: '🗓️', color: 'blue' });
+                         addList({ name: 'Google Calendar', icon: '🗓️', color: 'blue' });
                     }
                 }
             }
@@ -840,41 +752,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [user, lists, tasks, loading, offlineQueue, addList]);
 
     const addTask = useCallback(async (taskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed' | 'status'>): Promise<string | undefined> => {
-        if (!user) {
-            console.error("User not logged in");
-            return;
-        }
-        const tempId = `temp_${Date.now()}`;
-
+        if (!user) { console.error("User not logged in"); return; }
+        const tempId = `temp_task_${Date.now()}`;
         const dataForSupabase = { ...taskData, completed: false };
         if (dataForSupabase.today) {
-            (dataForSupabase as Partial<Task>).today_assigned_date = getLocalISOString();
+            dataForSupabase.today_assigned_date = getLocalISOString();
         }
-
         const newTask: Task = { ...dataForSupabase, id: tempId, user_id: user.id, status: 'pending' };
-        setTasks(current => [...current, newTask]);
         
+        setTasks(current => [...current, newTask]);
         await scheduleNotification(newTask);
-
+        
         const supabaseTaskData = cleanTaskForSupabase(dataForSupabase);
         addToQueue({ type: 'ADD_TASK', payload: { taskData: supabaseTaskData }, tempId });
         return tempId;
     }, [user, setTasks, addToQueue, scheduleNotification]);
-
-    const updateTask = useCallback(async (taskId: string | number, updates: Partial<Task>) => {
+    
+    const updateTask = useCallback(async (taskId: number | string, updates: Partial<Task>) => {
         let updatedTask: Task | undefined;
         const fullUpdates = { ...updates };
-        if (fullUpdates.today === true) {
-            fullUpdates.today_assigned_date = getLocalISOString();
-        } else if (fullUpdates.today === false) {
-            fullUpdates.today_assigned_date = undefined;
-        }
+        if (fullUpdates.today === true) { fullUpdates.today_assigned_date = getLocalISOString(); }
+        else if (fullUpdates.today === false) { fullUpdates.today_assigned_date = undefined; }
 
-        if (fullUpdates.completed === true) {
-            fullUpdates.completed_at = new Date().toISOString();
-        } else if (fullUpdates.completed === false) {
-            fullUpdates.completed_at = undefined;
-        }
+        if (fullUpdates.completed === true) { fullUpdates.completed_at = new Date().toISOString(); } 
+        else if (fullUpdates.completed === false) { fullUpdates.completed_at = undefined; }
 
         setTasks(current => current.map(t => {
             if (t.id === taskId) {
@@ -883,15 +784,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             return t;
         }));
-        
+
         if (updatedTask) {
-             if (updatedTask.completed) {
+            if (updatedTask.completed) {
                 await cancelNotification(updatedTask.id);
             } else {
                 await scheduleNotification(updatedTask);
             }
         }
-
+        
         if (typeof taskId === 'string' && taskId.startsWith('temp_')) {
             setOfflineQueue(currentQueue => currentQueue.map(op => {
                 if (op.tempId === taskId && op.type === 'ADD_TASK') {
@@ -905,8 +806,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addToQueue({ type: 'UPDATE_TASK', payload: { taskId, updates: supabaseUpdates } });
         }
     }, [setTasks, setOfflineQueue, addToQueue, scheduleNotification, cancelNotification]);
-
-    const deleteTask = useCallback(async (taskId: string | number) => {
+    
+    const deleteTask = useCallback(async (taskId: number | string) => {
         await cancelNotification(taskId);
         setTasks(current => current.filter(t => t.id !== taskId));
         if (typeof taskId === 'string' && taskId.startsWith('temp_')) {
@@ -915,8 +816,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addToQueue({ type: 'DELETE_TASK', payload: { taskId } });
         }
     }, [setTasks, setOfflineQueue, addToQueue, cancelNotification]);
-    
-    const updateList = useCallback(async (listId: string | number, updates: Partial<TaskList>) => {
+
+    const updateList = useCallback(async (listId: number | string, updates: Partial<TaskList>) => {
         const cleanUpdates = { ...updates };
         delete cleanUpdates.id;
         delete cleanUpdates.user_id;
@@ -926,10 +827,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const oldList = lists.find(l => l.id === listId);
         const oldName = oldList?.name;
+        
         if (updates.name && oldName && oldName !== updates.name) {
             setTasks(current => current.map(t => t.category === oldName ? { ...t, category: updates.name!, status: 'pending' } : t));
         }
-        setLists(current => current.map(l => l.id === listId ? { ...l, ...updates, status: 'pending' } : l));
+
+        setLists(current => current.map(l => (l.id === listId ? { ...l, ...updates, status: 'pending' } : l)));
         
         if (typeof listId === 'string' && listId.startsWith('temp_')) {
             setOfflineQueue(currentQueue => {
@@ -938,7 +841,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const newOp = { ...op, payload: { listData: { ...op.payload.listData, ...cleanUpdates } } };
                         if (updates.name && oldName && oldName !== updates.name) {
                             currentQueue.forEach(taskOp => {
-                                if (taskOp.type === 'ADD_TASK' && taskOp.payload.taskData.category === oldName) {
+                                if(taskOp.type === 'ADD_TASK' && taskOp.payload.taskData.category === oldName) {
                                     taskOp.payload.taskData.category = updates.name;
                                 }
                             });
@@ -949,17 +852,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 });
             });
         } else {
-            addToQueue({ type: 'UPDATE_LIST', payload: { listId, updates: cleanUpdates, oldName } });
+             addToQueue({ type: 'UPDATE_LIST', payload: { listId, updates: cleanUpdates, oldName } });
         }
     }, [lists, setLists, setTasks, setOfflineQueue, addToQueue]);
 
-    const deleteList = useCallback(async (listId: string | number, listName: string) => {
+    const deleteList = useCallback(async (listId: number | string, listName: string) => {
         const defaultList = lists.find(l => l.name.toLowerCase() === 'personal') || lists.find(l => l.id !== listId);
         if (defaultList && defaultList.id !== listId) {
-            setTasks(current => current.map(t => t.category === listName ? {...t, category: defaultList.name, color: defaultList.color, status: 'pending' } : t));
+            setTasks(current => current.map(t => (t.category === listName ? { ...t, category: defaultList.name, color: defaultList.color, status: 'pending' } : t)));
         }
         setLists(current => current.filter(l => l.id !== listId));
-
         if (typeof listId === 'string' && listId.startsWith('temp_')) {
             setOfflineQueue(currentQueue => currentQueue.filter(op => op.tempId !== listId));
         } else {
@@ -967,35 +869,104 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [lists, setLists, setTasks, setOfflineQueue, addToQueue]);
 
-    // Listen for notification action messages from the service worker
     useEffect(() => {
         const handler = (event: MessageEvent) => {
             try {
                 const data = event.data;
                 if (data && data.type === 'NOTIFICATION_ACTION') {
                     if (data.action === 'complete' && data.taskId) {
-                        // mark complete if the task still exists locally
-                        updateTask(data.taskId, { completed: true }).catch(err => console.error('Failed to mark task complete from SW message', err));
+                        updateTask(data.taskId, { completed: true }).catch(err => console.error("Failed to mark task complete from SW message", err));
                     }
                 }
             } catch (e) {
-                console.error('Error handling SW message in DataProvider', e);
+                console.error("Error handling SW message in DataProvider", e);
             }
         };
-
         navigator.serviceWorker?.addEventListener('message', handler);
         return () => navigator.serviceWorker?.removeEventListener('message', handler);
     }, [updateTask]);
+    
+    // --- NOTE LOGIC START ---
+    const addNote = useCallback(async (noteData: Omit<Note, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>, filesToUpload: File[] = []): Promise<string | undefined> => {
+        if (!user) throw new Error("User not logged in");
+
+        const tempId = `temp_note_${Date.now()}`;
+        const localAttachments = await Promise.all(filesToUpload.map(async file => ({
+            name: file.name,
+            type: file.type,
+            data: await fileToBase64(file),
+        })));
+        
+        const newNote: Note = { ...noteData, id: tempId, user_id: user.id, status: 'pending', attachments: [], localAttachmentsToUpload: localAttachments, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        
+        setNotes(current => [newNote, ...current]);
+        
+        const { localAttachmentsToUpload: _, ...cleanNoteData } = newNote;
+        addToQueue({ type: 'ADD_NOTE', payload: { noteData: cleanNoteData, localAttachmentsToUpload: localAttachments }, tempId });
+        
+        return tempId;
+    }, [user, setNotes, addToQueue]);
+
+    const updateNote = useCallback(async (noteId: number | string, updates: Partial<Note>, filesToUpload: File[] = []) => {
+        const { localAttachmentsToUpload, ...cleanUpdates } = updates;
+        
+        const newLocalAttachments = await Promise.all(filesToUpload.map(async file => ({
+            name: file.name,
+            type: file.type,
+            data: await fileToBase64(file),
+        })));
+
+        let originalNote: Note | undefined;
+        setNotes(current => current.map(n => {
+            if (n.id === noteId) {
+                originalNote = n;
+                return { ...n, ...updates, status: 'pending', localAttachmentsToUpload: [...(n.localAttachmentsToUpload || []), ...newLocalAttachments], updated_at: new Date().toISOString() };
+            }
+            return n;
+        }));
+
+        if (typeof noteId === 'string' && noteId.startsWith('temp_')) {
+            setOfflineQueue(currentQueue => currentQueue.map(op => {
+                if (op.tempId === noteId && op.type === 'ADD_NOTE') {
+                    const updatedPayload = { ...op.payload.noteData, ...cleanUpdates };
+                    const combinedAttachments = [...(op.payload.localAttachmentsToUpload || []), ...newLocalAttachments];
+                    return { ...op, payload: { noteData: updatedPayload, localAttachmentsToUpload: combinedAttachments } };
+                }
+                return op;
+            }));
+        } else {
+            const originalAttachments = originalNote?.attachments || [];
+            const newAttachmentUrls = new Set((updates.attachments || []).map(a => a.url));
+            const deletedAttachments = originalAttachments.filter(att => !newAttachmentUrls.has(att.url));
+            const deletedAttachmentPaths = deletedAttachments.map(att => att.path).filter(Boolean) as string[];
+
+            addToQueue({ type: 'UPDATE_NOTE', payload: { noteId, updates: cleanUpdates, localAttachmentsToUpload: newLocalAttachments, deletedAttachmentPaths } });
+        }
+    }, [setNotes, setOfflineQueue, addToQueue]);
+    
+    const deleteNote = useCallback(async (noteId: number | string) => {
+        const noteToDelete = notes.find(n => n.id === noteId);
+        setNotes(current => current.filter(n => n.id !== noteId));
+
+        if (typeof noteId === 'string' && noteId.startsWith('temp_')) {
+            setOfflineQueue(current => current.filter(op => op.tempId !== noteId));
+        } else {
+            const attachmentPaths = (noteToDelete?.attachments || []).map(att => att.path).filter(Boolean) as string[];
+            addToQueue({ type: 'DELETE_NOTE', payload: { noteId, attachmentPaths } });
+        }
+    }, [notes, setNotes, setOfflineQueue, addToQueue]);
+    // --- NOTE LOGIC END ---
+
 
     const addMoment = useCallback(async (momentData: Omit<Moment, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>) => {
         if (!user) throw new Error("User not logged in");
-        const tempId = `temp_${Date.now()}`;
-        const newMoment: Moment = { ...momentData, id: tempId, user_id: user.id, status: 'pending', created_at: new Date().toISOString() };
+        const tempId = `temp_moment_${Date.now()}`;
+        const newMoment: Moment = { ...momentData, id: tempId, user_id: user.id, status: 'pending', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
         setMoments(current => [newMoment, ...current]);
         addToQueue({ type: 'ADD_MOMENT', payload: { momentData }, tempId });
     }, [user, setMoments, addToQueue]);
 
-    const updateMoment = useCallback(async (momentId: string | number, updates: Partial<Moment>) => {
+    const updateMoment = useCallback(async (momentId: number | string, updates: Partial<Moment>) => {
         const cleanUpdates = { ...updates };
         delete cleanUpdates.id;
         delete cleanUpdates.user_id;
@@ -1003,23 +974,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         delete cleanUpdates.updated_at;
         delete cleanUpdates.status;
 
-        setMoments(current => current.map(m => m.id === momentId ? { ...m, ...updates, status: 'pending' } : m));
-
+        setMoments(current => current.map(m => (m.id === momentId ? { ...m, ...updates, status: 'pending', updated_at: new Date().toISOString() } : m)));
+        
         if (typeof momentId === 'string' && momentId.startsWith('temp_')) {
-            setOfflineQueue(currentQueue => {
-                return currentQueue.map(op => {
-                    if (op.tempId === momentId && op.type === 'ADD_MOMENT') {
-                        return { ...op, payload: { momentData: { ...op.payload.momentData, ...cleanUpdates } } };
-                    }
-                    return op;
-                });
-            });
+            setOfflineQueue(currentQueue => currentQueue.map(op => {
+                if (op.tempId === momentId && op.type === 'ADD_MOMENT') {
+                    return { ...op, payload: { momentData: { ...op.payload.momentData, ...cleanUpdates } } };
+                }
+                return op;
+            }));
         } else {
-            addToQueue({ type: 'UPDATE_MOMENT', payload: { momentId, updates: cleanUpdates } });
+             addToQueue({ type: 'UPDATE_MOMENT', payload: { momentId, updates: cleanUpdates } });
         }
     }, [setMoments, setOfflineQueue, addToQueue]);
-
-    const deleteMoment = useCallback(async (momentId: string | number) => {
+    
+    const deleteMoment = useCallback(async (momentId: number | string) => {
         setMoments(current => current.filter(m => m.id !== momentId));
         if (typeof momentId === 'string' && momentId.startsWith('temp_')) {
             setOfflineQueue(currentQueue => currentQueue.filter(op => op.tempId !== momentId));
@@ -1028,127 +997,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [setMoments, setOfflineQueue, addToQueue]);
 
-    const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = error => reject(error);
-    });
-    
-    const addNote = useCallback(async (
-        noteData: Omit<Note, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status'>,
-        filesToUpload: File[] = []
-    ) => {
-        if (!user) throw new Error("User not logged in");
-        const tempId = `temp_note_${Date.now()}`;
-        
-        const localAttachmentsToUpload = await Promise.all(filesToUpload.map(async file => ({
-            name: file.name,
-            type: file.type,
-            data: await fileToBase64(file),
-        })));
-        
-        const newNote: Note = { 
-            ...noteData, 
-            id: tempId, 
-            user_id: user.id, 
-            status: 'pending',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            attachments: [],
-            localAttachmentsToUpload: localAttachmentsToUpload.length > 0 ? localAttachmentsToUpload : undefined
-        };
-
-        const payloadForQueue = { ...noteData, attachments: [], localAttachmentsToUpload: localAttachmentsToUpload.length > 0 ? localAttachmentsToUpload : undefined };
-        
-        addToQueue({ type: 'ADD_NOTE', payload: { noteData: payloadForQueue }, tempId });
-        setNotes(current => [newNote, ...current]);
-    }, [user, addToQueue, setNotes]);
-
-    const updateNote = useCallback(async (
-        noteId: number | string, 
-        updates: Partial<Note>,
-        filesToUpload: File[] = []
-    ) => {
-        const localAttachmentsToUpload = await Promise.all(filesToUpload.map(async file => ({
-            name: file.name,
-            type: file.type,
-            data: await fileToBase64(file),
-        })));
-
-        setNotes(current => current.map(n => {
-            if (n.id === noteId) {
-                return { 
-                    ...n, 
-                    ...updates, 
-                    localAttachmentsToUpload: [...(n.localAttachmentsToUpload || []), ...localAttachmentsToUpload],
-                    status: 'pending',
-                    updated_at: new Date().toISOString(),
-                };
-            }
-            return n;
-        }));
-        
-        const payloadForQueue = { ...updates, updated_at: new Date().toISOString() };
-        if (localAttachmentsToUpload.length > 0) {
-            (payloadForQueue as any).localAttachmentsToUpload = localAttachmentsToUpload;
-        }
-
-        if (typeof noteId === 'string' && noteId.startsWith('temp_')) {
-            setOfflineQueue(currentQueue => currentQueue.map(op => {
-                if (op.tempId === noteId && op.type === 'ADD_NOTE') {
-                    return {
-                        ...op,
-                        payload: {
-                            noteData: {
-                                ...op.payload.noteData,
-                                ...payloadForQueue,
-                                localAttachmentsToUpload: [
-                                    ...(op.payload.noteData.localAttachmentsToUpload || []),
-                                    ...localAttachmentsToUpload,
-                                ],
-                            }
-                        }
-                    };
-                }
-                return op;
-            }));
-        } else {
-            addToQueue({ type: 'UPDATE_NOTE', payload: { noteId, updates: payloadForQueue } });
-        }
-    }, [setNotes, setOfflineQueue, addToQueue]);
-
-    const deleteNote = useCallback(async (noteId: string | number) => {
-        setNotes(current => current.filter(n => n.id !== noteId));
-        if (typeof noteId === 'string' && noteId.startsWith('temp_')) {
-            setOfflineQueue(currentQueue => currentQueue.filter(op => op.tempId !== noteId));
-        } else {
-            addToQueue({ type: 'DELETE_NOTE', payload: { noteId } });
-        }
-    }, [setNotes, setOfflineQueue, addToQueue]);
-
     const addFocusSession = useCallback(async (sessionData: Omit<FocusSession, 'id' | 'user_id' | 'created_at' | 'status'>) => {
         if (!user) throw new Error("User not logged in");
         const newSession: FocusSession = { ...sessionData, user_id: user.id, status: 'pending' };
         setFocusHistory(current => [...current, newSession]);
         
         const { status, user_id, id, created_at, ...payloadForSupabase } = newSession;
-        
         addToQueue({ type: 'ADD_FOCUS_SESSION', payload: { sessionData: payloadForSupabase }, tempId: String(sessionData.plant_id) });
     }, [user, setFocusHistory, addToQueue]);
-    
+
     useEffect(() => {
         if (user && tasks.length > 0 && !cleanupRun.current) {
             const todayStr = getLocalISOString();
-            
             tasks.forEach(task => {
-                // If a task was assigned to 'Today' on a previous day, reset its 'today' status.
-                // This applies to both completed and uncompleted tasks, cleaning up the Today view for the new day.
                 if (task.today && task.today_assigned_date && task.today_assigned_date !== todayStr) {
                     updateTask(task.id, { today: false });
                 }
             });
-            
             cleanupRun.current = true;
         }
     }, [user, tasks, updateTask]);
@@ -1159,54 +1024,61 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setTags(current => [...current, trimmedTag].sort());
         }
     }, [tags, setTags]);
-    
+
     const updateTag = useCallback(async (oldName: string, newName: string) => {
-        if (tags.some(t => t.toLowerCase() === newName.trim().toLowerCase() && t.toLowerCase() !== oldName.toLowerCase())) {
-            throw new Error(`Tag "${newName.trim()}" already exists.`);
+        const trimmedNewName = newName.trim();
+        if (tags.some(t => t.toLowerCase() === trimmedNewName.toLowerCase() && t.toLowerCase() !== oldName.toLowerCase())) {
+            throw new Error(`Tag "${trimmedNewName}" already exists.`);
         }
         
-        const trimmedNewName = newName.trim();
-
         setTags(current => {
             const newTags = current.map(t => t === oldName ? trimmedNewName : t);
             return [...new Set(newTags)].sort();
         });
-
+        
         const momentsToUpdate = moments.filter(m => m.tags?.includes(oldName));
-        const updatePromises = momentsToUpdate.map(moment => {
+        const updateMomentPromises = momentsToUpdate.map(moment => {
             const newTags = moment.tags?.map(t => t === oldName ? trimmedNewName : t);
             return updateMoment(moment.id, { tags: newTags });
         });
         
-        await Promise.all(updatePromises);
-    }, [tags, moments, setTags, updateMoment]);
+        const notesToUpdate = notes.filter(n => n.tags?.includes(oldName));
+        const updateNotePromises = notesToUpdate.map(note => {
+             const newTags = note.tags?.map(t => t === oldName ? trimmedNewName : t);
+            return updateNote(note.id, { tags: newTags });
+        });
+
+        await Promise.all([...updateMomentPromises, ...updateNotePromises]);
+
+    }, [tags, moments, notes, setTags, updateMoment, updateNote]);
 
     const deleteTag = useCallback(async (tagToDelete: string) => {
         setTags(current => current.filter(t => t !== tagToDelete));
-    
         const momentsToUpdate = moments.filter(m => m.tags?.includes(tagToDelete));
-        const updatePromises = momentsToUpdate.map(moment => {
+        const updateMomentPromises = momentsToUpdate.map(moment => {
             const newTags = moment.tags?.filter(t => t !== tagToDelete);
             return updateMoment(moment.id, { tags: newTags });
         });
         
-        await Promise.all(updatePromises);
-    }, [moments, setTags, updateMoment]);
+        const notesToUpdate = notes.filter(n => n.tags?.includes(tagToDelete));
+        const updateNotePromises = notesToUpdate.map(note => {
+             const newTags = note.tags?.filter(t => t !== tagToDelete);
+            return updateNote(note.id, { tags: newTags });
+        });
+
+        await Promise.all([...updateMomentPromises, ...updateNotePromises]);
+    }, [moments, notes, setTags, updateMoment, updateNote]);
 
     const value = useMemo(() => ({
-        session, user, loading,
-        login: (email, pass) => supabase.auth.signInWithPassword({ email, password: pass }),
-        signup: (email, pass, fullName, username) => supabase.auth.signUp({ email, password: pass, options: { data: { full_name: fullName, username, avatar_url: `https://i.pravatar.cc/150?u=${username}` } } }),
-        logout: () => supabase.auth.signOut(),
-        resetPassword: (email) => supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin }),
+        session, user, loading, login, signup, logout, resetPassword,
         tasks, setTasks,
         lists, setLists,
         moments, setMoments,
         notes, setNotes,
-        focusHistory,
+        focusHistory, setFocusHistory,
         profile, setProfile,
-        syncData,
-        isOnline, isSyncing, offlineQueue, syncError, clearOfflineQueue, rescheduleAllNotifications,
+        syncData, isOnline, isSyncing, offlineQueue, syncError, clearOfflineQueue,
+        rescheduleAllNotifications,
         addTask, updateTask, deleteTask,
         addList, updateList, deleteList,
         addMoment, updateMoment, deleteMoment,
@@ -1216,37 +1088,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         theme, setTheme,
         fontSize, setFontSize,
         debugLog, addDebugLog,
-    }), [session, user, loading, tasks, lists, moments, notes, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, syncData, setTasks, setLists, setMoments, setNotes, setProfile, clearOfflineQueue, rescheduleAllNotifications, addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, addNote, updateNote, deleteNote, addFocusSession, tags, addTag, updateTag, deleteTag, theme, setTheme, fontSize, setFontSize, debugLog, addDebugLog]);
-
-    // Stable window helper so users can call it in console: window.__debugNotifyNow('taskId')
-    useEffect(() => {
-        // attach once
-        (window as any).__debugNotifyNow = async (taskId?: string | number) => {
-            try {
-                const t = taskId ? tasks.find(x => x.id === taskId) : tasks.find(x => !x.completed && x.today);
-                if (!t) return console.warn('window.__debugNotifyNow: no matching task');
-                console.log('[DataContext] window.__debugNotifyNow ->', t.id);
-                if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
-                    const registration = await navigator.serviceWorker.ready;
-                    const options: NotificationOptions = {
-                        body: t.title,
-                        icon: `data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' stroke='%236D55A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9' /><path d='m9 12 2 2 4-4' /></svg>`,
-                        tag: String(t.id),
-                        actions: [ { action: 'snooze_5', title: 'Snooze 5min' }, { action: 'snooze_15', title: 'Snooze 15min' }, { action: 'complete', title: 'Complete' } ],
-                        data: { taskId: t.id, url: `/task/${t.id}` }
-                    };
-                    await registration.showNotification('Task Reminder', options);
-                } else if (Notification.permission === 'granted') {
-                    new Notification('Task Reminder', { body: t.title });
-                } else {
-                    console.warn('Notifications not permitted');
-                }
-            } catch (e) {
-                console.error('window.__debugNotifyNow failed', e);
-            }
-        };
-        return () => { try { delete (window as any).__debugNotifyNow; } catch {} };
-    }, [tasks]);
+    }), [
+        session, user, loading, tasks, lists, moments, notes, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, 
+        syncData, setTasks, setLists, setMoments, setNotes, setProfile, clearOfflineQueue, rescheduleAllNotifications, 
+        addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, 
+        addNote, updateNote, deleteNote, addFocusSession,
+        tags, addTag, updateTag, deleteTag,
+        theme, setTheme, fontSize, setFontSize,
+        debugLog, addDebugLog, login, signup, logout, resetPassword
+    ]);
 
     return (
         <DataContext.Provider value={value}>
@@ -1255,7 +1105,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 };
 
-export const useData = () => {
+export const useData = (): DataContextType => {
     const context = useContext(DataContext);
     if (context === undefined) {
         throw new Error('useData must be used within a DataProvider');

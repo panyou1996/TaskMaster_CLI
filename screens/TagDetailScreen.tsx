@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
@@ -52,6 +53,7 @@ const TagDetailScreen: React.FC = () => {
         if (uniqueDays.length > 0) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
+            const todayStr = today.toISOString().split('T')[0];
             // FIX: Fix 'No overload matches this call' error by ensuring argument is a string. Also fixes timezone issues.
             const mostRecent = new Date(uniqueDays[0] + 'T00:00:00');
             mostRecent.setHours(0, 0, 0, 0);

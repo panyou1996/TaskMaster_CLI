@@ -12,6 +12,13 @@ const minutesToTime = (totalMinutes: number): string => {
     const minutes = totalMinutes % 60;
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
+const formatTo12Hour = (timeStr: string): string => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+    return `${displayHour}:${String(minutes).padStart(2, '0')} ${period}`;
+};
+
 
 // Constants for timeline layout
 const PIXELS_PER_HOUR = 80;
@@ -30,7 +37,7 @@ const colorVariants = {
 };
 
 // Clickable unscheduled task card
-const UnscheduledTaskCard: React.FC<{ task: Task; onClick: () => void; }> = ({ task, onClick }) => {
+const UnscheduledTaskCard: React.FC<{ task: Task & { color?: string }; onClick: () => void; }> = ({ task, onClick }) => {
     return (
         <button
             onClick={onClick}
@@ -51,6 +58,7 @@ interface ScheduledTaskProps {
     leftPercent: number;
     widthPercent: number;
     onShortPress: (task: Task) => void;
+    onLongPress: (task: Task) => void;
     onTaskTimeChange: (taskId: number | string, newStartTime: string) => void;
     onComplete: (id: number | string) => void;
     onUncomplete: (id: number | string) => void;
@@ -59,11 +67,10 @@ interface ScheduledTaskProps {
     isOverdue: boolean;
 }
 
-const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height, leftPercent, widthPercent, onShortPress, onTaskTimeChange, onComplete, onUncomplete, isCompleting, isUncompleting, isOverdue }) => {
-    const [isDragging, setIsDragging] = useState(false);
-    const dragStartRef = useRef({ y: 0, top: 0 });
-    const [dragOffset, setDragOffset] = useState(0);
-    const wasDragged = useRef(false);
+const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height, leftPercent, widthPercent, onShortPress, onLongPress, onTaskTimeChange, onComplete, onUncomplete, isCompleting, isUncompleting, isOverdue }) => {
+    const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isClickRef = useRef(true);
+    const interactionStartedOnButton = useRef(false);
 
     const fireworksData = [
         { color: 'blue', particles: 6, delay: 0 },
@@ -71,125 +78,80 @@ const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height
         { color: 'yellow', particles: 6, delay: 0.2 },
     ];
     
+    const cancelLongPress = useCallback(() => {
+        if (pressTimerRef.current) {
+            clearTimeout(pressTimerRef.current);
+            pressTimerRef.current = null;
+        }
+    }, []);
+
     const onPointerDown = useCallback((e: React.PointerEvent) => {
         const targetEl = e.target as HTMLElement;
-        if (task.completed || e.button !== 0 || targetEl.closest('button')) {
+        interactionStartedOnButton.current = !!targetEl.closest('button');
+        if (interactionStartedOnButton.current || e.button !== 0) {
             return;
         }
-
-        e.currentTarget.setPointerCapture(e.pointerId);
-        wasDragged.current = false;
-        setIsDragging(true);
-        dragStartRef.current = { y: e.clientY, top };
-        setDragOffset(0);
-    }, [task.completed, top]);
-
-    const onPointerMove = useCallback((e: React.PointerEvent) => {
-        if (!isDragging) return;
-        
-        const deltaY = e.clientY - dragStartRef.current.y;
-        if (!wasDragged.current && Math.abs(deltaY) > 5) {
-            wasDragged.current = true;
+        isClickRef.current = true;
+        cancelLongPress();
+        if (!task.completed) {
+             pressTimerRef.current = setTimeout(() => {
+                isClickRef.current = false;
+                onLongPress(task);
+            }, 500);
         }
-        setDragOffset(deltaY);
-    }, [isDragging]);
-
-    const onPointerUp = useCallback((e: React.PointerEvent) => {
-        if (!isDragging) return;
-
-        e.currentTarget.releasePointerCapture(e.pointerId);
-        
-        if (wasDragged.current) {
-            const finalTop = dragStartRef.current.top + dragOffset;
-            
-            // Snap to 15-minute grid
-            const quarterHourPixels = PIXELS_PER_HOUR / 4;
-            const snappedTop = Math.round(finalTop / quarterHourPixels) * quarterHourPixels;
-            
-            const minutesFromStart = (snappedTop / PIXELS_PER_HOUR) * 60;
-            const totalMinutes = START_HOUR * 60 + minutesFromStart;
-            const newStartTime = minutesToTime(Math.max(0, totalMinutes));
-
-            if (newStartTime !== task.startTime) {
-                onTaskTimeChange(task.id, newStartTime);
-            }
-        } else {
+    }, [cancelLongPress, onLongPress, task]);
+    
+    const onPointerUp = useCallback(() => {
+        cancelLongPress();
+        if (isClickRef.current && !interactionStartedOnButton.current) {
             onShortPress(task);
         }
-        
-        setIsDragging(false);
-        setDragOffset(0);
-    }, [isDragging, dragOffset, onShortPress, onTaskTimeChange, task]);
-
-     const onPointerCancel = useCallback((e: React.PointerEvent) => {
-        if (!isDragging) return;
-        e.currentTarget.releasePointerCapture(e.pointerId);
-        setIsDragging(false);
-        setDragOffset(0);
-    }, [isDragging]);
+        interactionStartedOnButton.current = false;
+        isClickRef.current = true;
+    }, [cancelLongPress, onShortPress, task]);
 
     return (
         <div
             onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            onPointerCancel={onPointerCancel}
-            className={`absolute rounded-lg p-2 overflow-hidden select-none flex items-start gap-2 ${colors.bg} ${colors.border} ${isCompleting ? 'animate-card-fade-out' : ''} ${!task.completed ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
-            style={{ 
-                top, 
-                height: Math.max(height, 20), 
-                left: `calc(3rem + (100% - 3rem) * ${leftPercent / 100})`, 
+            onPointerLeave={cancelLongPress}
+            onPointerCancel={cancelLongPress}
+            onContextMenu={(e) => e.preventDefault()}
+            className={`absolute rounded-lg p-2 overflow-hidden cursor-pointer select-none flex items-start gap-2 ${colors.bg} ${colors.border} ${isCompleting ? 'animate-card-fade-out' : ''}`}
+            style={{
+                top,
+                height: Math.max(height, 20),
+                left: `calc(3rem + (100% - 3rem) * ${leftPercent / 100})`,
                 width: `calc((100% - 3rem) * ${widthPercent / 100} - 4px)`,
-                borderLeftWidth: '4px', 
-                willChange: 'transform',
-                transform: `translateY(${dragOffset}px) scale(${isDragging ? 1.02 : 1})`,
-                boxShadow: isDragging ? 'var(--shadow-pop)' : 'none',
-                transition: isDragging ? 'none' : 'box-shadow 0.2s ease-out, transform 0.2s ease-out',
-                touchAction: 'none',
-                zIndex: isDragging ? 20 : 10,
+                borderLeftWidth: '4px',
+                willChange: 'transform, opacity'
             }}
         >
             <div className="pt-0.5">
-                {task.completed ? (
+               {task.completed ? (
                     <button
                         onClick={(e) => { e.stopPropagation(); onUncomplete(task.id); }}
-                        className={`w-4.5 h-4.5 rounded-full bg-blue-600 flex items-center justify-center text-white shrink-0 hover:bg-blue-700 transition-colors
-                            ${isUncompleting ? 'animate-uncheck' : ''}
-                        `}
+                        className={`w-4 h-4 rounded-full bg-[var(--color-primary-500)] flex items-center justify-center text-white shrink-0 hover:opacity-80 transition-opacity ${isUncompleting ? 'animate-uncheck' : ''}`}
                         aria-label="Mark task as incomplete"
                         disabled={isUncompleting}
                     >
                         <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={5} d="M5 13l4 4L19 7" /></svg>
                     </button>
                 ) : (
-                    <button
+                    <button 
                         onClick={(e) => { e.stopPropagation(); onComplete(task.id); }}
-                        className={`relative w-4.5 h-4.5 rounded-full border-2 shrink-0 transition-colors flex items-center justify-center
-                            ${isCompleting 
-                                ? 'animate-checkmark' 
-                                : 'border-gray-400 hover:border-blue-500'
-                            }
-                        `}
+                        className={`relative w-4 h-4 rounded-full border-2 shrink-0 transition-colors flex items-center justify-center ${isCompleting ? 'animate-checkmark' : 'border-gray-400 hover:border-blue-500'}`}
                         aria-label="Mark task as complete"
                         disabled={isCompleting}
                     >
-                        {isCompleting && (
+                         {isCompleting && (
                             <>
-                                <svg className="w-2.5 h-2.5 text-white animate-checkmark-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={5} d="M5 13l4 4L19 7" />
-                                </svg>
+                                <svg className="w-2.5 h-2.5 text-white animate-checkmark-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={5} d="M5 13l4 4L19 7" /></svg>
                                 <div className="fireworks-container">
                                     {fireworksData.map((set, setIndex) =>
                                         Array.from({ length: set.particles }).map((_, i) => (
-                                            <div
-                                                key={`${setIndex}-${i}`}
-                                                className="rotator"
-                                                style={{ transform: `rotate(${i * (360 / set.particles)}deg)` }}
-                                            >
-                                                <div 
-                                                    className={`particle particle-${set.color}`}
-                                                    style={{ animationDelay: `${set.delay}s` }}
-                                                />
+                                            <div key={`${setIndex}-${i}`} className="rotator" style={{ transform: `rotate(${i * (360 / set.particles)}deg)` }}>
+                                                <div className={`particle particle-${set.color}`} style={{ animationDelay: `${set.delay}s` }} />
                                             </div>
                                         ))
                                     )}
@@ -201,23 +163,26 @@ const ScheduledTask: React.FC<ScheduledTaskProps> = ({ task, colors, top, height
             </div>
             <div className="flex-grow min-w-0">
                 <p className={`font-bold text-sm truncate ${isOverdue && !task.completed ? 'text-[var(--color-functional-red)]' : colors.text}`}>{task.title}</p>
-                <p className={`text-xs ${isOverdue && !task.completed ? 'text-[var(--color-functional-red)]' : colors.subtext}`}>{task.startTime} - {minutesToTime(timeToMinutes(task.startTime!) + (task.duration || 30))}</p>
+                <p className={`text-xs ${isOverdue && !task.completed ? 'text-[var(--color-functional-red)]' : colors.subtext}`}>
+                    {task.startTime && formatTo12Hour(task.startTime)} - {task.startTime && minutesToTime(timeToMinutes(task.startTime) + (task.duration || 30))}
+                </p>
             </div>
         </div>
     );
 };
 
 interface TimelineViewProps {
-  tasks: Task[];
-  lists: TaskList[];
-  currentTime: Date;
-  onUnscheduledTaskClick: (task: Task) => void;
-  onScheduledTaskShortPress: (task: Task) => void;
-  onTaskTimeChange: (taskId: number | string, newStartTime: string) => void;
-  onCompleteTask: (taskId: number | string) => void;
-  onUncompleteTask: (taskId: number | string) => void;
-  completingTaskId: number | string | null;
-  uncompletingTaskId: number | string | null;
+    tasks: Task[];
+    lists: TaskList[];
+    currentTime: Date;
+    onUnscheduledTaskClick: (task: Task) => void;
+    onScheduledTaskShortPress: (task: Task) => void;
+    onScheduledTaskLongPress: (task: Task) => void;
+    onTaskTimeChange: (taskId: number | string, newStartTime: string) => void;
+    onCompleteTask: (id: number | string) => void;
+    onUncompleteTask: (id: number | string) => void;
+    completingTaskId: number | string | null;
+    uncompletingTaskId: number | string | null;
 }
 
 const isTaskOverdue = (task: Task, now: Date): boolean => {
@@ -230,29 +195,29 @@ const isTaskOverdue = (task: Task, now: Date): boolean => {
 };
 
 
-const TimelineView: React.FC<TimelineViewProps> = ({
-    tasks,
-    lists,
-    currentTime,
+const TimelineView: React.FC<TimelineViewProps> = ({ 
+    tasks, 
+    lists, 
+    currentTime, 
     onUnscheduledTaskClick,
     onScheduledTaskShortPress,
+    onScheduledTaskLongPress,
     onTaskTimeChange,
     onCompleteTask,
     onUncompleteTask,
     completingTaskId,
-    uncompletingTaskId,
+    uncompletingTaskId
 }) => {
     const [currentTimePosition, setCurrentTimePosition] = useState<number | null>(null);
-    const timelineContainerRef = useRef<HTMLElement>(null);
+    const timelineContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const calculatePosition = () => {
             const now = new Date();
             const currentHour = now.getHours();
             const currentMinutes = now.getMinutes();
-
             if (currentHour >= START_HOUR && currentHour <= END_HOUR) {
-                const totalMinutes = currentHour * 60 + currentMinutes;
+                const totalMinutes = (currentHour * 60) + currentMinutes;
                 const position = ((totalMinutes - (START_HOUR * 60)) / 60) * PIXELS_PER_HOUR;
                 setCurrentTimePosition(position);
                 return position;
@@ -264,23 +229,23 @@ const TimelineView: React.FC<TimelineViewProps> = ({
 
         const initialPosition = calculatePosition();
         if (initialPosition !== null && timelineContainerRef.current) {
-            const scrollOffset = 40; // pixels from the top
+             const scrollOffset = 40; 
             timelineContainerRef.current.scrollTo({
                 top: initialPosition - scrollOffset,
                 behavior: 'smooth'
             });
         }
-
-        const intervalId = setInterval(calculatePosition, 60000);
-
+        
+        const intervalId = setInterval(calculatePosition, 60000); // Update every minute
         return () => clearInterval(intervalId);
     }, []);
+
 
     const listColorMap = useMemo(() => {
         return lists.reduce((acc, list) => {
             acc[list.name] = list.color;
             return acc;
-        }, {} as Record<string, string>);
+        }, {} as { [key: string]: string });
     }, [lists]);
 
     const { unscheduledTasks, scheduledTasks } = useMemo(() => {
@@ -290,13 +255,11 @@ const TimelineView: React.FC<TimelineViewProps> = ({
             scheduledTasks: todayTasks.filter(t => t.startTime),
         };
     }, [tasks]);
-    
+
     const scheduledTasksWithLayout = useMemo(() => {
-        const sortedTasks = scheduledTasks
-            .sort((a, b) => timeToMinutes(a.startTime!) - timeToMinutes(b.startTime!));
-
+        const sortedTasks = scheduledTasks.sort((a, b) => timeToMinutes(a.startTime!) - timeToMinutes(b.startTime!));
         if (sortedTasks.length === 0) return [];
-
+        
         const collisionGroups: Task[][] = [];
         if (sortedTasks.length > 0) {
             collisionGroups.push([sortedTasks[0]]);
@@ -306,7 +269,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
             for (let i = 1; i < sortedTasks.length; i++) {
                 const task = sortedTasks[i];
                 const startTime = timeToMinutes(task.startTime!);
-                
                 if (startTime < groupEndTime) {
                     currentGroup.push(task);
                     groupEndTime = Math.max(groupEndTime, startTime + (task.duration || 0));
@@ -322,13 +284,13 @@ const TimelineView: React.FC<TimelineViewProps> = ({
 
         for (const group of collisionGroups) {
             const columns: { lastEndTime: number }[] = [];
-            group.forEach(task => {
+            group.forEach((task: Task & { _layout?: any }) => {
                 let placed = false;
                 const taskStartTime = timeToMinutes(task.startTime!);
-                
+
                 for (let i = 0; i < columns.length; i++) {
                     if (columns[i].lastEndTime <= taskStartTime) {
-                        (task as any)._layout = { columnIndex: i };
+                        task._layout = { columnIndex: i };
                         columns[i].lastEndTime = taskStartTime + (task.duration || 0);
                         placed = true;
                         break;
@@ -337,44 +299,38 @@ const TimelineView: React.FC<TimelineViewProps> = ({
 
                 if (!placed) {
                     const columnIndex = columns.length;
-                    (task as any)._layout = { columnIndex };
+                    task._layout = { columnIndex };
                     columns.push({ lastEndTime: taskStartTime + (task.duration || 0) });
                 }
             });
 
             const numColumns = columns.length;
-
-            group.forEach(task => {
-                const { columnIndex } = (task as any)._layout;
+            group.forEach((task: Task & { _layout?: any }) => {
+                const { columnIndex } = task._layout;
                 const colorName = listColorMap[task.category] || 'gray';
                 let colors = colorVariants[colorName as keyof typeof colorVariants] || colorVariants.gray;
                 const isOverdue = isTaskOverdue(task, currentTime);
                 if (task.completed) {
-                    colors = {
-                        bg: 'bg-gray-100 dark:bg-gray-800/50',
-                        border: 'border-gray-400 dark:border-gray-700',
-                        text: 'text-gray-500 dark:text-gray-400 line-through',
-                        subtext: 'text-gray-400 dark:text-gray-500'
-                    };
+                    colors = { bg: 'bg-gray-100 dark:bg-gray-800/50', border: 'border-gray-400 dark:border-gray-700', text: 'text-gray-500 dark:text-gray-400 line-through', subtext: 'text-gray-400 dark:text-gray-500' };
                 }
 
                 allLayoutTasks.push({
                     ...task,
                     layout: {
-                        top: ((timeToMinutes(task.startTime!) - (START_HOUR * 60)) / 60) * PIXELS_PER_HOUR,
-                        height: ((task.duration || 30) / 60) * PIXELS_PER_HOUR,
+                        top: (timeToMinutes(task.startTime!) - (START_HOUR * 60)) / 60 * PIXELS_PER_HOUR,
+                        height: (task.duration || 30) / 60 * PIXELS_PER_HOUR,
                         widthPercent: 100 / numColumns,
                         leftPercent: columnIndex * (100 / numColumns),
                         colors,
                         isOverdue,
                     }
                 });
-                delete (task as any)._layout;
+                delete task._layout;
             });
         }
+        
         return allLayoutTasks;
     }, [scheduledTasks, listColorMap, currentTime]);
-
 
     const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => i + START_HOUR);
 
@@ -385,13 +341,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                     <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-3">Unscheduled</h2>
                     <div className="flex gap-3 overflow-x-auto pb-3 -mx-6 px-6">
                         {unscheduledTasks.length > 0 ? (
-                            unscheduledTasks.map(task => 
-                                <UnscheduledTaskCard 
-                                    key={task.id} 
-                                    task={{...task, color: listColorMap[task.category]}}
-                                    onClick={() => onUnscheduledTaskClick(task)}
-                                />
-                            )
+                            unscheduledTasks.map(task => (
+                                <UnscheduledTaskCard key={task.id} task={{ ...task, color: listColorMap[task.category] }} onClick={() => onUnscheduledTaskClick(task)} />
+                            ))
                         ) : (
                             <div className="w-full text-center py-4 bg-[var(--color-surface-container)] rounded-lg">
                                 <p className="text-[var(--color-text-secondary)] font-semibold text-sm">No tasks to schedule</p>
@@ -400,20 +352,15 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                         )}
                     </div>
                 </section>
-
-                <section
-                    ref={timelineContainerRef}
-                    className="flex-grow overflow-y-auto relative"
-                >
-                    <div className="relative h-full px-6" style={{ height: (END_HOUR - START_HOUR + 1) * PIXELS_PER_HOUR }}>
+                <section ref={timelineContainerRef} className="flex-grow overflow-y-auto relative">
+                    <div className="relative h-full px-6" style={{ height: `${(END_HOUR - START_HOUR + 1) * PIXELS_PER_HOUR}px` }}>
                         {hours.map(hour => (
                             <div key={hour} className="absolute w-full flex items-center" style={{ top: (hour - START_HOUR) * PIXELS_PER_HOUR, left: 0, right: 0 }}>
                                 <span className="text-xs text-[var(--color-text-tertiary)] w-12 text-right pr-2">{`${hour % 12 === 0 ? 12 : hour % 12}${hour < 12 || hour === 24 ? 'am' : 'pm'}`}</span>
                                 <div className="flex-grow border-t border-[var(--color-border)]"></div>
                             </div>
                         ))}
-                        
-                        {scheduledTasksWithLayout.map(taskWithLayout => (
+                        {scheduledTasksWithLayout.map((taskWithLayout) => (
                             <ScheduledTask
                                 key={taskWithLayout.id}
                                 task={taskWithLayout}
@@ -423,6 +370,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                                 leftPercent={taskWithLayout.layout.leftPercent}
                                 widthPercent={taskWithLayout.layout.widthPercent}
                                 onShortPress={onScheduledTaskShortPress}
+                                onLongPress={onScheduledTaskLongPress}
                                 onTaskTimeChange={onTaskTimeChange}
                                 onComplete={onCompleteTask}
                                 onUncomplete={onUncompleteTask}
@@ -431,14 +379,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                                 isOverdue={taskWithLayout.layout.isOverdue}
                             />
                         ))}
-
                         {currentTimePosition !== null && (
-                            <div 
-                                className="absolute left-12 right-0 flex items-center z-10 pointer-events-none" 
-                                style={{ top: currentTimePosition }}
-                            >
-                                <div className="w-2.5 h-2.5 bg-red-500 rounded-full -ml-1" />
-                                <div className="flex-grow h-px bg-red-500" />
+                            <div className="absolute left-12 right-0 flex items-center z-10 pointer-events-none" style={{ top: currentTimePosition }}>
+                                <div className="w-2.5 h-2.5 bg-red-500 rounded-full -ml-1"></div>
+                                <div className="flex-grow h-px bg-red-500"></div>
                             </div>
                         )}
                     </div>
