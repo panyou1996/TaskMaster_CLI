@@ -492,11 +492,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             });
                             uploadedAttachments = await Promise.all(uploadPromises);
 
-                            const { error: updateError } = await supabase.from('notes').update({ attachments: uploadedAttachments }).eq('id', syncedNote.id);
+                            const { data: finalNote, error: updateError } = await supabase
+                                .from('notes')
+                                .update({ attachments: uploadedAttachments })
+                                .eq('id', syncedNote.id)
+                                .select()
+                                .single();
                             if (updateError) throw updateError;
+
+                            setNotes(current => current.map(n => n.id === operation.tempId ? { ...finalNote, status: 'synced' } : n));
+                        } else {
+                            setNotes(current => current.map(n => n.id === operation.tempId ? { ...syncedNote, attachments: [], status: 'synced' } : n));
                         }
                         
-                        setNotes(current => current.map(n => n.id === operation.tempId ? { ...syncedNote, attachments: uploadedAttachments, status: 'synced' } : n));
                         success = true;
                         break;
                     }

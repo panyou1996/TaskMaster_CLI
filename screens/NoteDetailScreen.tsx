@@ -30,6 +30,7 @@ const NoteDetailScreen: React.FC = () => {
     const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSavingRef = useRef(false);
     const isFirstLoad = useRef(true);
+    const lastTempId = useRef<string | null>(null);
 
     useEffect(() => {
         isNewNoteRef.current = id === 'new';
@@ -45,6 +46,9 @@ const NoteDetailScreen: React.FC = () => {
                 if (contentEditableRef.current && contentEditableRef.current.innerHTML !== foundNote.content) {
                     contentEditableRef.current.innerHTML = foundNote.content || '';
                 }
+                if (String(id).startsWith('temp_')) {
+                    lastTempId.current = id;
+                }
             }
         } else {
             setNote({});
@@ -58,6 +62,27 @@ const NoteDetailScreen: React.FC = () => {
         }
         isFirstLoad.current = true;
     }, [id, notes]);
+
+    // This effect handles the redirection after a temporary note is synced.
+    useEffect(() => {
+        if (lastTempId.current && !notes.some(n => n.id === lastTempId.current)) {
+            // The temp note is gone, which means it has been synced.
+            // Find the new note by looking for a synced note that doesn't have a temp ID
+            // and matches the content of the last known temp note.
+            const lastKnownNote = note;
+            const newSyncedNote = notes.find(n => 
+                !String(n.id).startsWith('temp_') &&
+                n.status === 'synced' &&
+                n.created_at === lastKnownNote?.created_at &&
+                n.title === lastKnownNote?.title
+            );
+
+            if (newSyncedNote) {
+                lastTempId.current = null;
+                navigate(`/notes/${newSyncedNote.id}`, { replace: true });
+            }
+        }
+    }, [notes, navigate, note]);
 
     const handleContentChange = useCallback(() => {
         if (contentEditableRef.current) {

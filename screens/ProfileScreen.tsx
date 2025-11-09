@@ -3,6 +3,7 @@ import React, { useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
 import { ChevronLeftIcon, EditIcon } from '../components/icons/Icons';
+import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { supabase } from '../utils/supabase';
 
@@ -69,7 +70,8 @@ const resizeImage = (file: File, maxWidth: number, maxHeight: number, quality: n
 
 const ProfileScreen: React.FC = () => {
     const navigate = useNavigate();
-    const { profile, setProfile, tasks: allTasks, moments: momentsData, logout, user, focusHistory } = useData();
+    const { profile, setProfile, logout, user } = useAuth();
+    const { tasks: allTasks, moments: momentsData, focusHistory } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const tasksCompleted = useMemo(() => {
