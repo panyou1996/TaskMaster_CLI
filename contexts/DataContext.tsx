@@ -468,7 +468,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
                     case 'ADD_NOTE': {
                         const { noteData, localAttachmentsToUpload } = operation.payload;
-                        const { data: syncedNote, error: noteError } = await supabase.from('notes').insert({ ...noteData, user_id: targetUser.id, attachments: [], status: 'synced' }).select().single();
+                        const { data: syncedNote, error: noteError } = await supabase.from('notes').insert({ ...noteData, user_id: targetUser.id, attachments: [] }).select().single();
                         if (noteError) throw noteError;
 
                         let uploadedAttachments: Attachment[] = [];
@@ -901,8 +901,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setNotes(current => [newNote, ...current]);
         
-        const { localAttachmentsToUpload: _, ...cleanNoteData } = newNote;
-        addToQueue({ type: 'ADD_NOTE', payload: { noteData: cleanNoteData, localAttachmentsToUpload: localAttachments }, tempId });
+        addToQueue({ type: 'ADD_NOTE', payload: { noteData, localAttachmentsToUpload: localAttachments }, tempId });
         
         return tempId;
     }, [user, setNotes, addToQueue]);
