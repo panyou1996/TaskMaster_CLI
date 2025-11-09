@@ -384,9 +384,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [tasks, scheduleNotification]);
     
-    const processOfflineQueueInternal = useCallback(async (targetUser: User) => {
+    const processOfflineQueueInternal = useCallback(async (targetUser: User): Promise<boolean> => {
         if (!isOnline || isProcessingQueue.current || offlineQueue.length === 0) {
-            return;
+            return true; // Nothing to process, so not a failure
         }
     
         isProcessingQueue.current = true;
@@ -562,7 +562,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     });
                 }
                 isProcessingQueue.current = false;
-                return;
+                return false; // Return failure
             }
         }
         if (processedOperationIds.size > 0) {
@@ -573,6 +573,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
         }
         isProcessingQueue.current = false;
+        return true; // Return success
     }, [isOnline, offlineQueue, setOfflineQueue, setTasks, setLists, setMoments, setNotes, setFocusHistory, scheduleNotification, cancelNotification]);
 
     const syncData = useCallback(async (userOverride?: User | null) => {
@@ -584,7 +585,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsSyncing(true);
         setSyncError(null);
         try {
-            await processOfflineQueueInternal(targetUser);
+            const queueSuccess = await processOfflineQueueInternal(targetUser);
+            if (!queueSuccess) {
+                setIsSyncing(false);
+                return;
+            }
             await new Promise(res => setTimeout(res, 0)); 
             
             const [
