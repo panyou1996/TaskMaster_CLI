@@ -625,7 +625,51 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (listsData) setLists(local => mergeData(local, listsData, 'LIST', 'listId'));
             if (tasksData) setTasks(local => mergeData(local, tasksData, 'TASK', 'taskId'));
             if (momentsData) setMoments(local => mergeData(local, momentsData, 'MOMENT', 'momentId'));
-            if (notesData) setNotes(local => mergeData(local, notesData, 'NOTE', 'noteId'));
+                        if (notesData) {
+                setNotes(currentLocalNotes => {
+                    const pendingDeletes = new Set(offlineQueueRef.current.filter(op => op.type === 'DELETE_NOTE').map(op => op.payload.noteId));
+                    const serverNotes = notesData.filter(s => !pendingDeletes.has(s.id));
+                    
+                    const localNotesById = new Map(currentLocalNotes.map(n => [n.id, n]));
+                    const finalNotes: Note[] = [];
+                    const processedIds = new Set<string | number>();
+
+                    // Iterate server notes first
+                    for (const serverNote of serverNotes) {
+                        const localNote = localNotesById.get(serverNote.id);
+                        processedIds.add(serverNote.id);
+
+                        if (localNote) {
+                            // Note exists locally and on server
+                            if (localNote.status === 'pending') {
+                                // Local has unsynced changes, prioritize it.
+                                finalNotes.push(localNote);
+                            } else {
+                                // Both are synced. Compare timestamps and take the newer one.
+                                const localDate = new Date(localNote.updated_at || 0);
+                                const serverDate = new Date(serverNote.updated_at || 0);
+                                if (localDate > serverDate) {
+                                    finalNotes.push(localNote);
+                                } else {
+                                    finalNotes.push({ ...serverNote, status: 'synced' });
+                                }
+                            }
+                        } else {
+                            // Note only on server, add it.
+                            finalNotes.push({ ...serverNote, status: 'synced' });
+                        }
+                    }
+
+                    // Add any new local notes that weren't on the server yet (pending creation)
+                    for (const localNote of currentLocalNotes) {
+                        if (!processedIds.has(localNote.id)) {
+                            finalNotes.push(localNote);
+                        }
+                    }
+
+                    return finalNotes;
+                });
+            }
             if (focusData) {
                  setFocusHistory((currentLocal) => {
                     const localPending = currentLocal.filter(s => s.status === 'pending');
