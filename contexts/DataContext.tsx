@@ -19,7 +19,6 @@ import useLocalStorage from '../hooks/useLocalStorage';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { checkAndRequestNotificationPermission } from '../utils/permissions';
 import { Capacitor } from '@capacitor/core';
-import { type Theme, type FontSize } from '../screens/settings/ThemeSettingsScreen';
 import { getLocalISOString } from '../utils/date';
 
 type OperationType = 
@@ -89,11 +88,6 @@ interface DataContextType {
     addTag: (tag: string) => void;
     updateTag: (oldName: string, newName: string) => Promise<void>;
     deleteTag: (tag: string) => Promise<void>;
-
-    theme: Theme;
-    setTheme: React.Dispatch<React.SetStateAction<Theme>>;
-    fontSize: FontSize;
-    setFontSize: React.Dispatch<React.SetStateAction<FontSize>>;
     
     debugLog: string[];
     addDebugLog: (log: string) => void;
@@ -221,9 +215,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [profile, setProfile] = useLocalStorage<UserProfile | null>('userProfile', null);
     const [tags, setTags] = useLocalStorage<string[]>('checkinTags', []);
     const [focusHistory, setFocusHistory] = useLocalStorage<FocusSession[]>('focusHistory', initialFocusHistoryData);
-
-    const [theme, setTheme] = useLocalStorage<Theme>('app-theme', 'System');
-    const [fontSize, setFontSize] = useLocalStorage<FontSize>('app-font-size', 'lg');
 
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -1185,8 +1176,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addNote, updateNote, deleteNote,
         addFocusSession,
         tags, addTag, updateTag, deleteTag,
-        theme, setTheme,
-        fontSize, setFontSize,
         debugLog, addDebugLog,
     }), [
         session, user, loading, tasks, lists, moments, notes, focusHistory, profile, isOnline, isSyncing, offlineQueue, syncError, 
@@ -1194,7 +1183,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addTask, updateTask, deleteTask, addList, updateList, deleteList, addMoment, updateMoment, deleteMoment, 
         addNote, updateNote, deleteNote, addFocusSession,
         tags, addTag, updateTag, deleteTag,
-        theme, setTheme, fontSize, setFontSize,
         debugLog, addDebugLog, login, signup, logout, resetPassword
     ]);
 
@@ -1204,6 +1192,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         </DataContext.Provider>
     );
 };
+
+export const useData = (): DataContextType => {
+    const context = useContext(DataContext);
+    if (context === undefined) {
+        throw new Error('useData must be used within a DataProvider');
+    }
+    return context;
+};
+
 
 export const useData = (): DataContextType => {
     const context = useContext(DataContext);
