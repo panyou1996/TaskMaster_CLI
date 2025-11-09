@@ -59,7 +59,6 @@ export const checkAndRequestNotificationPermission = async (): Promise<boolean> 
         }
 
         if (Notification.permission === 'denied') {
-            showSettingsAlert('Notification permission has been denied. Please enable it in your browser settings.');
             return false;
         }
 
@@ -87,7 +86,6 @@ export const checkAndRequestNotificationPermission = async (): Promise<boolean> 
         }
 
         if (permissions.display === 'denied') {
-            showSettingsAlert('Notification permission is required for reminders. Please enable it in your app settings.');
             return false;
         }
 
