@@ -161,6 +161,17 @@ const cleanTaskForSupabase = (task: Partial<Task>) => {
     return cleanedPayload;
 };
 
+const cleanNoteForSupabase = (note: Partial<Note>) => {
+    const cleaned = { ...note };
+    delete cleaned.id;
+    delete cleaned.user_id;
+    delete cleaned.created_at;
+    delete cleaned.updated_at;
+    delete cleaned.status;
+    delete cleaned.localAttachmentsToUpload;
+    return cleaned;
+};
+
 // --- Notification Helpers ---
 const getNotificationId = (taskId: number | string): number => {
     if (typeof taskId === 'number') {
@@ -901,7 +912,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setNotes(current => [newNote, ...current]);
         
-        addToQueue({ type: 'ADD_NOTE', payload: { noteData, localAttachmentsToUpload: localAttachments }, tempId });
+        const supabaseNoteData = cleanNoteForSupabase(noteData);
+        addToQueue({ type: 'ADD_NOTE', payload: { noteData: supabaseNoteData, localAttachmentsToUpload: localAttachments }, tempId });
         
         return tempId;
     }, [user, setNotes, addToQueue]);

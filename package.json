@@ -27,7 +27,8 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^6.1.0",
-    "esbuild": "^0.21.5"
+    "esbuild": "^0.21.5",
+    "supabase": "^2.54.11"
   },
   "scripts": {
     "dev": "node scripts/dev.js",
