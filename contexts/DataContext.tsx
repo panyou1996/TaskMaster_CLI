@@ -548,15 +548,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         
                         Object.keys(updatesForSupabase).forEach(key => (updatesForSupabase as any)[key] === undefined && delete (updatesForSupabase as any)[key]);
 
-                        if (Object.keys(updatesForSupabase).length > 0) {
-                            const { error: updateError } = await supabase.from('notes').update(updatesForSupabase).eq('id', noteId);
-                            if (updateError) throw updateError;
-                        }
+                        const { data: updatedNote, error: updateError } = await supabase
+                            .from('notes')
+                            .update(updatesForSupabase)
+                            .eq('id', noteId)
+                            .select()
+                            .single();
 
-                        setNotes(current => current.map(n => {
-                            if (n.id !== noteId) return n;
-                            return { ...n, ...updates, attachments: finalAttachments, status: 'synced', localAttachmentsToUpload: [] };
-                        }));
+                        if (updateError) throw updateError;
+
+                        if (updatedNote) {
+                            setNotes(current => current.map(n => 
+                                n.id === noteId 
+                                ? { ...n, ...updatedNote, status: 'synced', localAttachmentsToUpload: [] } 
+                                : n
+                            ));
+                        } else {
+                            // Fallback in case select() fails or returns null
+                            setNotes(current => current.map(n => {
+                                if (n.id !== noteId) return n;
+                                return { ...n, ...updates, attachments: finalAttachments, status: 'synced', localAttachmentsToUpload: [] };
+                            }));
+                        }
                         success = true;
                         break;
                     }
