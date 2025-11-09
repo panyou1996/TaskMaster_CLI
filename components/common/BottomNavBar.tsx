@@ -122,8 +122,12 @@ const BottomNavBar: React.FC = () => {
                 triggerHapticImpact();
                 setIsMenuOpen(prev => !prev);
             }
+        } else if (isLongPressRef.current) {
+            // Timer already fired, so it was a long press. The global pointerup will handle it.
+            // But as a fallback, we'll stop it here too.
+            addDebugLog('-> Long press released on button. Stopping recording.');
+            stop();
         }
-        // If it was a long press, the global pointerup listener handles stopping.
     };
 
     const handleMomentButtonClick = async () => {

@@ -22,3 +22,19 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Gemini CLI generated files
+.idx/
+android_sdk/
+gh/
+icons/
+jdk/
+supabase/.temp/
+public/manifest.json
+
+# Android build files
+android/build/
+android/app/build/
+android/.gradle/
+/android/keystore.properties
+/android/release-key.keystore

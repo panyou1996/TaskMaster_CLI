@@ -22,6 +22,7 @@ import useLocalStorage from '../hooks/useLocalStorage';
 import { triggerHapticImpact, triggerHapticNotification, triggerHapticSelection } from '../utils/permissions';
 import { ImpactStyle, NotificationType } from '@capacitor/haptics';
 import Button from '../components/common/Button';
+import { Browser } from '@capacitor/browser';
 
 const parseDateAsLocal = (dateString?: string): Date | null => {
     if (!dateString) return null;
@@ -29,6 +30,7 @@ const parseDateAsLocal = (dateString?: string): Date | null => {
     if (parts.length !== 3 || parts.some(isNaN)) return null;
     return new Date(parts[0], parts[1] - 1, parts[2]);
 };
+
 
 // --- Planning Algorithm Logic ---
 
@@ -879,13 +881,13 @@ const TodayScreen: React.FC = () => {
                                                     <span className="text-sm font-medium text-[var(--color-text-secondary)]">{finishedTasks.length}/{totalTodayTasks}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                     <a
-                                                        href="/gemini"
+                                                     <button
+                                                        onClick={async () => await Browser.open({ url: 'https://gemini.google.com' })}
                                                         className="flex-shrink-0 p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-container-low)] rounded-full transition-colors"
                                                         aria-label="Open Gemini CLI"
                                                     >
                                                         <TerminalIcon className="w-5 h-5" />
-                                                    </a>
+                                                    </button>
                                                     <button
                                                         onClick={() => setIsPlanningSettingsOpen(true)}
                                                         className="flex-shrink-0 p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-container-low)] rounded-full transition-colors"

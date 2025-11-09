@@ -135,18 +135,19 @@ export const useWebSpeech = (addDebugLog: (log: string) => void) => {
     const stop = useCallback(() => {
         if (Capacitor.isNativePlatform()) {
             addDebugLog('Native Speech: stop() called.');
-            SpeechRecognition.stop()
-              .then(() => {
+            SpeechRecognition.stop().then(() => {
                 addDebugLog('Native speech stopped successfully.');
                 // Use the ref to get the most up-to-date transcript value
                 onEndRef.current(transcriptRef.current);
-              })
-              .catch(err => addDebugLog(`Native Speech: stop() error: ${err.message}`))
-              .finally(() => {
-                  setIsRecording(false);
-                  setTranscript('');
-                  SpeechRecognition.removeAllListeners();
-              });
+                setIsRecording(false);
+                setTranscript('');
+                SpeechRecognition.removeAllListeners();
+            }).catch(err => {
+                addDebugLog(`Native Speech: stop() error: ${err.message}`);
+                setIsRecording(false);
+                setTranscript('');
+                SpeechRecognition.removeAllListeners();
+            });
         } else {
             if (recognitionRef.current) {
                 addDebugLog('Web Speech: stop() called.');
