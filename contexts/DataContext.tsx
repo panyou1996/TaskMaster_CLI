@@ -233,11 +233,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cleanupRun = useRef(false);
     // Keep a ref to the offline queue to avoid stale closures during sync
     const offlineQueueRef = useRef<OfflineOperation[]>(offlineQueue);
+    const notesRef = useRef<Note[]>(notes);
 
     // Keep the ref in sync whenever offlineQueue state changes so other callbacks can read latest pending ops
     useEffect(() => {
         offlineQueueRef.current = offlineQueue;
     }, [offlineQueue]);
+    
+    useEffect(() => {
+        notesRef.current = notes;
+    }, [notes]);
     
     const [debugLog, setDebugLog] = useState<string[]>([]);
     const addDebugLog = useCallback((log: string) => {
@@ -527,20 +532,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             newUploadedAttachments = await Promise.all(uploadPromises);
                         }
 
-                        const finalAttachments = [...(updates.attachments || []), ...newUploadedAttachments];
+                        const noteInState = notesRef.current.find(n => n.id === noteId);
+                        const baseAttachments = updates.attachments !== undefined ? updates.attachments : (noteInState?.attachments || []);
+                        
+                        const attachmentMap = new Map();
+                        [...baseAttachments, ...newUploadedAttachments].forEach(att => attachmentMap.set(att.url, att));
+                        const finalAttachments = Array.from(attachmentMap.values());
+
                         const updatesForSupabase = {
                             title: updates.title,
                             content: updates.content,
                             tags: updates.tags,
                             attachments: finalAttachments,
                         };
-                        // Clean out any undefined keys before sending
+                        
                         Object.keys(updatesForSupabase).forEach(key => (updatesForSupabase as any)[key] === undefined && delete (updatesForSupabase as any)[key]);
 
-                        const { error: updateError } = await supabase.from('notes').update(updatesForSupabase).eq('id', noteId);
-                        if (updateError) throw updateError;
+                        if (Object.keys(updatesForSupabase).length > 0) {
+                            const { error: updateError } = await supabase.from('notes').update(updatesForSupabase).eq('id', noteId);
+                            if (updateError) throw updateError;
+                        }
 
-                        setNotes(current => current.map(n => n.id === noteId ? { ...n, ...updates, attachments: finalAttachments, status: 'synced', localAttachmentsToUpload: [] } : n));
+                        setNotes(current => current.map(n => {
+                            if (n.id !== noteId) return n;
+                            return { ...n, ...updates, attachments: finalAttachments, status: 'synced', localAttachmentsToUpload: [] };
+                        }));
                         success = true;
                         break;
                     }
