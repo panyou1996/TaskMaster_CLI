@@ -691,7 +691,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                 // Both are synced. Compare timestamps and take the newer one.
                                 const localDate = new Date(localNote.updated_at || 0);
                                 const serverDate = new Date(serverNote.updated_at || 0);
-                                if (localDate >= serverDate) {
+                                // If local is newer, or if server is not newer by more than 5s, prefer local.
+                                // This helps protect against replication lag where the server data is slightly stale.
+                                if (serverDate.getTime() - localDate.getTime() < 5000) {
                                     finalNotes.push(localNote);
                                 } else {
                                     finalNotes.push({ ...serverNote, status: 'synced' });
