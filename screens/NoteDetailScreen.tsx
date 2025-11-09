@@ -263,7 +263,7 @@ const NoteDetailScreen: React.FC = () => {
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                 {attachments.map((att, index) => (
                                     <div key={index} className="relative group bg-[var(--color-surface-container-low)] p-2 rounded-lg text-sm">
-                                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 truncate text-[var(--color-text-primary)] hover:underline">
+                                        <a href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 truncate text-[var(--color-text-primary)] hover:underline">
                                             <PaperclipIcon className="w-4 h-4 shrink-0" />
                                             <span className="truncate">{att.name}</span>
                                         </a>
