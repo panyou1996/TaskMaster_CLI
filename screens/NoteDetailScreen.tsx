@@ -106,7 +106,7 @@ const NoteDetailScreen: React.FC = () => {
     };
     
     const handleSave = useCallback(async () => {
-        if (isSavingRef.current || (isNewNoteRef.current && !title.trim() && !content.trim())) return;
+        if (isSavingRef.current || (isNewNoteRef.current && !title.trim() && !content.trim() && newLocalAttachments.length === 0)) return;
     
         isSavingRef.current = true;
         setSavingStatus('saving');
@@ -120,13 +120,13 @@ const NoteDetailScreen: React.FC = () => {
                     title, 
                     content: finalContent,
                     tags,
-                    attachments: [], // Existing attachments will be empty for a new note
                 }, filesToUpload);
     
                 if (newNoteId) {
+                    lastTempId.current = newNoteId;
+                    isNewNoteRef.current = false;
                     setNewLocalAttachments([]);
-                    // Navigate to the new ID, which will trigger the useEffect to load the full note data
-                    navigate(`/notes/${newNoteId}`, { replace: true });
+                    // We no longer navigate here. The useEffect will handle it.
                 }
             } else if (note?.id) {
                 await updateNote(note.id, { 
