@@ -528,7 +528,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         }
 
                         const finalAttachments = [...(updates.attachments || []), ...newUploadedAttachments];
-                        const { error: updateError } = await supabase.from('notes').update({ ...updates, attachments: finalAttachments }).eq('id', noteId);
+                        const updatesForSupabase = {
+                            title: updates.title,
+                            content: updates.content,
+                            tags: updates.tags,
+                            attachments: finalAttachments,
+                        };
+                        // Clean out any undefined keys before sending
+                        Object.keys(updatesForSupabase).forEach(key => (updatesForSupabase as any)[key] === undefined && delete (updatesForSupabase as any)[key]);
+
+                        const { error: updateError } = await supabase.from('notes').update(updatesForSupabase).eq('id', noteId);
                         if (updateError) throw updateError;
 
                         setNotes(current => current.map(n => n.id === noteId ? { ...n, ...updates, attachments: finalAttachments, status: 'synced', localAttachmentsToUpload: [] } : n));

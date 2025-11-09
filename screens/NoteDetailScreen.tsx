@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import { Note, Attachment } from '../data/mockData';
-import { ChevronLeftIcon, BoldIcon, ItalicIcon, ListIcon, ListOrderedIcon, PaperclipIcon, XIcon, RefreshSpinnerIcon, TrashIcon, ChecklistIcon } from '../components/icons/Icons';
+import { ChevronLeftIcon, BoldIcon, ItalicIcon, ListIcon, ListOrderedIcon, PaperclipIcon, XIcon, RefreshSpinnerIcon, TrashIcon, ChecklistIcon, DownloadIcon } from '../components/icons/Icons';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const NoteDetailScreen: React.FC = () => {
@@ -135,7 +135,7 @@ const NoteDetailScreen: React.FC = () => {
     
         debounceTimer.current = setTimeout(() => {
             handleSave();
-        }, 1500);
+        }, 500);
     
         return () => {
             if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -262,14 +262,19 @@ const NoteDetailScreen: React.FC = () => {
                             <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-2">Attachments</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                 {attachments.map((att, index) => (
-                                    <div key={index} className="relative group bg-[var(--color-surface-container-low)] p-2 rounded-lg text-sm">
-                                        <a href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 truncate text-[var(--color-text-primary)] hover:underline">
-                                            <PaperclipIcon className="w-4 h-4 shrink-0" />
-                                            <span className="truncate">{att.name}</span>
-                                        </a>
-                                        <button onClick={() => removeExistingAttachment(att)} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <XIcon className="w-3 h-3" />
-                                        </button>
+                                <div key={index} className="relative group bg-[var(--color-surface-container-low)] p-2 rounded-lg text-sm flex items-center justify-between">
+                                        <div className="flex items-center gap-2 truncate">
+                                            <PaperclipIcon className="w-4 h-4 shrink-0 text-[var(--color-text-secondary)]" />
+                                            <span className="truncate text-[var(--color-text-primary)]">{att.name}</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <a href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)]">
+                                                <DownloadIcon className="w-4 h-4" />
+                                            </a>
+                                            <button onClick={() => removeExistingAttachment(att)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-functional-red)]">
+                                                <XIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                                 {newLocalAttachments.map((att, index) => (
